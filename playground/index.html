@@ -53,6 +53,19 @@
         color: #e7e8ec; padding: 8px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap;
       }
       [data-fluidkit="liquid-tab"][aria-selected="true"] { color: #141417; }
+
+      /* interactive controls */
+      .controls { display: flex; flex-wrap: wrap; gap: 16px 18px; padding: 13px 15px; border-top: 1px solid #1e1e25; background: #0f0f14; }
+      .field { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #8a8b92; }
+      .field label { font-weight: 600; letter-spacing: .02em; display: flex; gap: 6px; align-items: baseline; }
+      .field .val { color: #e7e8ec; font-variant-numeric: tabular-nums; }
+      .field input[type=range] { width: 128px; accent-color: #7c5cff; }
+      .field input[type=color] { width: 40px; height: 24px; padding: 0; border: 1px solid #2c2c34; border-radius: 6px; background: none; cursor: pointer; }
+      .seg { display: inline-flex; gap: 2px; background: #17171d; border: 1px solid #2c2c34; border-radius: 8px; padding: 2px; }
+      .seg button { font: inherit; font-size: 11px; color: #9a9ba3; background: none; border: 0; border-radius: 6px; padding: 4px 9px; cursor: pointer; }
+      .seg button.on { background: #2a2a33; color: #fff; }
+      .btn { font: inherit; font-size: 11.5px; background: rgba(255,255,255,.09); color: #fff; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 5px 11px; cursor: pointer; }
+      .btn:hover { background: rgba(255,255,255,.16); }
     </style>
   </head>
   <body>
