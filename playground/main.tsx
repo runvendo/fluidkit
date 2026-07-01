@@ -1,6 +1,6 @@
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Metaballs, ThinkingBlob, MorphSurface, FlowStagger, LiquidTabs, Ripple } from "../src/index";
+import { Metaballs, ThinkingBlob, MorphSurface, FlowStagger, LiquidTabs, Ripple, LiquidGlass } from "../src/index";
 
 function Card({
   title,
@@ -117,6 +117,40 @@ function TabsDemo() {
   );
 }
 
+function GlassDemo() {
+  return (
+    <div
+      style={{
+        position: "absolute", inset: 0, display: "grid", placeItems: "center",
+        background: "conic-gradient(from 20deg at 30% 30%, #ff9a5a, #ff5aa8, #6b5bff, #2ad6c0, #ff9a5a)",
+      }}
+    >
+      {/* content BEHIND the glass, so the refraction has something to bend */}
+      <div
+        style={{
+          position: "absolute", inset: 0, display: "grid", placeItems: "center",
+          color: "rgba(255,255,255,.55)", fontSize: 26, letterSpacing: 6, fontWeight: 600,
+        }}
+      >
+        abcdefg 1234 ~~~~ ==== ····
+      </div>
+      <LiquidGlass
+        blur={2}
+        radius={24}
+        style={{
+          position: "relative", zIndex: 2, width: 210, height: 104,
+          display: "grid", placeItems: "center", color: "#fff", fontWeight: 700,
+          fontSize: 14, textShadow: "0 1px 6px rgba(0,0,0,.4)",
+          border: "1px solid rgba(255,255,255,.35)",
+          boxShadow: "inset 0 1px 1px rgba(255,255,255,.6), 0 18px 40px rgba(0,0,0,.3)",
+        }}
+      >
+        Liquid Glass
+      </LiquidGlass>
+    </div>
+  );
+}
+
 function App() {
   return (
     <>
@@ -155,6 +189,9 @@ function App() {
           >
             Tap me
           </Ripple>
+        </Card>
+        <Card title="LiquidGlass" desc="Frosted panel with real refraction (Chromium) via @samasante; degrades cleanly.">
+          <GlassDemo />
         </Card>
       </div>
     </>
