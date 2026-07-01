@@ -73,7 +73,7 @@ describe("LiquidTabs", () => {
     expect(onChange).toHaveBeenCalledWith("three");
   });
 
-  it("renders exactly one indicator, nested inside the active tab only", async () => {
+  it("renders exactly one indicator, and it lives outside every tab button", async () => {
     const LiquidTabs = await mockReducedMotion(false);
     const { container } = render(
       <LiquidTabs items={ITEMS} value="two" onChange={() => {}} />
@@ -84,13 +84,44 @@ describe("LiquidTabs", () => {
     );
     expect(indicators).toHaveLength(1);
 
+    // The indicator now lives in its own goo-filtered layer, never nested
+    // among the crisp tab labels — so no tab button contains it.
     const tabs = container.querySelectorAll('[data-fluidkit="liquid-tab"]');
-    expect(tabs[1].contains(indicators[0])).toBe(true);
-    expect(tabs[0].contains(indicators[0])).toBe(false);
-    expect(tabs[2].contains(indicators[0])).toBe(false);
+    tabs.forEach((tab) => {
+      expect(tab.contains(indicators[0])).toBe(false);
+    });
   });
 
-  it("applies the goo filter and mounts defs when motion is allowed", async () => {
+  it("applies the goo filter to the indicator layer and mounts defs when motion is allowed", async () => {
+    const LiquidTabs = await mockReducedMotion(false);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} />
+    );
+
+    const layer = container.querySelector(
+      '[data-fluidkit="liquid-tab-indicator-layer"]'
+    ) as HTMLElement;
+
+    // jsdom's CSSOM normalizes `url(...)` values by quoting them; the id
+    // inside is what actually matters here (see useGoo.test.tsx). The goo
+    // filter now lives on the indicator LAYER, not the container — so the
+    // text (in the sibling buttons layer) is never inside the filter.
+    expect(layer.style.filter).toBe('url("#fluidkit-goo")');
+    expect(document.getElementById("fluidkit-defs")).not.toBeNull();
+
+    const stage = container.querySelector(
+      '[data-fluidkit="liquid-tabs"]'
+    ) as HTMLElement;
+    expect(stage.getAttribute("data-motion")).toBe("liquid");
+  });
+
+  it("keeps the goo filter off the container so text is never inside it", async () => {
+    // Guard test encoding the library's non-negotiable principle: the tab
+    // LABELS (text) must never be a descendant of a goo-filtered element,
+    // or CSS `filter` rasterizes and erases them. Walk up from a tab button
+    // to the container and assert no ancestor carries the goo filter. This
+    // fails on the old (indicator-inside-active-button) structure and passes
+    // only when the text lives outside the filtered layer.
     const LiquidTabs = await mockReducedMotion(false);
     const { container } = render(
       <LiquidTabs items={ITEMS} value="one" onChange={() => {}} />
@@ -99,12 +130,16 @@ describe("LiquidTabs", () => {
     const stage = container.querySelector(
       '[data-fluidkit="liquid-tabs"]'
     ) as HTMLElement;
+    let node: HTMLElement | null = container.querySelector(
+      '[data-fluidkit="liquid-tab"]'
+    );
 
-    // jsdom's CSSOM normalizes `url(...)` values by quoting them; the id
-    // inside is what actually matters here (see useGoo.test.tsx).
-    expect(stage.style.filter).toBe('url("#fluidkit-goo")');
-    expect(document.getElementById("fluidkit-defs")).not.toBeNull();
-    expect(stage.getAttribute("data-motion")).toBe("liquid");
+    expect(node).not.toBeNull();
+    while (node) {
+      expect(node.style.filter).not.toContain("fluidkit-goo");
+      if (node === stage) break;
+      node = node.parentElement;
+    }
   });
 
   it("drops the goo filter and marks instant motion under prefers-reduced-motion", async () => {
@@ -113,11 +148,14 @@ describe("LiquidTabs", () => {
       <LiquidTabs items={ITEMS} value="one" onChange={() => {}} />
     );
 
+    const layer = container.querySelector(
+      '[data-fluidkit="liquid-tab-indicator-layer"]'
+    ) as HTMLElement;
+    expect(layer.style.filter).toBe("");
+
     const stage = container.querySelector(
       '[data-fluidkit="liquid-tabs"]'
     ) as HTMLElement;
-
-    expect(stage.style.filter).toBe("");
     expect(stage.getAttribute("data-motion")).toBe("instant");
   });
 
