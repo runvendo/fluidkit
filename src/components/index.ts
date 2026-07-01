@@ -7,3 +7,5 @@ export { ThinkingBlob } from "./ThinkingBlob";
 export type { ThinkingBlobProps } from "./ThinkingBlob";
 export { FlowStagger } from "./FlowStagger";
 export type { FlowStaggerProps } from "./FlowStagger";
+export { LiquidTabs } from "./LiquidTabs";
+export type { LiquidTabsProps, LiquidTabsItem } from "./LiquidTabs";
