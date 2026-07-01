@@ -1,6 +1,6 @@
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Metaballs, ThinkingBlob, MorphSurface } from "../src/index";
+import { Metaballs, ThinkingBlob, MorphSurface, FlowStagger } from "../src/index";
 
 function Card({
   title,
@@ -54,6 +54,43 @@ function MorphDemo() {
   );
 }
 
+function FlowDemo() {
+  const [items, setItems] = useState([
+    "Summarize my spending",
+    "Move $500 to savings",
+    "Cancel the duplicate subscription",
+  ]);
+  const add = () =>
+    setItems((xs) => [`New task ${xs.length + 1}`, ...xs]);
+  return (
+    <>
+      <button
+        className="ctl"
+        style={{ position: "absolute", left: 12, bottom: 12, zIndex: 5 }}
+        onClick={add}
+      >
+        Add item (glide)
+      </button>
+      <FlowStagger style={{ display: "flex", flexDirection: "column", gap: 8, width: 260 }}>
+        {items.map((t) => (
+          <div
+            key={t}
+            style={{
+              background: "rgba(255,255,255,.06)",
+              border: "1px solid rgba(255,255,255,.1)",
+              borderRadius: 12,
+              padding: "10px 13px",
+              fontSize: 13,
+            }}
+          >
+            {t}
+          </div>
+        ))}
+      </FlowStagger>
+    </>
+  );
+}
+
 function App() {
   return (
     <>
@@ -72,6 +109,9 @@ function App() {
         </Card>
         <Card title="MorphSurface" desc="Launcher → panel. Surface morphs; text stays crisp.">
           <MorphDemo />
+        </Card>
+        <Card title="FlowStagger" desc="Children rise + un-blur + settle, staggered; siblings glide.">
+          <FlowDemo />
         </Card>
       </div>
     </>
