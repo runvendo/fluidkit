@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Flowlet — fluid, together</title>
+<style>
+  * { box-sizing: border-box; }
+  html,body { margin:0; height:100%; }
+  body { font-family: ui-sans-serif,-apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    background:#f4f2ec; color:#14151a; overflow:hidden; }
+
+  /* ---------- host page behind the panel ---------- */
+  .host-bar { height:52px; display:flex; align-items:center; gap:10px; padding:0 22px; background:#fff; border-bottom:1px solid rgba(20,21,26,.08); }
+  .host-logo { width:26px;height:26px;border-radius:7px;background:#0a5cff }
+  .host-name { font-weight:650;font-size:15px;letter-spacing:-.01em }
+  .host-nav { margin-left:auto; display:flex; gap:20px; color:#8a8b92; font-size:13px }
+  .host-body { padding:34px 40px }
+  .host-body h2 { margin:0 0 6px; font-size:20px; letter-spacing:-.02em }
+  .host-body p { color:#8a8b92; max-width:46ch; line-height:1.6; font-size:14px }
+  .host-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-top:20px; max-width:720px }
+  .host-tile { height:110px; border-radius:14px; border:1px solid rgba(20,21,26,.08); background:#fff }
+  .host-tile:nth-child(1){ background:linear-gradient(135deg,#0a5cff,transparent 150%) }
+  .host-tile:nth-child(3){ background:linear-gradient(135deg,#0a5cff 10%,transparent 140%); opacity:.5 }
+
+  /* ---------- Flowlet tokens (tuned Codex) ---------- */
+  .flowlet-root {
+    --flowlet-accent:#1b1c22; --flowlet-accent-fg:#fff; --flowlet-accent-soft:rgba(27,28,34,.06);
+    --flowlet-fg:#14151a; --flowlet-fg-muted:#8a8b92; --flowlet-bg:#f4f2ec; --flowlet-surface:#fff;
+    --flowlet-border:rgba(20,21,26,.09); --flowlet-border-strong:rgba(20,21,26,.14);
+    --flowlet-glass:color-mix(in srgb,#fff 58%,transparent); --flowlet-glass-strong:color-mix(in srgb,#fff 72%,transparent);
+    --flowlet-blur:saturate(1.4) blur(40px); --flowlet-ok:#2e9e6b;
+    font-family:inherit; letter-spacing:-.011em; color:var(--flowlet-fg);
+  }
+
+  /* ---------- launcher (graphite pill) ---------- */
+  .launcher-slot { position:fixed; right:26px; bottom:26px; z-index:40; }
+  .launcher { display:flex; align-items:center; gap:9px; background:var(--flowlet-accent); color:var(--flowlet-accent-fg);
+    border:0; border-radius:999px; padding:12px 18px; font-size:13.5px; font-weight:650; letter-spacing:-.01em; cursor:pointer;
+    box-shadow:0 10px 30px rgba(20,21,26,.28), inset 0 1px 0 rgba(255,255,255,.16);
+    transition:transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s; }
+  .launcher:hover { transform:translateY(-1px); box-shadow:0 14px 36px rgba(20,21,26,.34) }
+  .launcher .spark { width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#c9cad2) }
+  body.open .launcher-slot { opacity:0; pointer-events:none; transition:opacity .2s }
+
+  /* ---------- scrim ---------- */
+  .scrim { position:fixed; inset:0; z-index:30; background:color-mix(in srgb,#14151a 18%,transparent);
+    -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px); opacity:0; pointer-events:none; transition:opacity .3s; }
+  body.open .scrim { opacity:1; pointer-events:auto; }
+
+  /* ---------- the panel: SURFACE layer (morphs) + CONTENT layer (only fades) ---------- */
+  .panel { position:fixed; z-index:35; right:26px; bottom:26px; width:200px; height:48px; pointer-events:none; }
+  body.open .panel { pointer-events:auto; }
+  /* surface = the glass body. This is the ONLY thing that morphs size/shape. */
+  .surface { position:absolute; inset:0; border-radius:999px;
+    background:var(--flowlet-accent); /* starts as the graphite pill */
+    box-shadow:0 24px 60px rgba(20,21,26,.30), inset 0 1px 0 rgba(255,255,255,.14);
+    transition: width .55s cubic-bezier(.34,1.25,.4,1), height .55s cubic-bezier(.34,1.25,.4,1),
+      right .55s cubic-bezier(.34,1.25,.4,1), bottom .55s cubic-bezier(.34,1.25,.4,1),
+      border-radius .5s, background-color .45s ease .05s;
+    width:200px; height:48px; }
+  body.refract .surface { -webkit-backdrop-filter:var(--flowlet-blur) url(#lens); backdrop-filter:var(--flowlet-blur) url(#lens); }
+  body.open .panel { width:min(440px,92vw); height:min(660px,82vh); right:calc(50vw - min(440px,92vw)/2); bottom:calc(50vh - min(660px,82vh)/2); }
+  body.open .surface { width:100%; height:100%; border-radius:24px;
+    background:var(--flowlet-glass); border:1px solid var(--flowlet-border-strong);
+    -webkit-backdrop-filter:var(--flowlet-blur); backdrop-filter:var(--flowlet-blur); }
+  /* CONTENT — natural size, only opacity/translate. Never scaled → crisp text. */
+  .content { position:absolute; inset:0; display:flex; flex-direction:column; opacity:0; pointer-events:none; }
+  body.open .content { opacity:1; pointer-events:auto; transition:opacity .25s .18s; }
+
+  /* thread */
+  .thread { display:flex; flex-direction:column; height:100%; min-height:0; }
+  .msglist { flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; gap:14px; padding:20px 16px 10px; scrollbar-width:none; }
+  .msglist::-webkit-scrollbar { display:none } .msglist > :first-child { margin-top:auto }
+  .greet { font-size:15px; font-weight:600; letter-spacing:-.01em; padding:0 2px }
+  .turn-user { align-self:flex-end; background:var(--flowlet-accent); color:var(--flowlet-accent-fg);
+    padding:9px 14px; border-radius:13px 13px 5px 13px; max-width:82%; font-size:14px; line-height:1.5; letter-spacing:-.006em;
+    box-shadow:0 1px 2px rgba(20,21,26,.16), inset 0 1px 0 rgba(255,255,255,.1) }
+  .turn-assistant { align-self:flex-start; max-width:92%; line-height:1.65; font-size:14px; letter-spacing:-.006em }
+  .turn-assistant strong { font-weight:650 }
+  body.open .msglist.play > * { animation:rise .6s cubic-bezier(.22,1,.36,1) both }
+  @keyframes rise { from{opacity:0;transform:translateY(13px);filter:blur(1.5px)} to{opacity:1;transform:none;filter:blur(0)} }
+
+  /* ---------- fluid-dynamics: goo "thinking" blob ---------- */
+  .think { align-self:flex-start; position:relative; width:88px; height:34px; }
+  .think .goo { position:absolute; inset:0; filter:url(#goo); }
+  .think .b { position:absolute; top:7px; width:20px; height:20px; border-radius:50%; background:var(--flowlet-fg); }
+  .think .b1 { left:6px;  animation:tb1 1.8s ease-in-out infinite }
+  .think .b2 { left:30px; animation:tb2 1.8s ease-in-out infinite }
+  .think .b3 { left:54px; animation:tb3 1.8s ease-in-out infinite }
+  @keyframes tb1 { 0%,100%{transform:translateX(0) scale(1)} 50%{transform:translateX(16px) scale(.8)} }
+  @keyframes tb2 { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+  @keyframes tb3 { 0%,100%{transform:translateX(0) scale(1)} 50%{transform:translateX(-16px) scale(.8)} }
+
+  /* rail with liquid drip-fuse */
+  .rail { position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:7px; padding:2px 16px 8px; }
+  .rail-goo { position:absolute; left:16px; bottom:8px; top:2px; width:200px; filter:url(#goo); pointer-events:none; z-index:0; }
+  .chip { position:relative; z-index:1; display:flex; align-items:center; gap:7px; border:1px solid var(--flowlet-border);
+    border-radius:999px; padding:4px 11px 4px 5px; font-size:12px; font-weight:550; letter-spacing:-.006em;
+    background:var(--flowlet-glass-strong); -webkit-backdrop-filter:var(--flowlet-blur); backdrop-filter:var(--flowlet-blur);
+    transition:transform .18s cubic-bezier(.22,1,.36,1) }
+  .chip:hover { transform:translateY(-1px) }
+  .chip-ic { width:19px;height:19px;border-radius:6px;display:grid;place-items:center;font-size:10px;font-weight:700;color:#fff;background:var(--b,#888);box-shadow:inset 0 1px 0 rgba(255,255,255,.28) }
+  .chip.on { background:color-mix(in srgb,var(--flowlet-ok) 9%,var(--flowlet-surface)); border-color:color-mix(in srgb,var(--flowlet-ok) 26%,var(--flowlet-border)) }
+  .live { width:6px;height:6px;border-radius:50%;background:var(--flowlet-ok); animation:breathe 2.4s ease-in-out infinite }
+  @keyframes breathe { 0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--flowlet-ok) 45%,transparent)} 50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--flowlet-ok) 0%,transparent)} }
+  .connect { display:flex; align-items:center; gap:6px; border:1px dashed var(--flowlet-border-strong); border-radius:999px;
+    padding:5px 12px 5px 10px; font-size:12px; font-weight:550; color:var(--flowlet-fg-muted); background:transparent; cursor:pointer; z-index:1;
+    transition:color .16s,border-color .16s,background .16s }
+  .connect:hover { color:var(--flowlet-fg); border-color:var(--flowlet-fg-muted); background:var(--flowlet-accent-soft) }
+  .chip.entering { animation:chipin .5s cubic-bezier(.22,1.25,.36,1) both }
+  @keyframes chipin { from{opacity:0;transform:translateY(5px) scale(.9)} to{opacity:1;transform:none} }
+  .fuseblob { position:absolute; z-index:0; width:26px; height:26px; border-radius:50%; background:var(--flowlet-fg); }
+
+  /* composer */
+  .composer { display:flex; align-items:flex-end; gap:9px; margin:10px 16px 16px; padding:7px 8px 7px 14px;
+    background:var(--flowlet-glass-strong); -webkit-backdrop-filter:var(--flowlet-blur); backdrop-filter:var(--flowlet-blur);
+    border:1px solid var(--flowlet-border); border-radius:14px;
+    box-shadow:0 1px 2px rgba(20,21,26,.05), 0 10px 28px rgba(20,21,26,.07) }
+  .composer textarea { flex:1; border:0; outline:0; background:transparent; color:var(--flowlet-fg);
+    font-family:inherit; font-size:14.5px; line-height:1.5; resize:none; padding:6px 0 }
+  .composer textarea::placeholder { color:var(--flowlet-fg-muted) }
+  .icon-btn { flex-shrink:0; width:34px; height:34px; border-radius:10px; border:1px solid transparent; background:transparent;
+    display:grid; place-items:center; cursor:pointer; color:var(--flowlet-fg-muted); font-size:17px; transition:background .12s,color .12s }
+  .icon-btn:hover { background:var(--flowlet-accent-soft); color:var(--flowlet-fg) }
+  .send { border-radius:50%; background:var(--flowlet-accent); color:var(--flowlet-accent-fg); font-size:15px;
+    box-shadow:0 1px 2px rgba(20,21,26,.22), inset 0 1px 0 rgba(255,255,255,.16) }
+  .close-x { position:absolute; top:12px; right:14px; z-index:3; width:28px;height:28px;border-radius:9px;border:0;background:transparent;
+    color:var(--flowlet-fg-muted); cursor:pointer; font-size:16px; display:grid; place-items:center }
+  .close-x:hover { background:var(--flowlet-accent-soft); color:var(--flowlet-fg) }
+
+  /* control dock */
+  .lab { position:fixed; left:18px; bottom:18px; z-index:60; display:flex; gap:7px; flex-wrap:wrap; max-width:360px;
+    background:#0f0f12; padding:9px; border-radius:12px; }
+  .lab button { font:inherit; font-size:11.5px; background:#1c1c22; color:#d9dade; border:1px solid #2c2c34; border-radius:8px; padding:6px 10px; cursor:pointer }
+  .lab button:hover { border-color:#4a4a55 }
+  .lab button.on { background:#2a2a33; color:#fff; border-color:#6a6a7a }
+
+  @media (prefers-reduced-motion:reduce) {
+    .surface { transition:opacity .2s !important }
+    .think .b,.live { animation:none }
+    body.open .msglist.play > * { animation:none }
+  }
+</style>
+</head>
+<body>
+  <div class="host-bar"><div class="host-logo"></div><div class="host-name">Northwind Bank</div>
+    <nav class="host-nav"><span>Accounts</span><span>Transfers</span><span>Cards</span></nav></div>
+  <div class="host-body">
+    <h2>Checking · ****4021</h2>
+    <p>Your everyday account. Ask the assistant to move money, summarize spending, or set up an automation.</p>
+    <div class="host-grid"><div class="host-tile"></div><div class="host-tile"></div><div class="host-tile"></div></div>
+  </div>
+
+  <svg width="0" height="0" aria-hidden="true"><defs>
+    <filter id="goo"><feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/>
+      <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 20 -9"/></filter>
+    <filter id="lens" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.01" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="20"/></filter>
+  </defs></svg>
+
+  <div class="scrim" id="scrim"></div>
+
+  <!-- launcher -->
+  <div class="launcher-slot flowlet-root"><button class="launcher" id="launcher"><span class="spark"></span>Ask Flowlet</button></div>
+
+  <!-- panel: surface morphs, content fades -->
+  <div class="panel flowlet-root" id="panel">
+    <div class="surface"></div>
+    <div class="content">
+      <button class="close-x" id="closeX">✕</button>
+      <div class="thread">
+        <div class="msglist play" id="msglist">
+          <div class="greet">Northwind Assistant</div>
+          <div class="turn-user">How much did I spend on subscriptions last month?</div>
+          <div class="think" id="think"><div class="goo"><div class="b b1"></div><div class="b b2"></div><div class="b b3"></div></div></div>
+          <div class="turn-assistant" id="answer" style="display:none">You spent <strong>$142.97</strong> across <strong>6 subscriptions</strong> in May — Cloudscape, Streamly and Notion were the biggest. Want me to flag the two that renewed at a higher price?</div>
+        </div>
+        <div class="rail" id="rail">
+          <div class="rail-goo" id="railGoo"></div>
+          <div class="chip on"><span class="chip-ic" style="--b:#EA4335">G</span>Gmail<span class="live"></span></div>
+          <div class="chip on"><span class="chip-ic" style="--b:#111">P</span>Plaid<span class="live"></span></div>
+          <button class="connect" id="connectBtn"><span style="font-size:14px;line-height:1">+</span>Connect</button>
+        </div>
+        <div class="composer">
+          <button class="icon-btn">+</button>
+          <textarea rows="1" placeholder="Ask for follow-up changes"></textarea>
+          <button class="icon-btn send">↑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lab">
+    <button id="btnOpen" class="on">Open / close panel</button>
+    <button id="btnThink">Replay thinking→answer</button>
+    <button id="btnConnect">Connect (drip-fuse)</button>
+    <button id="btnRefract">Refraction: off</button>
+    <button id="btnReplay">Replay entrance</button>
+  </div>
+
+<script>
+  const body = document.body, msglist = document.getElementById('msglist');
+  // open / close morph
+  function setOpen(v){ body.classList.toggle('open', v); if(v){ replayEntrance(); } }
+  document.getElementById('launcher').onclick = ()=> setOpen(true);
+  document.getElementById('closeX').onclick = ()=> setOpen(false);
+  document.getElementById('scrim').onclick = ()=> setOpen(false);
+  document.getElementById('btnOpen').onclick = ()=> setOpen(!body.classList.contains('open'));
+
+  // entrance
+  function replayEntrance(){ const k=[...msglist.children]; msglist.classList.remove('play'); void msglist.offsetWidth;
+    k.forEach((el,i)=> el.style.animationDelay=(i*90)+'ms'); msglist.classList.add('play'); }
+  document.getElementById('btnReplay').onclick = ()=> { if(body.classList.contains('open')) replayEntrance(); };
+
+  // thinking -> answer
+  const think=document.getElementById('think'), answer=document.getElementById('answer');
+  function runThink(){ think.style.display=''; answer.style.display='none';
+    setTimeout(()=>{ think.style.display='none'; answer.style.display='';
+      answer.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:450,easing:'cubic-bezier(.22,1,.36,1)'}); }, 2200); }
+  document.getElementById('btnThink').onclick = ()=> runThink();
+  // auto-resolve once on first open
+  let resolved=false;
+  const obs=new MutationObserver(()=>{ if(body.classList.contains('open') && !resolved){ resolved=true; runThink(); } });
+  obs.observe(body,{attributes:true,attributeFilter:['class']});
+
+  // connect: a liquid blob drips from the button and fuses into the rail, then the chip resolves
+  const CANDS=[{nm:'Slack',b:'#611f69',in:'S'},{nm:'Notion',b:'#111',in:'N'},{nm:'Linear',b:'#5e6ad2',in:'L'}];
+  let ci=0; const rail=document.getElementById('rail'), railGoo=document.getElementById('railGoo'), connectBtn=document.getElementById('connectBtn');
+  function connect(){ const c=CANDS[ci%CANDS.length]; ci++;
+    const blob=document.createElement('div'); blob.className='fuseblob'; railGoo.appendChild(blob);
+    const bx=connectBtn.offsetLeft;
+    blob.animate([{left:bx+'px',top:'30px',opacity:1},{left:'0px',top:'6px',opacity:1}],{duration:600,easing:'cubic-bezier(.5,0,.3,1)',fill:'forwards'});
+    setTimeout(()=>{ blob.remove();
+      const chip=document.createElement('div'); chip.className='chip on entering';
+      chip.innerHTML=`<span class="chip-ic" style="--b:${c.b}">${c.in}</span>${c.nm}<span class="live"></span>`;
+      rail.insertBefore(chip, connectBtn); }, 560); }
+  connectBtn.onclick = connect; document.getElementById('btnConnect').onclick = ()=> { if(body.classList.contains('open')) connect(); };
+
+  // refraction toggle
+  const btnR=document.getElementById('btnRefract');
+  btnR.onclick=()=>{ const on=body.classList.toggle('refract'); btnR.textContent='Refraction: '+(on?'on':'off'); btnR.classList.toggle('on',on); };
+
+  // start open so you see it immediately
+  setTimeout(()=> setOpen(true), 300);
+</script>
+</body>
+</html>
