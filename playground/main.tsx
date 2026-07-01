@@ -1,6 +1,6 @@
 import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Metaballs, ThinkingBlob, MorphSurface, FlowStagger } from "../src/index";
+import { Metaballs, ThinkingBlob, MorphSurface, FlowStagger, LiquidTabs } from "../src/index";
 
 function Card({
   title,
@@ -91,6 +91,32 @@ function FlowDemo() {
   );
 }
 
+function TabsDemo() {
+  const [value, setValue] = useState("chat");
+  return (
+    <div style={{ color: "#e7e8ec" }}>
+      <LiquidTabs
+        value={value}
+        onChange={setValue}
+        color="#e7e8ec"
+        items={[
+          { id: "chat", label: "Chat" },
+          { id: "automations", label: "Automations" },
+          { id: "connections", label: "Connections" },
+        ]}
+        style={{
+          display: "flex",
+          gap: 4,
+          padding: 5,
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,.12)",
+          background: "rgba(255,255,255,.04)",
+        }}
+      />
+    </div>
+  );
+}
+
 function App() {
   return (
     <>
@@ -112,6 +138,9 @@ function App() {
         </Card>
         <Card title="FlowStagger" desc="Children rise + un-blur + settle, staggered; siblings glide.">
           <FlowDemo />
+        </Card>
+        <Card title="LiquidTabs" desc="Active indicator glides + stretches like mercury; text stays crisp.">
+          <TabsDemo />
         </Card>
       </div>
     </>

@@ -42,6 +42,13 @@
       .panel-body .ph .dot { width: 8px; height: 8px; border-radius: 50%; background: #141417; }
       .panel-body .row { margin-top: 10px; background: rgba(20,20,23,.06); border-radius: 12px; padding: 9px 11px; font-size: 12px; line-height: 1.4; }
       .panel-body .row.me { background: #141417; color: #e7e8ec; margin-left: auto; width: 72%; border-radius: 12px 12px 4px 12px; }
+
+      /* LiquidTabs consumer styling (component exposes aria-selected for contrast) */
+      [data-fluidkit="liquid-tab"] {
+        position: relative; background: transparent; border: 0; font: inherit; font-size: 13px; font-weight: 600;
+        color: #e7e8ec; padding: 8px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+      }
+      [data-fluidkit="liquid-tab"][aria-selected="true"] { color: #141417; }
     </style>
   </head>
   <body>
