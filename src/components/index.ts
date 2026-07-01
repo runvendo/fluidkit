@@ -11,3 +11,5 @@ export { LiquidTabs } from "./LiquidTabs";
 export type { LiquidTabsProps, LiquidTabsItem } from "./LiquidTabs";
 export { Ripple } from "./Ripple";
 export type { RippleProps } from "./Ripple";
+export { LiquidGlass } from "./LiquidGlass";
+export type { LiquidGlassProps } from "./LiquidGlass";
