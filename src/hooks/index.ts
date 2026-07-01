@@ -15,3 +15,10 @@ export type {
   UseFlowContainerProps,
   UseFlowItemProps,
 } from "./useFlow";
+export { useRipple } from "./useRipple";
+export type {
+  UseRippleOptions,
+  UseRippleResult,
+  UseRippleHandlers,
+  RippleData,
+} from "./useRipple";

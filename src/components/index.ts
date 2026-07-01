@@ -9,3 +9,5 @@ export { FlowStagger } from "./FlowStagger";
 export type { FlowStaggerProps } from "./FlowStagger";
 export { LiquidTabs } from "./LiquidTabs";
 export type { LiquidTabsProps, LiquidTabsItem } from "./LiquidTabs";
+export { Ripple } from "./Ripple";
+export type { RippleProps } from "./Ripple";
