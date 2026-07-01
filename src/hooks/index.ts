@@ -1,2 +1,3 @@
 // Public hooks will be re-exported from here as they are implemented.
-export {};
+export { useGoo } from "./useGoo";
+export type { UseGooResult } from "./useGoo";
