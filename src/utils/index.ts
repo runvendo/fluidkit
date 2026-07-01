@@ -9,3 +9,5 @@ export {
   resolvePrefersReducedMotion,
   usePrefersReducedMotion,
 } from "./reducedMotion";
+export { useInView } from "./useInView";
+export type { UseInViewResult } from "./useInView";
