@@ -1,4 +1,4 @@
-import { StrictMode, useRef, useState } from "react";
+import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { CSSProperties, ReactNode } from "react";
 import {
@@ -16,6 +16,12 @@ import {
   Thinking,
 } from "../src/index";
 import type { LiquidMaterial } from "../src/liquid";
+// The optional GPU tier lives behind its own subpath exports, not the core
+// entry above — imported here exactly as a consumer would write it
+// (`fluidkit/liquid-metal` / `fluidkit/water-field`), resolved by the
+// playground's own alias in vite.config.ts straight to source.
+import { LiquidMetal } from "fluidkit/liquid-metal";
+import { WaterField } from "fluidkit/water-field";
 import { PhoneFrame } from "./demos/PhoneFrame";
 import { DynamicIsland } from "./demos/DynamicIsland";
 import { MusicPlayer } from "./demos/MusicPlayer";
@@ -129,6 +135,8 @@ function Hero() {
             ["drip-fuse", "DripFuse"],
             ["mesh-gradient", "MeshGradient"],
             ["aurora", "Aurora"],
+            ["liquid-metal", "LiquidMetal"],
+            ["water-field", "WaterField"],
           ].map(([id, label]) => (
             <a key={id} href={`#${id}`}>{label}</a>
           ))}
@@ -451,6 +459,90 @@ function AuroraDemo() {
     controls={<><Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} /><Slider label="speed" value={speed} set={setSpeed} min={0.3} max={3} step={0.1} /><Seg label="blend" value={blend} set={setBlend} options={AURORA_BLENDS} /></>} />;
 }
 
+/* ------------------------- optional GPU tier ------------------------- */
+/**
+ * Site chrome: mounts children the FIRST time the stage scrolls into view,
+ * and never unmounts them after. The GPU demos below boot a real WebGL
+ * context on mount (and WaterField keeps issuing draw calls each frame even
+ * while paused), so mounting them eagerly would bill every docs visitor for
+ * two live GPU contexts at page load, for cards at the bottom of the page.
+ */
+function MountOnView({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || seen) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setSeen(true);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [seen]);
+  return <div ref={ref} style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>{seen ? children : null}</div>;
+}
+
+type LiquidMetalPreset = "mercury" | "gold" | "obsidian";
+const LIQUID_METAL_PRESET_KEYS: LiquidMetalPreset[] = ["mercury", "gold", "obsidian"];
+/** color/backgroundColor pairs; "mercury" mirrors the shader's own default look. */
+const LIQUID_METAL_PRESETS: Record<LiquidMetalPreset, { color: string; backgroundColor: string }> = {
+  mercury: { color: "#ffffff", backgroundColor: "#aaaaac" },
+  gold: { color: "#fff4d6", backgroundColor: "#8a6a2f" },
+  obsidian: { color: "#c9d6e3", backgroundColor: "#1b1d24" },
+};
+
+function LiquidMetalDemo() {
+  const [preset, setPreset] = useState<LiquidMetalPreset>("mercury");
+  const [speed, setSpeed] = useState(1);
+  const [intensity, setIntensity] = useState(0.07);
+  const { color, backgroundColor } = LIQUID_METAL_PRESETS[preset];
+  return <Card id="liquid-metal" title="LiquidMetal" desc="Optional GPU tier: a WebGL liquid-metal shader from @paper-design/shaders-react (pinned exact), wrapped with fluidkit's capability + reduced-motion gating and off-screen pausing. Lives behind the fluidkit/liquid-metal subpath — install the optional peer to use it; the core bundle never pays for it." hint={`fluidkit/liquid-metal — optional peer: npm i @paper-design/shaders-react@0.0.76`}
+    code={`import { LiquidMetal } from "fluidkit/liquid-metal";
+
+<LiquidMetal
+  color="${color}"
+  backgroundColor="${backgroundColor}"
+  speed={${speed}}
+  intensity={${intensity}}
+/>`}
+    stage={
+      <MountOnView>
+        <LiquidMetal color={color} backgroundColor={backgroundColor} speed={speed} intensity={intensity} />
+        <div style={{ position: "relative", background: "rgba(255,255,255,.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderRadius: 16, padding: "16px 20px", textAlign: "center", boxShadow: "0 10px 28px rgba(46,44,72,.12)" }}>
+          <div style={{ fontWeight: 650, fontSize: 13, color: "#23242c", marginBottom: 3 }}>Now Playing</div>
+          <div style={{ fontSize: 11.5, color: "#6b6c75" }}>LiquidMetal is the layer behind this card</div>
+        </div>
+      </MountOnView>
+    }
+    controls={<><Seg label="preset" value={preset} set={setPreset} options={LIQUID_METAL_PRESET_KEYS} /><Slider label="speed" value={speed} set={setSpeed} min={0.1} max={3} step={0.1} /><Slider label="intensity" value={intensity} set={setIntensity} min={0} max={0.3} step={0.01} /></>} />;
+}
+
+type WaterFieldPreset = "lagoon" | "sunset" | "ember";
+const WATER_FIELD_PRESET_KEYS: WaterFieldPreset[] = ["lagoon", "sunset", "ember"];
+/** two-color splat palettes; "lagoon" mirrors the wrapper's own default colors. */
+const WATER_FIELD_PRESETS: Record<WaterFieldPreset, string[]> = {
+  lagoon: ["#a8dadc", "#1d3557"],
+  sunset: ["#ffb37a", "#6a0572"],
+  ember: ["#ffcf7a", "#7a1f1f"],
+};
+
+function WaterFieldDemo() {
+  const [preset, setPreset] = useState<WaterFieldPreset>("lagoon");
+  const [intensity, setIntensity] = useState(0.6);
+  const [interactive, setInteractive] = useState(true);
+  const colors = WATER_FIELD_PRESETS[preset];
+  return <Card id="water-field" title="WaterField" desc="Optional GPU tier: a WebGL fluid simulation from webgl-fluid-enhanced, wrapped with the same capability + reduced-motion gating, off-screen pause/resume, and teardown-on-unmount. Lives behind the fluidkit/water-field subpath — install the optional peer to use it; the core bundle never pays for it." hint="fluidkit/water-field — optional peer: npm i webgl-fluid-enhanced — move your pointer over the field"
+    code={`import { WaterField } from "fluidkit/water-field";
+
+<WaterField
+  colors={${JSON.stringify(colors)}}
+  intensity={${intensity}}
+  interactive={${interactive}}
+/>`}
+    stage={<MountOnView><WaterField colors={colors} intensity={intensity} interactive={interactive} /></MountOnView>}
+    controls={<><Seg label="colors" value={preset} set={setPreset} options={WATER_FIELD_PRESET_KEYS} /><Slider label="intensity" value={intensity} set={setIntensity} min={0.1} max={1} step={0.05} /><Toggle label="interactive" value={interactive} set={setInteractive} /></>} />;
+}
+
 function App() {
   return (
     <>
@@ -469,6 +561,8 @@ function App() {
         <DripFuseDemo />
         <MeshGradientDemo />
         <AuroraDemo />
+        <LiquidMetalDemo />
+        <WaterFieldDemo />
       </div>
       <footer className="footer">
         MIT · <a href="https://github.com/yousefh409/fluidkit">github.com/yousefh409/fluidkit</a>
