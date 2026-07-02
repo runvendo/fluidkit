@@ -1,7 +1,7 @@
 /**
  * Feature-detection utilities.
  *
- * These guard runtime capability checks so primitives (e.g. LiquidGlass) can
+ * These guard runtime capability checks so primitives (e.g. the glass material) can
  * pick their best-available rendering path and degrade gracefully. Every
  * detector is a function (never a top-level constant) so nothing runs at
  * module import time, and every detector swallows errors so it never throws

@@ -1,28 +1,21 @@
 /**
- * Tab strip whose active-tab indicator glides between tabs and stretches
- * like mercury as it moves.
+ * Tab strip whose active-tab indicator glides between tabs with a taut,
+ * slightly-overshooting spring.
  *
- * Layering (critical): the tab LABELS must never live inside a goo-filtered
- * element — CSS `filter` rasterizes an element's entire subtree, so any text
- * inside the goo layer gets blurred and erased. LiquidTabs therefore renders
- * two overlaid layers inside an UNFILTERED container:
- *
- *   1. Indicator layer — absolutely positioned, `pointer-events:none`,
- *      carrying the goo filter from `useGoo()`. It contains ONLY the single
- *      moving indicator pill. No text ever lives here.
- *   2. Buttons layer — the `<button role="tab">` elements with their crisp
- *      labels, on top and fully interactive. No filter.
+ * Layering: the indicator lives on its own absolutely-positioned,
+ * `pointer-events:none` layer BEHIND the buttons; the `<button role="tab">`
+ * labels render crisp on top. No filters anywhere — the previous goo filter
+ * produced dark halo fringes on light backgrounds (blur + contrast clamps
+ * the indicator's soft alpha edges), so the glide now comes purely from the
+ * spring. (The engine-driven stretch lands in v0.3.)
  *
  * Because the two layers are siblings, the indicator can't ride along inside
  * the active button (the classic `layoutId` trick), so instead we MEASURE the
  * active button's box (`offsetLeft`/`offsetWidth`) in a layout effect and
- * animate the single indicator to that position. Motion's springy transition
- * gives a slight overshoot and the goo filter softens/fuses the edges, so the
- * glide reads as liquid mercury.
+ * animate the single indicator to that position.
  *
- * Under `prefers-reduced-motion` the goo filter is dropped (via `useGoo()`)
- * and the transition duration is zeroed, so the pill snaps to the active tab
- * instantly instead of gliding.
+ * Under `prefers-reduced-motion` the transition duration is zeroed, so the
+ * pill snaps to the active tab instantly instead of gliding.
  */
 
 import {
@@ -34,7 +27,6 @@ import {
   type ReactNode,
 } from "react";
 import { motion } from "motion/react";
-import { useGoo } from "../hooks";
 import { resolveColor, usePrefersReducedMotion } from "../utils";
 
 export interface LiquidTabsItem {
@@ -79,7 +71,6 @@ export function LiquidTabs({
   style,
   ...rest
 }: LiquidTabsProps) {
-  const { style: gooStyle } = useGoo();
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const resolvedColor = resolveColor(color);
@@ -134,9 +125,8 @@ export function LiquidTabs({
       {...rest}
     >
       {/*
-       * Indicator layer: goo-filtered, non-interactive, behind the buttons.
-       * Holds ONLY the moving pill — never any text — so the filter can
-       * never touch the labels.
+       * Indicator layer: non-interactive, behind the buttons. Holds ONLY the
+       * moving pill — never any text.
        */}
       <div
         data-fluidkit="liquid-tab-indicator-layer"
@@ -145,7 +135,6 @@ export function LiquidTabs({
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          ...gooStyle,
         }}
       >
         {rect && (

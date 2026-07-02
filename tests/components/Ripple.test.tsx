@@ -57,6 +57,25 @@ describe("Ripple", () => {
     expect(ripples).toHaveLength(1);
   });
 
+  it("renders a frosted lens (backdrop blur, no color wash) with material=glass", async () => {
+    const Ripple = await mockReducedMotion(false);
+    const { container } = render(
+      <Ripple material="glass" color="#ff0000">Click me</Ripple>
+    );
+
+    const wrapper = container.querySelector(
+      '[data-fluidkit="ripple-surface"]'
+    ) as HTMLElement;
+    fireEvent.pointerDown(wrapper, { clientX: 5, clientY: 5 });
+
+    const ripple = container.querySelector(
+      '[data-fluidkit="ripple"]'
+    ) as HTMLElement;
+    expect(ripple.style.backdropFilter).toContain("blur");
+    // glass ignores the color wash — the lens is the material
+    expect(ripple.style.background).not.toContain("255, 0, 0");
+  });
+
   it("renders no ripple element on pointer down under prefers-reduced-motion", async () => {
     const Ripple = await mockReducedMotion(true);
     const { container } = render(<Ripple>Click me</Ripple>);

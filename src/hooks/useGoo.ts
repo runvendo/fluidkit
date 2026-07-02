@@ -3,7 +3,7 @@
  *
  * Returns the `style` a consumer spreads onto their own container so that
  * container's children fuse like mercury (same-color, overlapping shapes
- * merge via the shared `fluidkit-goo` SVG filter). `Metaballs` is the
+ * merge via the shared `fluidkit-goo` SVG filter). `LiquidTabs` is the
  * batteries-included component built on top of this.
  */
 

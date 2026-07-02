@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>fluidkit — liquid glass lab (A + C hybrid)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: #f2f3f7; color: #1c1d23;
+    font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    padding: 26px; letter-spacing: -.01em; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: #5c5d66; font-size: 13px; margin: 0 0 20px; max-width: 80ch; line-height: 1.6; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 1320px; }
+  .card { border: 1px solid #e2e3ea; border-radius: 18px; overflow: hidden; background: #ffffff;
+    box-shadow: 0 1px 3px rgba(24,25,36,.05); }
+  .stage { position: relative; height: 340px; overflow: hidden; }
+  .hint { position: absolute; top: 10px; left: 0; right: 0; text-align: center; z-index: 8;
+    font-size: 10.5px; color: rgba(28,29,35,.4); letter-spacing: .06em; text-transform: uppercase; pointer-events: none; }
+  .meta { padding: 12px 15px 14px; border-top: 1px solid #ecedf2; }
+  .meta h2 { font-size: 13.5px; margin: 0 0 3px; }
+  .meta p { font-size: 12px; color: #6b6c75; margin: 0; line-height: 1.55; }
+
+  /* bright wallpaper the glass refracts — orbs are radial gradients, NOT
+     blurred divs: CSS blur() gets clipped to a rectangular filter region,
+     and backdrop saturation amplifies that clip edge into a visible seam */
+  .stage.wall { background: linear-gradient(160deg, #dbe4ff 0%, #f3e3ff 45%, #ffe9f2 100%); }
+  .orb { position: absolute; border-radius: 50%; opacity: .8; }
+  .o1 { width: 340px; height: 340px; background: radial-gradient(circle closest-side, #7c9bff 0%, rgba(124,155,255,.55) 45%, rgba(124,155,255,0) 100%); top: -110px; left: -100px; animation: drift1 14s ease-in-out infinite alternate; }
+  .o2 { width: 300px; height: 300px; background: radial-gradient(circle closest-side, #ff8ccb 0%, rgba(255,140,203,.5) 45%, rgba(255,140,203,0) 100%); bottom: -120px; right: -90px; animation: drift2 18s ease-in-out infinite alternate; }
+  .o3 { width: 240px; height: 240px; background: radial-gradient(circle closest-side, #63dcb9 0%, rgba(99,220,185,.45) 45%, rgba(99,220,185,0) 100%); bottom: -20px; left: -20px; animation: drift1 22s ease-in-out infinite alternate-reverse; }
+  @keyframes drift1 { to { transform: translate(50px, 28px); } }
+  @keyframes drift2 { to { transform: translate(-44px, -30px); } }
+
+  /* liquid layers — the shape is a JS-computed metaball clip path.
+     clip lives on a WRAPPER; fills/filters live on children (avoids the
+     Chromium clip-path + backdrop-filter same-element artifact). */
+  .shadow-wrap { position: absolute; inset: 0; z-index: 2;
+    filter: blur(14px); transform: translateY(16px) scale(.97); }
+  .shadow-fill { position: absolute; inset: 0; background: rgba(46,44,72,.16); }
+  .liq-clip { position: absolute; inset: 0; z-index: 3; }
+  .glass-fill { position: absolute; inset: 0; background: rgba(255,255,255,.30);
+    -webkit-backdrop-filter: blur(16px) saturate(1.8); backdrop-filter: blur(16px) saturate(1.8); }
+  .metal-fill { position: absolute; inset: 0;
+    background: linear-gradient(150deg, #fdfdfe 0%, #ccd1d9 36%, #8d94a1 64%, #b7bcc7 84%, #e8eaef 100%); }
+  /* explicit size: an svg is a replaced element — without width/height it
+     collapses to its intrinsic 300x150 and clips everything outside it */
+  .spec { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
+
+  .stage.plain { background: linear-gradient(160deg, #eef0f5, #e3e5ec); }
+
+  /* content overlay (never scales) */
+  .overlay { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+  .content { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    display: grid; place-items: center; transition: opacity .18s ease; }
+  .content.faded { opacity: 0; }
+  #pillFace { width: 150px; height: 46px; }
+  #panelFace { width: 250px; height: 200px; place-items: start; padding: 15px; }
+  .pill-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; color: #23242c; }
+  .pill-label .dot { width: 8px; height: 8px; border-radius: 50%; background: #4a6cf7; }
+  .ph { font-size: 12.5px; font-weight: 650; color: #23242c; display: flex; gap: 8px; align-items: center; }
+  .ph .dot { width: 7px; height: 7px; border-radius: 50%; background: #4a6cf7; }
+  .rows { display: flex; flex-direction: column; gap: 7px; width: 100%; margin-top: 10px; }
+  .rows > div { border-radius: 11px; padding: 8px 11px; font-size: 11.5px; line-height: 1.45;
+    background: rgba(255,255,255,.6); color: #2b2c34;
+    opacity: 0; transform: translateY(6px); transition: opacity .3s ease, transform .3s cubic-bezier(.22,1,.36,1); }
+  .rows > .me { background: #23242c; color: #f2f3f7; margin-left: auto; width: 72%; border-radius: 11px 11px 4px 11px; }
+  .content.in .rows > div { opacity: 1; transform: none; }
+  .content.in .rows > div:nth-child(2) { transition-delay: .05s; }
+  .content.in .rows > div:nth-child(3) { transition-delay: .10s; }
+</style>
+</head>
+<body>
+<h1>fluidkit — liquid glass lab (A + C)</h1>
+<p class="sub">The hybrid: <b>one liquid engine, swappable materials.</b> Shapes are real metaball
+geometry (computed bezier bridges, not blur tricks), so the same merge physics can render as
+<b>clear glass</b> (a drop of water IS liquid glass) or as <b>mercury</b>. Left: move your pointer
+around — your drop merges with the others. Middle: the morph done entirely in glass, droplets
+absorbed on open. Right: identical engine, mercury material.</p>
+
+<div class="grid">
+  <div class="card">
+    <div class="stage wall" id="dropStage">
+      <div class="hint">move pointer — your drop is alive</div>
+      <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+      <div class="shadow-wrap"><div class="shadow-fill" id="dropShadow"></div></div>
+      <div class="liq-clip" id="dropClip"><div class="glass-fill"></div></div>
+      <svg class="spec" id="dropSpec"></svg>
+    </div>
+    <div class="meta"><h2>Water-glass droplets</h2>
+      <p>Clear drops with surface tension: they bridge, merge, and snap apart. Backdrop
+      blur + saturation is the material; the shape is a live clip-path.</p></div>
+  </div>
+
+  <div class="card">
+    <div class="stage wall" id="morphStage">
+      <div class="hint">click — droplets absorb into the panel</div>
+      <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+      <div class="shadow-wrap"><div class="shadow-fill" id="morphShadow"></div></div>
+      <div class="liq-clip" id="morphClip"><div class="glass-fill"></div></div>
+      <svg class="spec" id="morphSpec"></svg>
+      <div class="overlay">
+        <div class="content" id="pillFace"><div class="pill-label"><span class="dot"></span>Ask fluidkit</div></div>
+        <div class="content faded" id="panelFace">
+          <div class="ph"><span class="dot"></span>Assistant</div>
+          <div class="rows">
+            <div class="me">Move $500 to savings</div>
+            <div>Done — scheduled for tomorrow.</div>
+            <div>Want a weekly rule?</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="meta"><h2>Glass absorb-morph</h2>
+      <p>The pill and its satellite droplets are one body of liquid glass. On open the
+      drops are pulled in through real liquid bridges; the panel is the same material.</p></div>
+  </div>
+
+  <div class="card">
+    <div class="stage plain" id="mercStage">
+      <div class="hint">same engine, mercury material</div>
+      <div class="shadow-wrap"><div class="shadow-fill" id="mercShadow"></div></div>
+      <div class="liq-clip" id="mercClip"><div class="metal-fill"></div></div>
+      <svg class="spec" id="mercSpec"></svg>
+    </div>
+    <div class="meta"><h2>Mercury twin</h2>
+      <p>Identical drop physics, opaque liquid-metal material. Proof that materials are a
+      swappable prop, not separate components.</p></div>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="specGrad">
+      <stop offset="0%" stop-color="rgba(255,255,255,.95)"/>
+      <stop offset="60%" stop-color="rgba(255,255,255,.5)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+  </defs>
+</svg>
+
+<script>
+/* ================= liquid engine: metaball geometry ================= */
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const angleBetween = (a, b) => Math.atan2(b.y - a.y, b.x - a.x);
+const vec = (p, ang, r) => ({ x: p.x + r * Math.cos(ang), y: p.y + r * Math.sin(ang) });
+const fmt = n => n.toFixed(1);
+
+function circlePath(c, r) {
+  if (r <= 0.5) return '';
+  return `M ${fmt(c.x + r)} ${fmt(c.y)} A ${fmt(r)} ${fmt(r)} 0 1 0 ${fmt(c.x - r)} ${fmt(c.y)} A ${fmt(r)} ${fmt(r)} 0 1 0 ${fmt(c.x + r)} ${fmt(c.y)} Z `;
+}
+
+/* classic 2-circle metaball bridge (Sato / paper.js form) */
+function bridgePath(c1, r1, c2, r2, v = 0.5, handle = 2.1, reach = 2.0) {
+  if (r1 <= 0.5 || r2 <= 0.5) return '';
+  const d = dist(c1, c2);
+  const maxD = (r1 + r2) * reach;
+  if (d > maxD || d <= Math.abs(r1 - r2) + 0.5) return '';
+  let u1 = 0, u2 = 0;
+  if (d < r1 + r2) {
+    u1 = Math.acos((r1 * r1 + d * d - r2 * r2) / (2 * r1 * d));
+    u2 = Math.acos((r2 * r2 + d * d - r1 * r1) / (2 * r2 * d));
+  }
+  const ang = angleBetween(c1, c2);
+  const maxSpread = Math.acos((r1 - r2) / d);
+  const a1 = ang + u1 + (maxSpread - u1) * v;
+  const a2 = ang - u1 - (maxSpread - u1) * v;
+  const a3 = ang + Math.PI - u2 - (Math.PI - u2 - maxSpread) * v;
+  const a4 = ang - Math.PI + u2 + (Math.PI - u2 - maxSpread) * v;
+  const p1 = vec(c1, a1, r1), p2 = vec(c1, a2, r1);
+  const p3 = vec(c2, a3, r2), p4 = vec(c2, a4, r2);
+  const totalR = r1 + r2;
+  const d2 = Math.min(v * handle, dist(p1, p3) / totalR) * Math.min(1, d * 2 / totalR);
+  const hr1 = r1 * d2, hr2 = r2 * d2;
+  const h1 = vec(p1, a1 - Math.PI / 2, hr1), h2 = vec(p2, a2 + Math.PI / 2, hr1);
+  const h3 = vec(p3, a3 + Math.PI / 2, hr2), h4 = vec(p4, a4 - Math.PI / 2, hr2);
+  return `M ${fmt(p1.x)} ${fmt(p1.y)} C ${fmt(h1.x)} ${fmt(h1.y)} ${fmt(h3.x)} ${fmt(h3.y)} ${fmt(p3.x)} ${fmt(p3.y)} L ${fmt(p4.x)} ${fmt(p4.y)} C ${fmt(h4.x)} ${fmt(h4.y)} ${fmt(h2.x)} ${fmt(h2.y)} ${fmt(p2.x)} ${fmt(p2.y)} Z `;
+}
+
+function roundRectPath(cx, cy, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  const x = cx - w / 2, y = cy - h / 2;
+  return `M ${fmt(x + r)} ${fmt(y)} L ${fmt(x + w - r)} ${fmt(y)} A ${fmt(r)} ${fmt(r)} 0 0 1 ${fmt(x + w)} ${fmt(y + r)} L ${fmt(x + w)} ${fmt(y + h - r)} A ${fmt(r)} ${fmt(r)} 0 0 1 ${fmt(x + w - r)} ${fmt(y + h)} L ${fmt(x + r)} ${fmt(y + h)} A ${fmt(r)} ${fmt(r)} 0 0 1 ${fmt(x)} ${fmt(y + h - r)} L ${fmt(x)} ${fmt(y + r)} A ${fmt(r)} ${fmt(r)} 0 0 1 ${fmt(x + r)} ${fmt(y)} Z `;
+}
+
+/* surface-tension bridges with hysteresis: a pair connects only when the
+   drops actually TOUCH (fat neck from frame one — never a hairline), stays
+   connected while stretching, and snaps apart past the break distance. */
+function liquidBridges(items, state, baseV = 0.55, handle = 2.1) {
+  let path = '';
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const A = items[i], B = items[j];
+      const key = `${A.id ?? i}|${B.id ?? j}`;
+      if (A.r <= 0.5 || B.r <= 0.5) { state.delete(key); continue; }
+      const stretch = dist(A, B) / (A.r + B.r);
+      const connected = state.has(key) ? stretch < 1.3 : stretch < 1.02;
+      if (!connected) { state.delete(key); continue; }
+      state.add(key);
+      // the neck thins as it stretches but SNAPS while still chunky —
+      // never a pencil-thin filament
+      const vv = baseV * Math.max(0.6, Math.min(1, (1.3 - stretch) / 0.35));
+      path += bridgePath(A, A.r, B, B.r, vv, handle, 1.6);
+    }
+  }
+  return path;
+}
+
+/* tiny spring integrator — taut liquid, not floaty sine */
+function makeSpring(value, k = 170, c = 15) {
+  const s = { x: value, v: 0, target: value, k, c };
+  s.step = (dt) => {
+    const a = -s.k * (s.x - s.target) - s.c * s.v;
+    s.v += a * dt; s.x += s.v * dt;
+    return s.x;
+  };
+  return s;
+}
+
+/* one shared light source per stage (user-configurable in the real library:
+   a `light` prop). Each drop's highlight sits on the side FACING the light,
+   oriented tangent to the surface — so all reflections agree on where the
+   light is. Soft falloff comes from a radial gradient fill — no blur filter,
+   which Chromium clips to a hard straight edge on rotated SVG ellipses. */
+const lightFor = stage => ({ x: stage.clientWidth * 0.3, y: -40 });
+
+function specularFor(svg, drops, light) {
+  svg.innerHTML = drops.filter(d => d.r > 2).map(d => {
+    const ang = Math.atan2(light.y - d.y, light.x - d.x);
+    const x = d.x + Math.cos(ang) * d.r * 0.52;
+    const y = d.y + Math.sin(ang) * d.r * 0.52;
+    const rx = d.r * 0.42, ry = d.r * 0.20;
+    const rot = ang * 180 / Math.PI + 90;
+    const o = d.o ?? 0.7;
+    return `<ellipse cx="${fmt(x)}" cy="${fmt(y)}" rx="${fmt(rx)}" ry="${fmt(ry)}"
+      transform="rotate(${fmt(rot)} ${fmt(x)} ${fmt(y)})" fill="url(#specGrad)" opacity="${o}"/>`;
+  }).join('');
+}
+
+function setShape(clipEl, shadowEl, path, specEl) {
+  const p = `path('${path}')`;
+  clipEl.style.clipPath = p;
+  shadowEl.style.clipPath = p;
+  if (specEl) specEl.style.clipPath = p;
+}
+
+/* ================= 1 · water-glass droplets ================= */
+(() => {
+  const stage = document.getElementById('dropStage');
+  const clip = document.getElementById('dropClip');
+  const shadow = document.getElementById('dropShadow');
+  const spec = document.getElementById('dropSpec');
+
+  const drops = [
+    { sx: makeSpring(0), sy: makeSpring(0), r: 17, homeX: -46, homeY: 10 },
+    { sx: makeSpring(0), sy: makeSpring(0), r: 22, homeX: 0,   homeY: -6 },
+    { sx: makeSpring(0), sy: makeSpring(0), r: 15, homeX: 48,  homeY: 12 },
+  ];
+  // your drop — chases the pointer
+  const you = { sx: makeSpring(0, 120, 13), sy: makeSpring(0, 120, 13), r: 14 };
+  let hasPointer = false;
+  stage.addEventListener('pointermove', e => {
+    const b = stage.getBoundingClientRect();
+    you.sx.target = e.clientX - b.left; you.sy.target = e.clientY - b.top;
+    if (!hasPointer) { you.sx.x = you.sx.target; you.sy.x = you.sy.target; hasPointer = true; }
+  });
+  const bridgeState = new Set();
+  stage.addEventListener('pointerleave', () => {
+    hasPointer = false;
+    [...bridgeState].filter(k => k.includes('you')).forEach(k => bridgeState.delete(k));
+  });
+
+  // merge cycle: drift together, snap apart — tension comes from the spring settle
+  let phase = 0, t = 0, last = performance.now();
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
+    t += dt;
+    if (t > 1.5) { t = 0; phase = 1 - phase; }
+    const cx = stage.clientWidth / 2, cy = stage.clientHeight / 2 + 8;
+    drops.forEach(d => {
+      const squeeze = phase === 1 ? 0.36 : 1;
+      d.sx.target = cx + d.homeX * squeeze;
+      d.sy.target = cy + d.homeY * squeeze;
+      d.x = d.sx.step(dt); d.y = d.sy.step(dt);
+    });
+    const all = drops.map((d, i) => ({ x: d.x, y: d.y, r: d.r, id: 'd' + i }));
+    if (hasPointer) { you.x = you.sx.step(dt); you.y = you.sy.step(dt); all.push({ x: you.x, y: you.y, r: you.r, id: 'you' }); }
+    let path = all.map(d => circlePath(d, d.r)).join('');
+    path += liquidBridges(all, bridgeState);
+    setShape(clip, shadow, path, spec);
+    specularFor(spec, all, lightFor(stage));
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* ================= 2 · glass absorb-morph ================= */
+(() => {
+  const stage = document.getElementById('morphStage');
+  const clip = document.getElementById('morphClip');
+  const shadow = document.getElementById('morphShadow');
+  const spec = document.getElementById('morphSpec');
+  const pillFace = document.getElementById('pillFace');
+  const panelFace = document.getElementById('panelFace');
+
+  const PILL = { w: 150, h: 46 };
+  const PANEL = { w: 250, h: 200 };
+  const sw = makeSpring(PILL.w, 240, 24), sh = makeSpring(PILL.h, 240, 24);
+  const sats = [
+    { s: makeSpring(-(PILL.w / 2 + 34), 150, 14), r: makeSpring(13, 150, 14), side: -1, y: -4, park: -(PILL.w / 2 + 34) },
+    { s: makeSpring(PILL.w / 2 + 38, 150, 14),  r: makeSpring(11, 150, 14), side: 1,  y: 10, park: PILL.w / 2 + 38 },
+  ];
+  let open = false;
+  stage.addEventListener('click', () => {
+    open = !open;
+    sw.target = open ? PANEL.w : PILL.w;
+    sh.target = open ? PANEL.h : PILL.h;
+    sats.forEach(sat => {
+      sat.s.target = open ? sat.side * (PANEL.w / 2 - 20) : sat.park;
+      sat.r.target = open ? 0 : (sat.side < 0 ? 13 : 11);
+    });
+    pillFace.classList.toggle('faded', open);
+    panelFace.classList.toggle('faded', !open);
+    panelFace.classList.toggle('in', open);
+  });
+
+  const bridgeState = new Set();
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
+    const cx = stage.clientWidth / 2, cy = stage.clientHeight / 2;
+    const w = sw.step(dt), h = sh.step(dt);
+    const rad = Math.min(24, h / 2);
+    let path = roundRectPath(cx, cy, w, h, rad);
+    const specDrops = [];
+    sats.forEach(sat => {
+      const x = cx + sat.s.step(dt), y = cy + sat.y;
+      const r = Math.max(sat.r.step(dt), 0);
+      if (r > 0.5) {
+        const drop = { x, y, r, id: 'sat' + sat.side };
+        path += circlePath(drop, r);
+        // phantom circle just inside the body's nearest edge carries the liquid bridge
+        const edgeX = cx + sat.side * (w / 2 - 16);
+        const phantom = { x: edgeX, y: cy + sat.y * 0.4, r: 15, id: 'edge' + sat.side };
+        path += liquidBridges([drop, phantom], bridgeState, 0.52);
+        specDrops.push(drop);
+      }
+    });
+    // one quiet sheen on the body itself, lit by the same source
+    specDrops.push({ x: cx, y: cy, r: Math.min(w, h) * 0.48, o: 0.28 });
+    setShape(clip, shadow, path, spec);
+    specularFor(spec, specDrops, lightFor(stage));
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* ================= 3 · mercury twin (same engine) ================= */
+(() => {
+  const stage = document.getElementById('mercStage');
+  const clip = document.getElementById('mercClip');
+  const shadow = document.getElementById('mercShadow');
+  const spec = document.getElementById('mercSpec');
+
+  const drops = [
+    { sx: makeSpring(0), sy: makeSpring(0), r: 17, homeX: -46, homeY: 10 },
+    { sx: makeSpring(0), sy: makeSpring(0), r: 22, homeX: 0,   homeY: -6 },
+    { sx: makeSpring(0), sy: makeSpring(0), r: 15, homeX: 48,  homeY: 12 },
+  ];
+  const bridgeState = new Set();
+  let phase = 0, t = 0, last = performance.now();
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
+    t += dt;
+    if (t > 1.5) { t = 0; phase = 1 - phase; }
+    const cx = stage.clientWidth / 2, cy = stage.clientHeight / 2 + 8;
+    drops.forEach(d => {
+      const squeeze = phase === 1 ? 0.36 : 1;
+      d.sx.target = cx + d.homeX * squeeze;
+      d.sy.target = cy + d.homeY * squeeze;
+      d.x = d.sx.step(dt); d.y = d.sy.step(dt);
+    });
+    let path = drops.map(d => circlePath(d, d.r)).join('');
+    path += liquidBridges(drops.map((d, i) => ({ x: d.x, y: d.y, r: d.r, id: 'm' + i })), bridgeState);
+    setShape(clip, shadow, path, spec);
+    // mercury: NO painted highlight — the metal gradient IS the reflection
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -24,10 +24,16 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRipple } from "../hooks";
 
 export interface RippleProps extends HTMLAttributes<HTMLDivElement> {
-  /** Ripple color. Defaults to `currentColor`. */
+  /** Ripple color (flat material). Defaults to `currentColor`. */
   color?: string;
   /** Ripple lifetime in ms. Defaults to `600`. */
   duration?: number;
+  /**
+   * `flat` (default): a translucent wash of `color`.
+   * `glass`: a frosted water lens — white tint + backdrop blur with a thin
+   * rim, so the ripple reads as liquid over the surface instead of a dye.
+   */
+  material?: "flat" | "glass";
   children: ReactNode;
 }
 
@@ -37,9 +43,18 @@ export interface RippleProps extends HTMLAttributes<HTMLDivElement> {
  * so the growing ring stays legible instead of dissolving as soon as it grows. */
 const RIPPLE_PEAK_OPACITY = 0.4;
 
+/** The glass ripple's material: frosted lens instead of a color wash. */
+const GLASS_RIPPLE_STYLE: CSSProperties = {
+  background: "rgba(255,255,255,0.28)",
+  backdropFilter: "blur(5px) saturate(1.6)",
+  WebkitBackdropFilter: "blur(5px) saturate(1.6)",
+  boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.45)",
+};
+
 export function Ripple({
   color,
   duration,
+  material = "flat",
   className,
   style,
   children,
@@ -95,9 +110,11 @@ export function Ripple({
                 width: ripple.size,
                 height: ripple.size,
                 borderRadius: "50%",
-                background: resolvedColor,
                 translateX: "-50%",
                 translateY: "-50%",
+                ...(material === "glass"
+                  ? GLASS_RIPPLE_STYLE
+                  : { background: resolvedColor }),
               }}
               initial={{ scale: 0, opacity: RIPPLE_PEAK_OPACITY }}
               animate={{

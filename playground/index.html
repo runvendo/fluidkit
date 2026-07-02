@@ -7,65 +7,73 @@
     <style>
       * { box-sizing: border-box; }
       body {
-        margin: 0; min-height: 100vh; background: #0c0c10; color: #e7e8ec;
+        margin: 0; min-height: 100vh; background: #f2f3f7; color: #1c1d23;
         font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
         padding: 28px; letter-spacing: -0.01em;
       }
       h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.02em; }
-      .sub { color: #8a8b92; font-size: 13.5px; margin: 0 0 24px; max-width: 70ch; line-height: 1.6; }
+      .sub { color: #5c5d66; font-size: 13.5px; margin: 0 0 24px; max-width: 74ch; line-height: 1.6; }
       .hint {
         position: absolute; top: 12px; left: 0; right: 0; text-align: center;
-        font-size: 11px; color: #6c6d75; letter-spacing: 0.02em; z-index: 4; pointer-events: none;
+        font-size: 11px; color: rgba(28,29,35,.4); letter-spacing: 0.04em; text-transform: uppercase;
+        z-index: 8; pointer-events: none;
       }
       .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; max-width: 1000px; }
-      .card { border: 1px solid #23232b; border-radius: 18px; overflow: hidden; background: #131318; }
+      .card { border: 1px solid #e2e3ea; border-radius: 18px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px rgba(24,25,36,.05); }
       .stage {
-        position: relative; height: 300px; display: grid; place-items: center;
-        background: radial-gradient(130% 120% at 50% -10%, #17171f, #0d0d12);
+        position: relative; height: 300px; display: grid; place-items: center; overflow: hidden;
+        background: linear-gradient(160deg, #eef0f5, #e3e5ec);
       }
-      .meta { padding: 12px 15px 15px; border-top: 1px solid #1e1e25; }
+      /* bright wallpaper the glass refracts — orbs are radial gradients, never
+         blurred divs (CSS blur's clipped filter region shows as a straight seam
+         through backdrop saturation) */
+      .stage.wall { background: linear-gradient(160deg, #dbe4ff 0%, #f3e3ff 45%, #ffe9f2 100%); }
+      .orb { position: absolute; border-radius: 50%; opacity: .8; pointer-events: none; }
+      .orb.o1 { width: 300px; height: 300px; top: -100px; left: -90px;
+        background: radial-gradient(circle closest-side, #7c9bff 0%, rgba(124,155,255,.55) 45%, rgba(124,155,255,0) 100%);
+        animation: drift1 14s ease-in-out infinite alternate; }
+      .orb.o2 { width: 260px; height: 260px; bottom: -100px; right: -80px;
+        background: radial-gradient(circle closest-side, #ff8ccb 0%, rgba(255,140,203,.5) 45%, rgba(255,140,203,0) 100%);
+        animation: drift2 18s ease-in-out infinite alternate; }
+      .orb.o3 { width: 210px; height: 210px; bottom: -30px; left: -10px;
+        background: radial-gradient(circle closest-side, #63dcb9 0%, rgba(99,220,185,.45) 45%, rgba(99,220,185,0) 100%);
+        animation: drift1 22s ease-in-out infinite alternate-reverse; }
+      @keyframes drift1 { to { transform: translate(50px, 28px); } }
+      @keyframes drift2 { to { transform: translate(-44px, -30px); } }
+      @media (prefers-reduced-motion: reduce) { .orb { animation: none; } }
+
+      .meta { padding: 12px 15px 15px; border-top: 1px solid #ecedf2; }
       .meta h2 { font-size: 13.5px; margin: 0 0 3px; }
-      .meta p { font-size: 12px; color: #9a9ba3; margin: 0; line-height: 1.55; }
-      button.ctl {
-        font: inherit; font-size: 12px; background: rgba(255,255,255,.09); color: #fff;
-        border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 6px 12px; cursor: pointer;
-      }
-      button.ctl:hover { background: rgba(255,255,255,.16); }
+      .meta p { font-size: 12px; color: #6b6c75; margin: 0; line-height: 1.55; }
 
-      /* MorphSurface demo: consumer-owned surface look, keyed on data-open */
-      .demo-surface {
-        background: #e7e8ec;
-        box-shadow: 0 18px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.5);
-      }
-      .demo-surface[data-open="false"] { border-radius: 999px; }
-      .demo-surface[data-open="true"]  { border-radius: 24px; }
-      .pill-label { display: flex; align-items: center; gap: 8px; padding: 12px 18px; color: #141417; font-weight: 650; font-size: 13px; white-space: nowrap; }
-      .pill-label .dot { width: 9px; height: 9px; border-radius: 50%; background: #141417; }
-      .panel-body { width: 300px; padding: 16px; color: #141417; }
-      .panel-body .ph { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 13px; }
-      .panel-body .ph .dot { width: 8px; height: 8px; border-radius: 50%; background: #141417; }
-      .panel-body .row { margin-top: 10px; background: rgba(20,20,23,.06); border-radius: 12px; padding: 9px 11px; font-size: 12px; line-height: 1.4; }
-      .panel-body .row.me { background: #141417; color: #e7e8ec; margin-left: auto; width: 72%; border-radius: 12px 12px 4px 12px; }
+      /* morph faces (content only ever fades — never scales) */
+      .pill-label { display: flex; align-items: center; gap: 8px; color: #23242c; font-weight: 650; font-size: 13px; white-space: nowrap; }
+      .pill-label .dot { width: 8px; height: 8px; border-radius: 50%; background: #4a6cf7; }
+      .panel-body { width: 100%; height: 100%; padding: 15px; color: #23242c; }
+      .panel-body .ph { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 12.5px; }
+      .panel-body .ph .dot { width: 7px; height: 7px; border-radius: 50%; background: #4a6cf7; }
+      .panel-body .row { margin-top: 8px; background: rgba(255,255,255,.6); border-radius: 11px; padding: 8px 11px; font-size: 11.5px; line-height: 1.45; }
+      .panel-body .row.me { background: #23242c; color: #f2f3f7; margin-left: auto; width: 72%; border-radius: 11px 11px 4px 11px; }
 
-      /* LiquidTabs consumer styling (component exposes aria-selected for contrast) */
+      /* LiquidTabs consumer styling */
       [data-fluidkit="liquid-tab"] {
         position: relative; background: transparent; border: 0; font: inherit; font-size: 13px; font-weight: 600;
-        color: #e7e8ec; padding: 8px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+        color: #3a3b44; padding: 8px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap;
       }
-      [data-fluidkit="liquid-tab"][aria-selected="true"] { color: #141417; }
+      [data-fluidkit="liquid-tab"][aria-selected="true"] { color: #fff; }
 
       /* interactive controls */
-      .controls { display: flex; flex-wrap: wrap; gap: 16px 18px; padding: 13px 15px; border-top: 1px solid #1e1e25; background: #0f0f14; }
-      .field { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #8a8b92; }
+      .controls { display: flex; flex-wrap: wrap; gap: 16px 18px; padding: 13px 15px; border-top: 1px solid #ecedf2; background: #fafafd; }
+      .field { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #6b6c75; }
       .field label { font-weight: 600; letter-spacing: .02em; display: flex; gap: 6px; align-items: baseline; }
-      .field .val { color: #e7e8ec; font-variant-numeric: tabular-nums; }
-      .field input[type=range] { width: 128px; accent-color: #7c5cff; }
-      .field input[type=color] { width: 40px; height: 24px; padding: 0; border: 1px solid #2c2c34; border-radius: 6px; background: none; cursor: pointer; }
-      .seg { display: inline-flex; gap: 2px; background: #17171d; border: 1px solid #2c2c34; border-radius: 8px; padding: 2px; }
-      .seg button { font: inherit; font-size: 11px; color: #9a9ba3; background: none; border: 0; border-radius: 6px; padding: 4px 9px; cursor: pointer; }
-      .seg button.on { background: #2a2a33; color: #fff; }
-      .btn { font: inherit; font-size: 11.5px; background: rgba(255,255,255,.09); color: #fff; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 5px 11px; cursor: pointer; }
-      .btn:hover { background: rgba(255,255,255,.16); }
+      .field .val { color: #1c1d23; font-variant-numeric: tabular-nums; }
+      .field input[type=range] { width: 128px; accent-color: #4a6cf7; }
+      .field input[type=color] { width: 40px; height: 24px; padding: 0; border: 1px solid #d8d9e0; border-radius: 6px; background: none; cursor: pointer; }
+      .seg { display: inline-flex; gap: 2px; background: #eef0f5; border: 1px solid #d8d9e0; border-radius: 8px; padding: 2px; }
+      .seg button { font: inherit; font-size: 11px; color: #6b6c75; background: none; border: 0; border-radius: 6px; padding: 4px 9px; cursor: pointer; }
+      .seg button.on { background: #fff; color: #1c1d23; box-shadow: 0 1px 2px rgba(24,25,36,.12); }
+      .btn { font: inherit; font-size: 11.5px; background: #fff; color: #1c1d23; border: 1px solid #d8d9e0; border-radius: 8px; padding: 5px 11px; cursor: pointer; }
+      .btn:hover { background: #eef0f5; }
     </style>
   </head>
   <body>

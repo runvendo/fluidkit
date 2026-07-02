@@ -1,7 +1,7 @@
 /**
  * Shared SVG filter definitions.
  *
- * Several primitives (Metaballs, ThinkingBlob, LiquidTabs, and LiquidGlass's
+ * LiquidTabs (and any goo-based
  * fallback path) rely on `filter: url(#fluidkit-*)` resolving to an SVG
  * `<filter>` that lives somewhere in the DOM. This module is the single
  * source of truth for those filters' ids and markup: pure data + builders,
@@ -14,7 +14,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 /** Fuses same-color shapes together (mercury-style blob merging). */
 export const GOO_FILTER_ID = "fluidkit-goo";
 
-/** Displacement refraction used by the LiquidGlass fallback path. */
+/** Displacement refraction (kept for future glass refraction work). */
 export const LENS_FILTER_ID = "fluidkit-lens";
 
 /** Id of the hidden `<svg>` singleton that hosts both filters. */
@@ -37,7 +37,7 @@ function createGooFilter(doc: Document): SVGFilterElement {
   const blur = doc.createElementNS(SVG_NS, "feGaussianBlur");
   blur.setAttribute("in", "SourceGraphic");
   // stdDeviation 6 balances the goo across the size range we ship: large
-  // Metaballs (~64px) keep smooth mercury bridges, while small ThinkingBlob
+  // large blobs (~64px) keep smooth mercury bridges, while small
   // blobs (~20px) still fuse into one mass instead of the outer ones being
   // blurred below the alpha-contrast threshold and vanishing.
   blur.setAttribute("stdDeviation", "6");

@@ -84,7 +84,7 @@ describe("LiquidTabs", () => {
     );
     expect(indicators).toHaveLength(1);
 
-    // The indicator now lives in its own goo-filtered layer, never nested
+    // The indicator now lives in its own indicator layer, never nested
     // among the crisp tab labels — so no tab button contains it.
     const tabs = container.querySelectorAll('[data-fluidkit="liquid-tab"]');
     tabs.forEach((tab) => {
@@ -92,7 +92,7 @@ describe("LiquidTabs", () => {
     });
   });
 
-  it("applies the goo filter to the indicator layer and mounts defs when motion is allowed", async () => {
+  it("uses NO filter on the indicator layer (goo halos on light backgrounds)", async () => {
     const LiquidTabs = await mockReducedMotion(false);
     const { container } = render(
       <LiquidTabs items={ITEMS} value="one" onChange={() => {}} />
@@ -102,12 +102,10 @@ describe("LiquidTabs", () => {
       '[data-fluidkit="liquid-tab-indicator-layer"]'
     ) as HTMLElement;
 
-    // jsdom's CSSOM normalizes `url(...)` values by quoting them; the id
-    // inside is what actually matters here (see useGoo.test.tsx). The goo
-    // filter now lives on the indicator LAYER, not the container — so the
-    // text (in the sibling buttons layer) is never inside the filter.
-    expect(layer.style.filter).toBe('url("#fluidkit-goo")');
-    expect(document.getElementById("fluidkit-defs")).not.toBeNull();
+    // The goo filter was removed: blur + contrast clamps the pill's soft
+    // alpha edges into a dark halo on light backgrounds. The glide comes
+    // purely from the spring now.
+    expect(layer.style.filter).toBe("");
 
     const stage = container.querySelector(
       '[data-fluidkit="liquid-tabs"]'
@@ -115,13 +113,11 @@ describe("LiquidTabs", () => {
     expect(stage.getAttribute("data-motion")).toBe("liquid");
   });
 
-  it("keeps the goo filter off the container so text is never inside it", async () => {
+  it("keeps filters off the label ancestry so text is never rasterized", async () => {
     // Guard test encoding the library's non-negotiable principle: the tab
-    // LABELS (text) must never be a descendant of a goo-filtered element,
-    // or CSS `filter` rasterizes and erases them. Walk up from a tab button
-    // to the container and assert no ancestor carries the goo filter. This
-    // fails on the old (indicator-inside-active-button) structure and passes
-    // only when the text lives outside the filtered layer.
+    // LABELS (text) must never be a descendant of a filtered element, or
+    // CSS `filter` rasterizes and erases them. Walk up from a tab button
+    // to the container and assert no ancestor carries a filter.
     const LiquidTabs = await mockReducedMotion(false);
     const { container } = render(
       <LiquidTabs items={ITEMS} value="one" onChange={() => {}} />

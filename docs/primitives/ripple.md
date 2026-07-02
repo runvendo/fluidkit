@@ -10,6 +10,7 @@ A Material-style water ripple that expands from the pointer's tap/click position
 |---|---|---|---|
 | `color` | `string` | `currentColor` | Ripple color. |
 | `duration` | `number` | `600` | Ripple lifetime in ms. |
+| `material` | `"flat" \| "glass"` | `"flat"` | `glass` renders a frosted water lens (backdrop blur + rim) instead of a color wash. |
 | `children` | `ReactNode` | required | The surface content the ripple overlays. |
 | `className` | `string` | `undefined` | Applied to the wrapper. |
 | `style` | `CSSProperties` | `undefined` | Applied to the wrapper. |

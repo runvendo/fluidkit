@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>fluidkit — three looks</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: #0a0a0e; color: #e7e8ec;
+    font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    padding: 26px; letter-spacing: -.01em; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: #8a8b92; font-size: 13px; margin: 0 0 20px; max-width: 78ch; line-height: 1.6; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 1280px; }
+  .card { border: 1px solid #202028; border-radius: 18px; overflow: hidden; background: #121217; }
+  .stage { position: relative; height: 320px; display: grid; place-items: center; overflow: hidden; cursor: pointer; }
+  .stage.short { height: 150px; cursor: default; }
+  .hint { position: absolute; top: 10px; left: 0; right: 0; text-align: center;
+    font-size: 10.5px; color: rgba(255,255,255,.28); letter-spacing: .06em; text-transform: uppercase; pointer-events: none; }
+  .meta { padding: 12px 15px 14px; border-top: 1px solid #1d1d24; }
+  .meta h2 { font-size: 13.5px; margin: 0 0 3px; }
+  .meta p { font-size: 12px; color: #9a9ba3; margin: 0; line-height: 1.55; }
+  .colhead { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #b9bac2; margin: 0 0 8px; }
+  .colhead span { color: #5c5d66; font-weight: 500; text-transform: none; letter-spacing: -.01em; }
+
+  /* ============================================================
+     A · MATERIAL + RESTRAINT (liquid glass)
+     ============================================================ */
+  .stage.glassbg { background: #101016; }
+  .orb { position: absolute; border-radius: 50%; filter: blur(46px); opacity: .55; }
+  .orb1 { width: 210px; height: 210px; background: #3d5afe; top: -40px; left: -30px; animation: drift1 13s ease-in-out infinite alternate; }
+  .orb2 { width: 180px; height: 180px; background: #b03a8c; bottom: -50px; right: -20px; animation: drift2 17s ease-in-out infinite alternate; }
+  .orb3 { width: 130px; height: 130px; background: #0e8f7a; bottom: 30px; left: 40px; animation: drift1 21s ease-in-out infinite alternate-reverse; }
+  @keyframes drift1 { to { transform: translate(48px, 26px); } }
+  @keyframes drift2 { to { transform: translate(-40px, -30px); } }
+
+  .glass-surface {
+    position: relative; z-index: 3;
+    width: 150px; height: 46px; border-radius: 23px;
+    background: rgba(255,255,255,.07);
+    -webkit-backdrop-filter: blur(18px) saturate(1.7);
+    backdrop-filter: blur(18px) saturate(1.7);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.32),
+      inset 0 -1px 0 rgba(255,255,255,.06),
+      inset 1px 0 0 rgba(255,255,255,.10),
+      inset -1px 0 0 rgba(255,255,255,.10),
+      0 18px 44px rgba(0,0,0,.45);
+    overflow: hidden;
+  }
+  /* specular sheen along the top edge */
+  .glass-surface::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background:
+      radial-gradient(120% 60% at 50% -20%, rgba(255,255,255,.18), rgba(255,255,255,0) 55%),
+      linear-gradient(160deg, rgba(255,255,255,.10), rgba(255,255,255,0) 34%);
+  }
+
+  /* content layers: only ever fade / translate a few px — never scale */
+  .content { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center;
+    pointer-events: none; transition: opacity .18s ease; }
+  .content.panelface { place-items: start; padding: 14px; }
+  .content.faded { opacity: 0; }
+  .pill-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 650; }
+  .pill-label .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .glasscol .pill-label { color: #f2f3f7; } .glasscol .pill-label .dot { background: #8fb4ff; }
+  .rows { display: flex; flex-direction: column; gap: 7px; width: 100%; margin-top: 10px; }
+  .rows > div { border-radius: 11px; padding: 8px 11px; font-size: 11.5px; line-height: 1.45; opacity: 0;
+    transform: translateY(6px); transition: opacity .3s ease, transform .3s cubic-bezier(.22,1,.36,1); }
+  .content.in .rows > div { opacity: 1; transform: none; }
+  .content.in .rows > div:nth-child(2) { transition-delay: .05s; }
+  .content.in .rows > div:nth-child(3) { transition-delay: .10s; }
+  .glasscol .ph { font-size: 12.5px; font-weight: 650; color: #f2f3f7; display: flex; gap: 8px; align-items: center; }
+  .glasscol .ph .dot { width: 7px; height: 7px; border-radius: 50%; background: #8fb4ff; }
+  .glasscol .rows > div { background: rgba(255,255,255,.08); color: #e9eaf1; }
+  .glasscol .rows > .me { background: rgba(255,255,255,.85); color: #16161c; margin-left: auto; width: 72%; border-radius: 11px 11px 4px 11px; }
+
+  /* A · thinking: quiet glass capsule, dots breathe, sheen sweeps */
+  .glass-think { position: relative; width: 92px; height: 36px; border-radius: 18px;
+    background: rgba(255,255,255,.07);
+    -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: blur(14px) saturate(1.6);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 10px 26px rgba(0,0,0,.4);
+    display: flex; align-items: center; justify-content: center; gap: 7px; overflow: hidden; }
+  .glass-think i { width: 6px; height: 6px; border-radius: 50%; background: #eef0f6; animation: breathe 1.5s ease-in-out infinite; }
+  .glass-think i:nth-child(2) { animation-delay: .18s; } .glass-think i:nth-child(3) { animation-delay: .36s; }
+  @keyframes breathe { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+  .glass-think::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40px;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.22), transparent);
+    animation: sweep 2.6s ease-in-out infinite; }
+  @keyframes sweep { 0% { left: -50px; } 60%, 100% { left: 110px; } }
+
+  /* ============================================================
+     B · DYNAMIC ISLAND (taut physics, simple material)
+     ============================================================ */
+  .stage.islandbg { background: radial-gradient(130% 120% at 50% -10%, #17171e, #0c0c11); }
+  .island-surface { position: relative; z-index: 3; width: 150px; height: 46px; border-radius: 23px;
+    background: #0b0b0d; box-shadow: 0 16px 40px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.05); }
+  .islandcol .pill-label { color: #f2f3f7; } .islandcol .pill-label .dot { background: #ffb340; }
+  .islandcol .ph { font-size: 12.5px; font-weight: 650; color: #f2f3f7; display: flex; gap: 8px; align-items: center; }
+  .islandcol .ph .dot { width: 7px; height: 7px; border-radius: 50%; background: #ffb340; }
+  .islandcol .rows > div { background: rgba(255,255,255,.09); color: #e9eaf1; }
+  .islandcol .rows > .me { background: #e7e8ec; color: #141417; margin-left: auto; width: 72%; border-radius: 11px 11px 4px 11px; }
+
+  /* B · thinking: the pill itself breathes width — the surface is alive, content still */
+  .island-think { position: relative; height: 36px; border-radius: 18px; background: #0b0b0d;
+    box-shadow: 0 10px 26px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.05);
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    width: 92px; animation: islebreathe 1.9s cubic-bezier(.45,0,.25,1) infinite; }
+  @keyframes islebreathe { 0%, 100% { width: 92px; } 50% { width: 112px; } }
+  .island-think i { width: 6px; height: 6px; border-radius: 50%; background: #ffb340; animation: breathe 1.9s ease-in-out infinite; }
+  .island-think i:nth-child(2) { animation-delay: .2s; } .island-think i:nth-child(3) { animation-delay: .4s; }
+
+  /* ============================================================
+     C · LIQUID METAL (mercury: gradient + highlight + goo, taut)
+     ============================================================ */
+  .stage.metalbg { background: radial-gradient(130% 120% at 50% -10%, #141419, #0b0b0f); }
+  .goo-layer { position: absolute; inset: 0; z-index: 2; filter: url(#goo); }
+  .metal-core { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: 150px; height: 46px; border-radius: 23px;
+    background: linear-gradient(150deg, #fdfdfe 0%, #cdd2da 34%, #8f96a3 62%, #b9bec9 84%, #e8eaef 100%); }
+  /* specular highlight riding inside the mercury */
+  .metal-core::before { content: ""; position: absolute; left: 14px; top: 8px; width: 54px; height: 15px;
+    border-radius: 50%; background: rgba(255,255,255,.9); filter: blur(5px); }
+  .metal-sat { position: absolute; left: 50%; top: 50%; width: 24px; height: 24px; margin: -12px;
+    border-radius: 50%; background: linear-gradient(150deg, #fdfdfe, #9aa0ab);
+    transition: transform .5s cubic-bezier(.3,1.1,.35,1), opacity .3s ease; }
+  .sat-l { transform: translate(-84px, 0); } .sat-r { transform: translate(84px, 0); }
+  .metal-overlay { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+  .metal-overlay .content { position: absolute; inset: auto; left: 50%; top: 50%; transform: translate(-50%,-50%); }
+  .metal-overlay #pillC { width: 150px; height: 46px; }
+  .metal-overlay #panelC { width: 240px; height: 190px; }
+  .metalcol .pill-label { color: #14151a; } .metalcol .pill-label .dot { background: #14151a; }
+  .metalcol .ph { font-size: 12.5px; font-weight: 650; color: #14151a; display: flex; gap: 8px; align-items: center; }
+  .metalcol .ph .dot { width: 7px; height: 7px; border-radius: 50%; background: #14151a; }
+  .metalcol .rows > div { background: rgba(20,21,26,.10); color: #23242b; }
+  .metalcol .rows > .me { background: #14151a; color: #eef0f4; margin-left: auto; width: 72%; border-radius: 11px 11px 4px 11px; }
+
+  /* C · thinking: two droplets merge into the core and split — fast settle, restrained overlap */
+  .merc-think { position: relative; width: 120px; height: 40px; }
+  .merc-think .g { position: absolute; inset: -20px; filter: url(#goo); }
+  .merc-think b { position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; margin: -11px;
+    border-radius: 50%; background: linear-gradient(150deg, #fdfdfe, #9aa0ab); }
+  .merc-think b::before { content: ""; position: absolute; left: 18%; top: 14%; width: 40%; height: 32%;
+    border-radius: 50%; background: rgba(255,255,255,.85); filter: blur(2px); }
+  .merc-think .b1 { animation: mergeL 2.2s cubic-bezier(.45,0,.2,1) infinite; }
+  .merc-think .b2 { width: 28px; height: 28px; margin: -14px; }
+  .merc-think .b3 { animation: mergeR 2.2s cubic-bezier(.45,0,.2,1) infinite; }
+  @keyframes mergeL { 0%, 100% { transform: translateX(-34px); } 50% { transform: translateX(-10px); } }
+  @keyframes mergeR { 0%, 100% { transform: translateX(34px); } 50% { transform: translateX(10px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .orb, .glass-think i, .glass-think::after, .island-think, .island-think i,
+    .merc-think .b1, .merc-think .b3 { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<h1>fluidkit — three looks, same beats</h1>
+<p class="sub">Same two beats per column: a pill that morphs into a panel (click the stage), and a
+“thinking” idle. Judge by feel: which one reads Apple-level? Text never scales in any of them —
+only the surface animates.</p>
+
+<div class="grid">
+  <div>
+    <p class="colhead">A · Material + restraint <span>— liquid glass</span></p>
+    <div class="card glasscol">
+      <div class="stage glassbg" id="stageA">
+        <div class="hint">click to morph</div>
+        <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+        <div class="glass-surface" id="surfA">
+          <div class="content pillface" id="pillA"><div class="pill-label"><span class="dot"></span>Ask fluidkit</div></div>
+          <div class="content panelface faded" id="panelA">
+            <div class="ph"><span class="dot"></span>Assistant</div>
+            <div class="rows">
+              <div class="me">Move $500 to savings</div>
+              <div>Done — scheduled for tomorrow.</div>
+              <div>Want a weekly rule?</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="meta"><h2>Morph: glass pill → glass panel</h2>
+        <p>Real material: backdrop blur + saturation, specular top edge, rim light. Motion is
+        near-critically damped — the shape stretches, nothing wobbles.</p></div>
+    </div>
+    <div class="card glasscol" style="margin-top:12px">
+      <div class="stage glassbg short">
+        <div class="orb orb2" style="opacity:.4"></div>
+        <div class="glass-think"><i></i><i></i><i></i></div>
+      </div>
+      <div class="meta"><h2>Thinking: quiet capsule</h2><p>Dots breathe, a sheen sweeps the glass. No blobs.</p></div>
+    </div>
+  </div>
+
+  <div>
+    <p class="colhead">B · Dynamic Island <span>— taut physics</span></p>
+    <div class="card islandcol">
+      <div class="stage islandbg" id="stageB">
+        <div class="hint">click to morph</div>
+        <div class="island-surface" id="surfB">
+          <div class="content pillface" id="pillB"><div class="pill-label"><span class="dot"></span>Ask fluidkit</div></div>
+          <div class="content panelface faded" id="panelB">
+            <div class="ph"><span class="dot"></span>Assistant</div>
+            <div class="rows">
+              <div class="me">Move $500 to savings</div>
+              <div>Done — scheduled for tomorrow.</div>
+              <div>Want a weekly rule?</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="meta"><h2>Morph: pill → panel, overshoot</h2>
+        <p>Flat black surface, no material tricks. The feel comes from the spring: fast,
+        weighty, one subtle overshoot, dead stop.</p></div>
+    </div>
+    <div class="card islandcol" style="margin-top:12px">
+      <div class="stage islandbg short">
+        <div class="island-think"><i></i><i></i><i></i></div>
+      </div>
+      <div class="meta"><h2>Thinking: the surface breathes</h2><p>The pill itself stretches a few px — alive but still.</p></div>
+    </div>
+  </div>
+
+  <div>
+    <p class="colhead">C · Liquid metal <span>— tasteful goo</span></p>
+    <div class="card metalcol">
+      <div class="stage metalbg" id="stageC">
+        <div class="hint">click to morph</div>
+        <div class="goo-layer">
+          <div class="metal-core" id="surfC"></div>
+          <div class="metal-sat sat-l" id="satL"></div>
+          <div class="metal-sat sat-r" id="satR"></div>
+        </div>
+        <div class="metal-overlay">
+          <div class="content pillface" id="pillC"><div class="pill-label"><span class="dot"></span>Ask fluidkit</div></div>
+          <div class="content panelface faded" id="panelC">
+            <div class="ph"><span class="dot"></span>Assistant</div>
+            <div class="rows">
+              <div class="me">Move $500 to savings</div>
+              <div>Done — scheduled for tomorrow.</div>
+              <div>Want a weekly rule?</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="meta"><h2>Morph: droplets absorb into the panel</h2>
+        <p>Mercury, not slime: gradient + specular highlight, satellites get absorbed on
+        expand. Surface tension = fast settle, shallow deformation.</p></div>
+    </div>
+    <div class="card metalcol" style="margin-top:12px">
+      <div class="stage metalbg short">
+        <div class="merc-think"><div class="g"><b class="b1"></b><b class="b2"></b><b class="b3"></b></div></div>
+      </div>
+      <div class="meta"><h2>Thinking: droplets merge + split</h2><p>Shallow overlap, quick settle — taut, not melty.</p></div>
+    </div>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="goo">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+    <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -11" result="g"/>
+    <feComposite in="SourceGraphic" in2="g" operator="atop"/>
+  </filter>
+</svg>
+
+<script>
+// ---- spring → linear() easing (sampled closed-form underdamped spring) ----
+function spring(stiffness, damping, mass = 1) {
+  const w0 = Math.sqrt(stiffness / mass);
+  const zeta = damping / (2 * Math.sqrt(stiffness * mass));
+  const settle = zeta < 1 ? -Math.log(0.001) / (zeta * w0) : 8 / w0;
+  const dur = Math.min(Math.max(settle, 0.25), 1.4);
+  const N = 96, vals = [];
+  for (let i = 0; i <= N; i++) {
+    const t = (i / N) * dur;
+    let x;
+    if (zeta < 1) {
+      const wd = w0 * Math.sqrt(1 - zeta * zeta);
+      x = 1 - Math.exp(-zeta * w0 * t) * (Math.cos(wd * t) + (zeta * w0 / wd) * Math.sin(wd * t));
+    } else {
+      x = 1 - Math.exp(-w0 * t) * (1 + w0 * t);
+    }
+    vals.push(x.toFixed(4));
+  }
+  return { easing: `linear(${vals.join(',')})`, ms: Math.round(dur * 1000) };
+}
+
+const PILL  = { w: 150, h: 46,  r: 23 };
+const PANEL = { w: 240, h: 190, r: 24 };
+
+function wireMorph(stage, surf, pill, panel, spr, onToggle) {
+  const { easing, ms } = spr;
+  surf.style.transition = `width ${ms}ms ${easing}, height ${ms}ms ${easing}, border-radius ${ms}ms ${easing}`;
+  let open = false;
+  stage.addEventListener('click', () => {
+    open = !open;
+    const s = open ? PANEL : PILL;
+    surf.style.width = s.w + 'px';
+    surf.style.height = s.h + 'px';
+    surf.style.borderRadius = s.r + 'px';
+    // content: cross-fade only — never scales with the surface
+    pill.classList.toggle('faded', open);
+    panel.classList.toggle('faded', !open);
+    panel.classList.toggle('in', open);
+    if (onToggle) onToggle(open);
+  });
+}
+
+// A · material + restraint: critically-damped-ish, zero visible overshoot
+wireMorph(
+  document.getElementById('stageA'), document.getElementById('surfA'),
+  document.getElementById('pillA'), document.getElementById('panelA'),
+  spring(420, 40)
+);
+
+// B · dynamic island: stiffer + underdamped → one taut overshoot, dead stop
+wireMorph(
+  document.getElementById('stageB'), document.getElementById('surfB'),
+  document.getElementById('pillB'), document.getElementById('panelB'),
+  spring(560, 28)
+);
+
+// C · liquid metal: slightly softer spring; satellites absorb on expand
+wireMorph(
+  document.getElementById('stageC'), document.getElementById('surfC'),
+  document.getElementById('pillC'), document.getElementById('panelC'),
+  spring(380, 30),
+  (open) => {
+    const l = document.getElementById('satL'), r = document.getElementById('satR');
+    if (open) {
+      l.style.transform = 'translate(-70px, -60px) scale(0.01)';
+      r.style.transform = 'translate(70px, 60px) scale(0.01)';
+      l.style.opacity = r.style.opacity = 0;
+    } else {
+      l.style.transform = 'translate(-92px, 0)';
+      r.style.transform = 'translate(92px, 0)';
+      l.style.opacity = r.style.opacity = 1;
+    }
+  }
+);
+</script>
+</body>
+</html>
