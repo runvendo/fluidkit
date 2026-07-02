@@ -1,7 +1,7 @@
 /**
  * Off-screen pause detection.
  *
- * Looping primitives (Metaballs, ThinkingBlob) should stop animating while
+ * Looping primitives (Droplets, Thinking) should stop animating while
  * their element is scrolled out of view, to save CPU/GPU. This hook is the
  * shared mechanism: it watches a DOM node with IntersectionObserver and
  * reports whether it's currently intersecting the viewport.
