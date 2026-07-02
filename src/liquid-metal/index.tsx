@@ -22,10 +22,15 @@
  * `shaderProps` is an escape hatch: raw props forwarded directly to the
  * underlying `@paper-design/shaders-react` `LiquidMetal` shader (its own
  * `LiquidMetalProps`), applied AFTER the mapped props above, so any key set
- * there wins (e.g. `shaderProps={{ shape: "circle", repetition: 4 }}`). The
- * one exception is `style`: it's merged (not replaced) with the fill-parent
- * default so the shader keeps sizing to its wrapper even if
- * `shaderProps.style` only sets unrelated properties.
+ * there wins (e.g. `shaderProps={{ shape: "circle", repetition: 4 }}`).
+ * Two exceptions:
+ * - `style` is merged (not replaced) with the fill-parent default so the
+ *   shader keeps sizing to its wrapper even if `shaderProps.style` only
+ *   sets unrelated properties.
+ * - `speed` wins over the mapped `speed` prop only while the component is
+ *   in view — the off-screen pause gate (speed forced to `0`) always takes
+ *   precedence, so `shaderProps.speed` can never keep the shader animating
+ *   while scrolled out of view.
  *
  * Gating: renders a static metallic-gradient fallback (`data-fallback`,
  * shader never mounted) when `supportsWebGL()` is false or the user
@@ -45,6 +50,13 @@
  * module) only touches `window`/`document` inside `useEffect` bodies and
  * event handlers — no top-level module access. A plain static import is
  * therefore SSR-safe; no lazy/dynamic import is needed here.
+ *
+ * Known limitations (upstream, out of our hands at 0.0.76): `ShaderMount`
+ * registers no `webglcontextlost`/`webglcontextrestored` handlers, so if
+ * the browser evicts the WebGL context at runtime (GPU pressure, tab
+ * backgrounding on some platforms) the canvas goes blank until the
+ * component remounts. `supportsWebGL()` gates boot-time capability only —
+ * it cannot protect against a context lost after mount.
  */
 
 import type { CSSProperties, HTMLAttributes } from "react";
@@ -70,8 +82,10 @@ export interface LiquidMetalProps extends HTMLAttributes<HTMLDivElement> {
    * Escape hatch: raw props forwarded directly to the underlying
    * `@paper-design/shaders-react` `LiquidMetal` shader, applied AFTER the
    * mapped props above (so any key here wins over `color`/`backgroundColor`/
-   * `speed`/`intensity`). Advanced/unstable — the upstream shader is pinned
-   * to `0.0.76` and its param set may change between versions.
+   * `speed`/`intensity` — except that the off-screen pause gate always wins
+   * over `speed`: while out of view the shader runs at speed `0` regardless).
+   * Advanced/unstable — the upstream shader is pinned to `0.0.76` and its
+   * param set may change between versions.
    */
   shaderProps?: Partial<LiquidMetalShaderProps>;
 }
@@ -143,9 +157,14 @@ export function LiquidMetal({
         <LiquidMetalShader
           colorTint={resolvedTint}
           colorBack={resolvedBack}
-          speed={inView ? clampedSpeed : 0}
           distortion={intensity}
           {...shaderProps}
+          // After the spread on purpose: the off-screen pause gate must
+          // always win, or a consumer-supplied shaderProps.speed would
+          // silently keep the shader's rAF loop running while scrolled out
+          // of view. While in view, shaderProps.speed still wins over the
+          // mapped speed prop.
+          speed={inView ? (shaderProps?.speed ?? clampedSpeed) : 0}
           style={{ ...fillStyle, ...shaderProps?.style }}
         />
       )}

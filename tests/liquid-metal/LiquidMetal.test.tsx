@@ -237,6 +237,53 @@ describe("LiquidMetal", () => {
     expect(wrapper(container).getAttribute("data-animating")).toBe("true");
   });
 
+  it("forces speed 0 while out of view even when shaderProps.speed is set (pause gate beats the escape hatch)", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+    MockIntersectionObserver.instances = [];
+    const LiquidMetal = await loadLiquidMetal(false, true);
+    render(<LiquidMetal speed={2} shaderProps={{ speed: 9 }} />);
+    const observer = MockIntersectionObserver.instances[0];
+
+    act(() => {
+      observer.callback(
+        [{ isIntersecting: false } as IntersectionObserverEntry],
+        observer
+      );
+    });
+    const pausedProps = shaderMock.mock.calls[shaderMock.mock.calls.length - 1][0];
+    expect(pausedProps.speed).toBe(0);
+
+    act(() => {
+      observer.callback(
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        observer
+      );
+    });
+    // Back in view, shaderProps.speed wins over the mapped speed again.
+    const resumedProps = shaderMock.mock.calls[shaderMock.mock.calls.length - 1][0];
+    expect(resumedProps.speed).toBe(9);
+  });
+
+  it("keeps the mapped defaults in sync with the real package's defaultPreset (pin-bump canary)", async () => {
+    // Bypass the file-wide mock to read the REAL 0.0.76 runtime presets —
+    // safe in jsdom: the package touches no DOM at module import time. If a
+    // future pin bump changes upstream defaults, this fails loudly.
+    const actual = await vi.importActual<
+      typeof import("@paper-design/shaders-react")
+    >("@paper-design/shaders-react");
+    const defaultPreset = actual.liquidMetalPresets[0];
+    expect(defaultPreset.name).toBe("Default");
+
+    const LiquidMetal = await loadLiquidMetal(false, true);
+    render(<LiquidMetal />);
+
+    const props = shaderMock.mock.calls[0][0];
+    expect(props.colorTint).toBe(defaultPreset.params.colorTint);
+    expect(props.colorBack).toBe(defaultPreset.params.colorBack);
+    expect(props.distortion).toBe(defaultPreset.params.distortion);
+    expect(props.speed).toBe(defaultPreset.params.speed);
+  });
+
   it("does not touch document merely by importing the module (SSR-safe)", async () => {
     vi.resetModules();
     vi.doMock("motion/react", async (importOriginal) => {
