@@ -53,6 +53,12 @@ The tear/re-merge physics are the engine's normal tension hysteresis — nothing
 <Droplets interactive onTear={(i) => console.log(`drop ${i} tore off`)} />
 ```
 
+## Accessibility
+
+`interactive` and `followPointer` are pointer-first physics toys with no keyboard equivalent. That's a deliberate trade-off, not an oversight: a drag gesture has no discrete key-press analog. The wrapper never sets a `tabindex` or steals focus, so it doesn't trap keyboard users, it's simply not operable without a pointer.
+
+By default (not `interactive`) the cluster is marked `aria-hidden` as pure decoration. Passing your own `role` (as `Thinking` does with `role="status"`) opts it back into the accessibility tree and suppresses the default `aria-hidden`.
+
 ## Degrades to
 
 - **Reduced motion / off-screen**: separate static dots, no bridges, no animation loop.

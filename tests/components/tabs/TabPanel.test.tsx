@@ -70,4 +70,47 @@ describe("TabPanel", () => {
     const { container } = render(<TabPanel id="x">orphan</TabPanel>);
     expect(container.querySelector('[role="tabpanel"]')).toBeNull();
   });
+
+  it("cross-fades via Motion when motion is allowed: the panel carries an inline opacity driven by AnimatePresence", async () => {
+    const { LiquidTabs, TabsGroup, TabPanel } = await loadModule(false);
+    const { container } = render(
+      <TabsGroup defaultValue="one">
+        <LiquidTabs items={ITEMS} />
+        <TabPanel id="one">Panel One</TabPanel>
+        <TabPanel id="two">Panel Two</TabPanel>
+      </TabsGroup>
+    );
+    const panel = container.querySelector(
+      '[data-fluidkit="liquid-tab-panel"]'
+    ) as HTMLElement;
+    // Motion's `motion.div` writes its animated values (here, `opacity`)
+    // onto the element as an inline style — proof the AnimatePresence/motion
+    // path is live, not the reduced-motion plain-div branch.
+    expect(panel.style.opacity).not.toBe("");
+  });
+
+  it("hard-swaps under reduced motion: no Motion opacity styling, and the previous panel is gone the instant the new one renders (no AnimatePresence exit wait)", async () => {
+    const { LiquidTabs, TabsGroup, TabPanel } = await loadModule(true);
+    const { container, getByText, queryByText } = render(
+      <TabsGroup defaultValue="one">
+        <LiquidTabs items={ITEMS} />
+        <TabPanel id="one">Panel One</TabPanel>
+        <TabPanel id="two">Panel Two</TabPanel>
+      </TabsGroup>
+    );
+    const panel = container.querySelector(
+      '[data-fluidkit="liquid-tab-panel"]'
+    ) as HTMLElement;
+    // The reduced-motion branch is a plain `<div>`, never a `motion.div` —
+    // no Motion-authored inline style exists to drive a fade.
+    expect(panel.style.opacity).toBe("");
+
+    fireEvent.click(container.querySelectorAll('[data-fluidkit="liquid-tab"]')[1]);
+
+    // Instant swap: the outgoing panel is gone synchronously (no lingering
+    // AnimatePresence `mode="wait"` exit animation to sit through), and the
+    // incoming one is already there.
+    expect(queryByText("Panel One")).toBeNull();
+    expect(getByText("Panel Two")).toBeTruthy();
+  });
 });

@@ -36,6 +36,14 @@
  * trade-off `useSquish` documents. Consumers who need text or other
  * scale-sensitive content to stay crisp should wrap a non-text visual
  * (an icon, a swatch, a card face) rather than a label.
+ *
+ * Accessibility: never `aria-hidden` — unlike the surface primitives, this
+ * wraps arbitrary consumer children that may carry real semantic content, so
+ * hiding the wrapper would hide them too. Dragging itself is a pointer-first
+ * physics interaction (the same `Droplets.interactive` trade-off) with no
+ * keyboard equivalent by design; the wrapper never sets a `tabindex` or
+ * steals focus from its children, so it never traps keyboard users, it's
+ * simply not draggable without a pointer.
  */
 
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";

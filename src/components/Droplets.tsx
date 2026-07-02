@@ -9,6 +9,15 @@
  *
  * Reduced motion / off-screen: renders the drops as separate static dots
  * (no bridges, no animation loop).
+ *
+ * Accessibility: purely decorative by default (`aria-hidden`, same
+ * treatment as `MeshGradient`/`Aurora`) unless a consumer supplies its own
+ * `role` (e.g. `Thinking`'s `role="status"`), which suppresses the default
+ * so the two never conflict. `interactive`/`followPointer` are pointer-first
+ * physics toys — grabbing and dragging a drop has no keyboard equivalent by
+ * design, so they stay perceivable (not `aria-hidden`) but are intentionally
+ * not keyboard-operable; the wrapper never sets a `tabindex` or steals
+ * focus, so it never traps keyboard users, it's simply inert to them.
  */
 
 import type { CSSProperties, HTMLAttributes, PointerEvent } from "react";
@@ -332,12 +341,24 @@ export function Droplets({
     ...style,
   };
 
+  // Purely decorative by default (no accessible content, no keyboard access,
+  // same treatment as MeshGradient/Aurora): hidden from assistive tech. Two
+  // escapes, both checked against `rest` so a consumer's own semantics win:
+  // `interactive` mode is a real pointer target (grab/drag/tear), not
+  // decoration, so it stays perceivable even though it has no keyboard
+  // equivalent (see the docs' pointer-only note); and a consumer supplying
+  // their own `role` (e.g. `Thinking`'s `role="status"`) is opting the
+  // element INTO the accessibility tree, so forcing `aria-hidden` here would
+  // silently contradict that role.
+  const ariaHidden = interactive || "role" in rest ? undefined : "true";
+
   return (
     <div
       ref={ref}
       className={className}
       style={containerStyle}
       data-fluidkit="droplets"
+      aria-hidden={ariaHidden}
       data-animating={animating}
       data-grabbed={grabbed ?? undefined}
       onPointerDown={interactive ? handlePointerDown : undefined}

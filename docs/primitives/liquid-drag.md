@@ -39,6 +39,10 @@ function Board() {
 }
 ```
 
+## Accessibility
+
+Dragging is a pointer-first physics interaction with no keyboard equivalent, the same trade-off `Droplets`' `interactive` mode makes. The wrapper never sets a `tabindex` or steals focus from its children, so it doesn't trap keyboard users; it's simply not draggable without a pointer. If the dragged position needs to be reachable without a pointer, expose a separate keyboard-operable control alongside it.
+
 ## Degrades to
 
 Under `prefers-reduced-motion` (or `elasticity={0}`), the deformation is bypassed outright: scales are pinned at exactly `1`, never mid-stretch. Dragging itself is not gated; Motion's drag stays fully functional either way.

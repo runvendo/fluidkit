@@ -19,6 +19,28 @@ describe("Droplets", () => {
     vi.resetModules();
   });
 
+  it("marks the wrapper aria-hidden when purely decorative (non-interactive, no consumer role)", async () => {
+    const Droplets = await loadDroplets(false);
+    const { container } = render(<Droplets />);
+    const root = container.firstChild as HTMLElement;
+    expect(root.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("does not mark aria-hidden in interactive mode (a real pointer target, not pure decoration)", async () => {
+    const Droplets = await loadDroplets(false);
+    const { container } = render(<Droplets interactive />);
+    const root = container.firstChild as HTMLElement;
+    expect(root.getAttribute("aria-hidden")).toBeNull();
+  });
+
+  it("does not mark aria-hidden when a consumer supplies its own role (e.g. Thinking's role=status)", async () => {
+    const Droplets = await loadDroplets(false);
+    const { container } = render(<Droplets role="status" aria-label="Working" />);
+    const root = container.firstChild as HTMLElement;
+    expect(root.getAttribute("aria-hidden")).toBeNull();
+    expect(root.getAttribute("role")).toBe("status");
+  });
+
   it("renders the liquid layer stack with a computed clip path", async () => {
     const Droplets = await loadDroplets(false);
     const { container } = render(<Droplets />);
