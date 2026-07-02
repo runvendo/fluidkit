@@ -249,6 +249,16 @@ export function WaterField({
   // `pausedRef` tracks our own intent and this only calls it when the
   // desired state actually differs — otherwise a re-render with an
   // unrelated prop change would spuriously flip pause state.
+  //
+  // `degraded` is a dependency for the same reason it is on the config-sync
+  // effect: when the gate flips back open, the boot effect above constructs
+  // a FRESH (unpaused) instance and resets `pausedRef` — if the element is
+  // still out of view at that moment (e.g. reduced motion toggled on and
+  // back off while scrolled away), this effect must re-run to re-apply the
+  // pause, or the new sim would keep stepping physics off-screen forever.
+  // Effect order guarantees correctness: React runs these in declaration
+  // order, so by the time this runs the boot effect has already put the new
+  // instance in `instanceRef` and reset `pausedRef` to false.
   useEffect(() => {
     const instance = instanceRef.current;
     if (!instance) return;
@@ -256,7 +266,7 @@ export function WaterField({
     if (shouldPause !== pausedRef.current) {
       pausedRef.current = instance.togglePause();
     }
-  }, [inView]);
+  }, [inView, degraded]);
 
   const wrapperStyle: CSSProperties = {
     position: "absolute",

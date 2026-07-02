@@ -63,6 +63,28 @@ async function loadWaterField(reducedMotion: boolean, webglSupported: boolean) {
   return mod.WaterField;
 }
 
+/**
+ * Like `loadWaterField`, but reduced motion is read from a mutable box on
+ * every render, so a test can flip the preference mid-lifecycle (paired
+ * with a `rerender()` to pick the new value up — the mock has no real
+ * media-query subscription). Needed for the pause-reconciliation
+ * regression test, which reboots the sim by toggling PRM while the
+ * component stays mounted.
+ */
+async function loadWaterFieldWithMutableMotion(webglSupported: boolean) {
+  vi.resetModules();
+  const motionBox = { reducedMotion: false };
+  vi.doMock("motion/react", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("motion/react")>();
+    return { ...actual, useReducedMotion: () => motionBox.reducedMotion };
+  });
+  vi.doMock("../../src/utils/supportsWebGL", () => ({
+    supportsWebGL: () => webglSupported,
+  }));
+  const mod = await import("../../src/water-field/index");
+  return { WaterField: mod.WaterField, motionBox };
+}
+
 /** Same jsdom-has-no-IntersectionObserver mock as LiquidMetal's tests. */
 class MockIntersectionObserver implements IntersectionObserver {
   static instances: MockIntersectionObserver[] = [];
@@ -308,6 +330,49 @@ describe("WaterField", () => {
     // No further toggles: inView never changed across these re-renders.
     expect(instance.togglePause).toHaveBeenCalledTimes(2);
     expect(wrapper(container).getAttribute("data-animating")).toBe("true");
+  });
+
+  it("reconciles pause state when the sim reboots while off-screen (PRM on then off)", async () => {
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+    MockIntersectionObserver.instances = [];
+    const { WaterField, motionBox } = await loadWaterFieldWithMutableMotion(true);
+    const { rerender } = render(<WaterField />);
+
+    // useInView's initial pessimistic flip leaves us off-screen and paused
+    // (see the note in the togglePause test above) — the exact state the
+    // regression starts from.
+    const first = instances[0];
+    expect(first.togglePause).toHaveBeenCalledTimes(1);
+    expect(first.paused).toBe(true);
+
+    // Reduced motion turns ON while still off-screen: the sim tears down.
+    motionBox.reducedMotion = true;
+    rerender(<WaterField />);
+    expect(first.stop).toHaveBeenCalledTimes(1);
+
+    // Reduced motion turns OFF, still off-screen: a fresh instance boots.
+    // Regression under test: the boot effect resets its paused tracking,
+    // but nothing re-applied the pause for the still-out-of-view element —
+    // leaving the new sim running physics off-screen forever.
+    motionBox.reducedMotion = false;
+    rerender(<WaterField />);
+
+    expect(instances).toHaveLength(2);
+    const second = instances[1];
+    expect(second.togglePause).toHaveBeenCalledTimes(1);
+    expect(second.paused).toBe(true);
+  });
+
+  it("updates the canvas's pointer-events when interactive flips live", async () => {
+    const WaterField = await loadWaterField(false, true);
+    const { container, rerender } = render(<WaterField interactive={true} />);
+    expect(canvas(container)!.style.pointerEvents).toBe("auto");
+
+    rerender(<WaterField interactive={false} />);
+    expect(canvas(container)!.style.pointerEvents).toBe("none");
+
+    rerender(<WaterField interactive={true} />);
+    expect(canvas(container)!.style.pointerEvents).toBe("auto");
   });
 
   it("tears down via stop() on unmount", async () => {
