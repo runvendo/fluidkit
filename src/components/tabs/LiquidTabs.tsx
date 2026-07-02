@@ -95,6 +95,19 @@ const firstEnabledId = (items: LiquidTabsItem[]): string => {
   return item?.id ?? items[0]?.id ?? "";
 };
 
+/** True when both maps hold the same ids and identical rects. */
+const sameRects = (
+  a: Map<string, TabRect>,
+  b: Map<string, TabRect>
+): boolean => {
+  if (a.size !== b.size) return false;
+  for (const [id, r] of b) {
+    const p = a.get(id);
+    if (!p || p.left !== r.left || p.width !== r.width) return false;
+  }
+  return true;
+};
+
 export function LiquidTabs({
   items,
   value,
@@ -162,13 +175,17 @@ export function LiquidTabs({
   // and on resize. jsdom reports 0s (degenerate path until real layout).
   useLayoutEffect(() => {
     function measure() {
-      setHeight(containerRef.current?.offsetHeight ?? 0);
+      const h = containerRef.current?.offsetHeight ?? 0;
       const next = new Map<string, TabRect>();
       for (const item of items) {
         const el = tabRefs.current.get(item.id);
         if (el) next.set(item.id, { left: el.offsetLeft, width: el.offsetWidth });
       }
-      setRects(next);
+      // Only touch state when a value actually changed — an identity-only
+      // `items` change (inline `items={[...]}` re-renders) must not cascade
+      // into a new `rects` reference that would interrupt an in-flight flow.
+      setHeight((prevH) => (prevH === h ? prevH : h));
+      setRects((prevR) => (sameRects(prevR, next) ? prevR : next));
     }
     measure();
     const container = containerRef.current;
@@ -186,8 +203,17 @@ export function LiquidTabs({
     const toRect = rects.get(selected);
     if (!toRect || height <= 0) return;
 
-    if (prev === selected || prefersReducedMotion) {
+    // Reduced motion: always snap, no flow.
+    if (prefersReducedMotion) {
       springs.snapTo(flowSpec.rest(toRect, height));
+      return;
+    }
+
+    // Same selection: place the pill on mount / after an idle resize, but
+    // NEVER interrupt an in-flight transition — a stray parent re-render or a
+    // resize during the settle window must not snap the running flow.
+    if (prev === selected) {
+      if (!settling) springs.snapTo(flowSpec.rest(toRect, height));
       return;
     }
 
@@ -209,7 +235,7 @@ export function LiquidTabs({
     if (settleTimer.current) clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(() => setSettling(false), SETTLE_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, rects, height, prefersReducedMotion, flow]);
+  }, [selected, rects, height, prefersReducedMotion, flow, settling]);
 
   useEffect(() => {
     return () => {

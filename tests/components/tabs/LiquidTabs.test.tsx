@@ -186,3 +186,83 @@ describe("LiquidTabs (bar)", () => {
     ).toContain("mine");
   });
 });
+
+describe("LiquidTabs (bar) — mid-transition re-measure", () => {
+  const OFFSETS = ["offsetHeight", "offsetWidth", "offsetLeft"] as const;
+  const OFFSET_VALUES: Record<(typeof OFFSETS)[number], number> = {
+    offsetHeight: 40,
+    offsetWidth: 80,
+    offsetLeft: 10,
+  };
+
+  afterEach(() => {
+    // Restore jsdom's zero-offset behavior so the other suite is unaffected.
+    for (const prop of OFFSETS) {
+      Object.defineProperty(HTMLElement.prototype, prop, {
+        configurable: true,
+        value: 0,
+      });
+    }
+    vi.doUnmock("motion/react");
+    vi.doUnmock("../../../src/liquid/useMotionSprings");
+    vi.resetModules();
+  });
+
+  it("does not snap the indicator when re-measured with a fresh items array (same selection)", async () => {
+    for (const prop of OFFSETS) {
+      Object.defineProperty(HTMLElement.prototype, prop, {
+        configurable: true,
+        value: OFFSET_VALUES[prop],
+      });
+    }
+
+    vi.resetModules();
+    vi.doMock("motion/react", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("motion/react")>();
+      return { ...actual, useReducedMotion: () => false };
+    });
+
+    const snapTo = vi.fn();
+    const setTargets = vi.fn();
+    const setTarget = vi.fn();
+    vi.doMock("../../../src/liquid/useMotionSprings", () => ({
+      useMotionSprings: (count: number) => ({
+        values: Array.from({ length: count }, () => ({
+          get: () => 0,
+          getVelocity: () => 0,
+        })),
+        snapTo,
+        setTargets,
+        setTarget,
+      }),
+    }));
+
+    const { LiquidTabs } = await import(
+      "../../../src/components/tabs/LiquidTabs"
+    );
+
+    const items1 = [
+      { id: "one", label: "One" },
+      { id: "two", label: "Two" },
+      { id: "three", label: "Three" },
+    ];
+    const { rerender } = render(
+      <LiquidTabs items={items1} value="two" onChange={() => {}} />
+    );
+
+    // Ignore the mount-time placement snap; watch only the incidental re-render.
+    snapTo.mockClear();
+    setTargets.mockClear();
+    setTarget.mockClear();
+
+    // Simulate a stray parent re-render: same selection, brand-new items array.
+    const items2 = [
+      { id: "one", label: "One" },
+      { id: "two", label: "Two" },
+      { id: "three", label: "Three" },
+    ];
+    rerender(<LiquidTabs items={items2} value="two" onChange={() => {}} />);
+
+    expect(snapTo).not.toHaveBeenCalled();
+  });
+});
