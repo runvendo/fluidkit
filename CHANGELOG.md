@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **JellyButton.** An engine pill button that squashes on press via geometry, not a CSS transform, so the label never scales. Real `<button>` semantics (focus, Enter/Space, `disabled`); volume-preserving squash with spring-overshoot jiggle on release; material/tint/light/reflection/refraction passthrough. Reduced motion keeps a fully functional button with an opacity press dip only.
+- **useSquish.** Headless press-squash hook: volume-preserving `scaleX`/`scaleY` Motion values plus pointer/keyboard handlers, for jelly-pressing arbitrary elements via CSS transform. Reduced motion makes pressing inert.
+- **Magnetic.** Behavior wrapper that pulls its child toward the pointer within a `radius` (linear falloff, travel hard-capped at `radius / 2`) and springs back outside it. Window-level tracking attaches only while on screen; reduced motion attaches nothing.
+- **LiquidDrag.** Motion's own drag gesture plus a velocity-driven, volume-preserving stretch (continuous axis split, no cliff at the diagonal) that wobbles back to rest on release. `elasticity={0}` and reduced motion pin the scales at exactly 1 while dragging stays functional.
+- **DripFuse.** One-shot liquid transfer: a drop swells off a source body, tears free via the engine's tension hysteresis, flies to a target, and fuses in while the target swells to absorb it. Fired by a `fire` counter; rapid fires coalesce into one `onComplete`. Reduced motion completes instantly.
+- **CI on GitHub Actions.** Runs `typecheck`, `test`, `build`, `size` (bundle budget), `check:gpu-leak` (core-bundle guard), and `check:pack` (verify npm contents) on Node 20 and 24.
+- **Bundle-size budget.** 11.6 kB brotli on the core entry via size-limit (re-pinned from 8.7 kB when the interaction primitives landed: measured 9.68 kB plus 20% headroom); enforced in CI.
+- **GPU dependency guard.** Core bundle verified free of GPU dependencies to support the upcoming optional GPU tier.
+- **npm pack verification.** Guard ensures pack contents match expectations; runs in CI.
+- **MIT LICENSE file added.**
+
 ## 0.3.0
 
 - **LiquidTabs on the liquid engine.** The indicator is now an engine body: on tab change the old pill drains while the new one fills, a metaball tension bridge stretches between them, snaps free past the snap distance, and the new pill settles on a taut spring. Labels stay on an unfiltered sibling layer; reduced motion snaps instantly.

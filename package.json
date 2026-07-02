@@ -43,18 +43,29 @@
   ],
   "scripts": {
     "build": "tsup",
+    "build:site": "vite build playground",
+    "check:gpu-leak": "node scripts/check-no-gpu-deps.mjs",
+    "check:pack": "node scripts/check-pack.mjs",
+    "dev": "vite playground",
+    "size": "npm run build && size-limit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "dev": "vite playground",
-    "build:site": "vite build playground"
+    "typecheck": "tsc --noEmit"
   },
+  "size-limit": [
+    {
+      "path": "dist/index.js",
+      "limit": "11.6 kB",
+      "brotli": true
+    }
+  ],
   "peerDependencies": {
     "motion": ">=11",
     "react": ">=18",
     "react-dom": ">=18"
   },
   "devDependencies": {
+    "@size-limit/preset-small-lib": "^12.1.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^18.3.0",
@@ -64,6 +75,7 @@
     "motion": "^12.41.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "size-limit": "^12.1.0",
     "tsup": "^8.5.1",
     "typescript": "^5.7.0",
     "vitest": "^4.1.9"

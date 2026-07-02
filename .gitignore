@@ -5,6 +5,9 @@ coverage/
 .DS_Store
 *.log
 
+# Brainstorm visual companion sessions
+.superpowers/
+
 # Visual-verification scratch (Playwright screenshots / traces)
 .playwright-mcp/
 pg-*.png

@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -7,6 +8,13 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   root: __dirname,
   plugins: [react()],
+  // Demo recipes import from "fluidkit" so their displayed source reads
+  // exactly like consumer code; the alias points it at ../src.
+  resolve: {
+    alias: {
+      fluidkit: fileURLToPath(new URL("../src/index.ts", import.meta.url)),
+    },
+  },
   server: {
     fs: { allow: [".."] },
   },

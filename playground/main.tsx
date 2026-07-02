@@ -1,15 +1,28 @@
-import { StrictMode, useState } from "react";
+import { StrictMode, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
+  DripFuse,
   Droplets,
   FlowStagger,
+  JellyButton,
+  LiquidDrag,
   LiquidTabs,
+  Magnetic,
   MorphSurface,
   Ripple,
   Thinking,
 } from "../src/index";
 import type { LiquidMaterial } from "../src/liquid";
+import { PhoneFrame } from "./demos/PhoneFrame";
+import { DynamicIsland } from "./demos/DynamicIsland";
+import { MusicPlayer } from "./demos/MusicPlayer";
+import { LiquidDock } from "./demos/LiquidDock";
+import { GooButton } from "./demos/GooButton";
+import dynamicIslandSrc from "./demos/DynamicIsland.tsx?raw";
+import musicPlayerSrc from "./demos/MusicPlayer.tsx?raw";
+import liquidDockSrc from "./demos/LiquidDock.tsx?raw";
+import gooButtonSrc from "./demos/GooButton.tsx?raw";
 
 /* ------------------------- control primitives ------------------------- */
 function Slider({ label, value, set, min, max, step = 1, suffix = "" }: {
@@ -74,6 +87,7 @@ function Card({ id, title, desc, hint, wall, stage, controls, code, onStageClick
 }
 
 const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const AXES: ("free" | "x" | "y")[] = ["free", "x", "y"];
 
 /* ------------------------- hero ------------------------- */
 function Hero() {
@@ -90,12 +104,17 @@ function Hero() {
         <Snippet code="npm install fluidkit react react-dom motion" />
         <nav className="toc">
           {[
+            ["examples", "Examples"],
             ["droplets", "Droplets"],
             ["morph-surface", "MorphSurface"],
             ["thinking", "Thinking"],
             ["liquid-tabs", "LiquidTabs"],
             ["flow-stagger", "FlowStagger"],
             ["ripple", "Ripple"],
+            ["jelly-button", "JellyButton"],
+            ["magnetic", "Magnetic"],
+            ["liquid-drag", "LiquidDrag"],
+            ["drip-fuse", "DripFuse"],
           ].map(([id, label]) => (
             <a key={id} href={`#${id}`}>{label}</a>
           ))}
@@ -120,6 +139,72 @@ function Hero() {
         </div>
       </div>
     </header>
+  );
+}
+
+/* ------------------------- examples (phone showcases) ------------------------- */
+function DemoPhone({ title, desc, source, screenStyle, children }: {
+  title: string; desc: string; source: string; screenStyle?: CSSProperties; children: ReactNode;
+}) {
+  return (
+    <div className="demo-card">
+      <PhoneFrame screenStyle={screenStyle}>{children}</PhoneFrame>
+      <div className="demo-meta">
+        <h3>{title}</h3>
+        <p>{desc}</p>
+        <details className="src">
+          <summary>view source</summary>
+          <Snippet code={source} />
+        </details>
+      </div>
+    </div>
+  );
+}
+
+/** Lock-screen chrome behind the Dynamic Island (site chrome, not part of the recipe). */
+function LockScreen() {
+  return (
+    <div style={{ position: "absolute", inset: 0, color: "#23242c", textAlign: "center", pointerEvents: "none" }}>
+      <div style={{ marginTop: 96, fontSize: 15, fontWeight: 600, opacity: 0.7 }}>Wednesday, July 2</div>
+      <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.05 }}>9:41</div>
+      <div style={{ position: "absolute", left: 18, right: 18, bottom: 88, background: "rgba(255,255,255,.55)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderRadius: 18, padding: "11px 14px", textAlign: "left", boxShadow: "0 6px 18px rgba(46,44,72,.12)" }}>
+        <div style={{ fontSize: 11.5, fontWeight: 700 }}>Messages</div>
+        <div style={{ fontSize: 11.5, color: "#4b4c55" }}>Sam: the island demo is unreal</div>
+      </div>
+    </div>
+  );
+}
+
+const WALL_BG = "linear-gradient(160deg, #dbe4ff 0%, #f3e3ff 45%, #ffe9f2 100%)";
+
+function Examples() {
+  return (
+    <section className="examples" id="examples">
+      <h2>Built with fluidkit</h2>
+      <p className="sub">
+        Real app moments, live in the frame — each composed from the public API.
+        Every “view source” is the exact code running on that phone.
+      </p>
+      <div className="phones">
+        <DemoPhone title="Dynamic Island" desc="One MorphSurface: the pill liquid-morphs into a live-activity card; controls are JellyButtons. Tap it."
+          source={dynamicIslandSrc} screenStyle={{ background: WALL_BG }}>
+          <LockScreen />
+          <DynamicIsland />
+        </DemoPhone>
+        <DemoPhone title="Liquid Music Player" desc="A now-playing pill morphs into the full player sheet in glass. Play/pause is a JellyButton."
+          source={musicPlayerSrc} screenStyle={{ background: WALL_BG }}>
+          <MusicPlayer />
+        </DemoPhone>
+        <DemoPhone title="Liquid Dock" desc="LiquidTabs as a tab bar: the active pill drains, flies a tension bridge, snaps in. Content re-enters with FlowStagger."
+          source={liquidDockSrc}>
+          <LiquidDock />
+        </DemoPhone>
+        <DemoPhone title="Goo Progress Button" desc="JellyButton squashes on press, Thinking droplets churn while it downloads, the card ripples on tap."
+          source={gooButtonSrc} screenStyle={{ background: WALL_BG }}>
+          <GooButton />
+        </DemoPhone>
+      </div>
+    </section>
   );
 }
 
@@ -229,10 +314,87 @@ function RippleDemo() {
     controls={<Slider label="duration" value={duration} set={setDuration} min={200} max={2000} step={50} suffix="ms" />} />;
 }
 
+function JellyButtonDemo() {
+  const [material, setMaterial] = useState<LiquidMaterial>("glass");
+  const [intensity, setIntensity] = useState(0.12);
+  return <Card id="jelly-button" title="JellyButton" desc="An engine pill that squashes on press via geometry, not a CSS transform, so the label never scales." hint="press and hold" wall
+    code={`<JellyButton material="${material}" intensity={${intensity}}>Press me</JellyButton>`}
+    stage={
+      <JellyButton
+        material={material}
+        intensity={intensity}
+        color={material === "flat" ? "#8d94a1" : undefined}
+        style={{ color: material === "flat" ? "#fff" : "#23242c", fontSize: 14, fontWeight: 650 }}
+      >
+        Press me
+      </JellyButton>
+    }
+    controls={<><Seg label="material" value={material} set={setMaterial} options={MATERIALS} /><Slider label="intensity" value={intensity} set={setIntensity} min={0.02} max={0.3} step={0.01} /></>} />;
+}
+
+function MagneticDemo() {
+  const [strength, setStrength] = useState(0.3);
+  const [radius, setRadius] = useState(120);
+  return <Card id="magnetic" title="Magnetic" desc="Pulls its child toward the pointer while it's within radius px of the element's center, and springs back to rest outside that radius." hint="move your pointer near the dot"
+    code={`<Magnetic strength={${strength}} radius={${radius}}>
+  <Dot />
+</Magnetic>`}
+    stage={
+      <Magnetic strength={strength} radius={radius}>
+        <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(160deg, #4a6cf7, #7c9bff)", boxShadow: "0 10px 28px rgba(74,108,247,.35)" }} />
+      </Magnetic>
+    }
+    controls={<><Slider label="strength" value={strength} set={setStrength} min={0.05} max={1} step={0.05} /><Slider label="radius" value={radius} set={setRadius} min={40} max={240} step={10} suffix="px" /></>} />;
+}
+
+function LiquidDragDemo() {
+  const [elasticity, setElasticity] = useState(0.4);
+  const [axis, setAxis] = useState<"free" | "x" | "y">("free");
+  const constraintsRef = useRef<HTMLDivElement>(null);
+  return <Card id="liquid-drag" title="LiquidDrag" desc="Wraps Motion's own drag gesture; velocity feeds a volume-preserving stretch that wobbles back to rest on release." hint="drag the blob"
+    code={`<LiquidDrag elasticity={${elasticity}}${axis !== "free" ? ` axis="${axis}"` : ""}>
+  <Blob />
+</LiquidDrag>`}
+    stage={
+      <div ref={constraintsRef} style={{ position: "absolute", inset: 24 }}>
+        <LiquidDrag
+          elasticity={elasticity}
+          axis={axis === "free" ? undefined : axis}
+          dragConstraints={constraintsRef}
+          style={{ width: 72, height: 72, margin: "auto", position: "absolute", inset: 0, cursor: "grab" }}
+        >
+          <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: "linear-gradient(160deg, #63dcb9, #4fc9a3)", boxShadow: "0 10px 28px rgba(99,220,185,.4)" }} />
+        </LiquidDrag>
+      </div>
+    }
+    controls={<><Slider label="elasticity" value={elasticity} set={setElasticity} min={0} max={1} step={0.05} /><Seg label="axis" value={axis} set={setAxis} options={AXES} /></>} />;
+}
+
+function DripFuseDemo() {
+  const [fire, setFire] = useState(0);
+  const [completions, setCompletions] = useState(0);
+  const [material, setMaterial] = useState<LiquidMaterial>("glass");
+  return <Card id="drip-fuse" title="DripFuse" desc="A drop swells off a source body, tears free, springs to a target, and fuses in: one trigger-and-complete cycle." hint={`fired ${fire} · completed ${completions}`} wall
+    code={`const [fire, setFire] = useState(0);
+const [completed, setCompleted] = useState(0);
+
+<DripFuse fire={fire} material="${material}" onComplete={() => setCompleted((c) => c + 1)} />`}
+    stage={
+      <DripFuse
+        fire={fire}
+        material={material}
+        color={material === "flat" ? "#8d94a1" : undefined}
+        onComplete={() => setCompletions((c) => c + 1)}
+      />
+    }
+    controls={<><button className="btn" onClick={() => setFire((f) => f + 1)}>Fire</button><Seg label="material" value={material} set={setMaterial} options={MATERIALS} /></>} />;
+}
+
 function App() {
   return (
     <>
       <Hero />
+      <Examples />
       <div className="grid">
         <DropletsDemo />
         <MorphDemo />
@@ -240,6 +402,10 @@ function App() {
         <TabsDemo />
         <FlowDemo />
         <RippleDemo />
+        <JellyButtonDemo />
+        <MagneticDemo />
+        <LiquidDragDemo />
+        <DripFuseDemo />
       </div>
       <footer className="footer">
         MIT · <a href="https://github.com/yousefh409/fluidkit">github.com/yousefh409/fluidkit</a>

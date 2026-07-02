@@ -1,5 +1,7 @@
 # fluidkit
 
+[![CI](https://github.com/yousefh409/fluidkit/actions/workflows/ci.yml/badge.svg)](https://github.com/yousefh409/fluidkit/actions/workflows/ci.yml)
+
 A React library of liquid UI animations built on one idea: **one liquid engine, swappable materials.** Shapes are real metaball geometry (computed bezier bridges applied as a live `clip-path`), motion is spring-driven with surface tension (drops connect on touch, stretch, and snap), and the same shape renders as clear glass, mercury, or a flat fill via a `material` prop. Built on top of [Motion](https://motion.dev).
 
 ## The core principle
@@ -45,6 +47,10 @@ function App() {
 | [`FlowStagger`](docs/primitives/flow-stagger.md) | Staggered rise + un-blur entrance for list items, FLIP on reorder | Simple simultaneous fade |
 | [`LiquidTabs`](docs/primitives/liquid-tabs.md) | Flagship tab strip: the indicator flows between tabs (slide or stretch), ink or glass material, labels tint by liquid coverage | Plain pill, snaps instantly |
 | [`Ripple`](docs/primitives/ripple.md) | Pointer-origin water ripple on tap/click | No ripple, children render normally |
+| [`JellyButton`](docs/primitives/jelly-button.md) | Engine pill button that squashes on press via geometry; the label never scales | Normal button with an opacity press dip |
+| [`Magnetic`](docs/primitives/magnetic.md) | Pulls its child toward the pointer inside a radius, springs back outside it | No listener, element never moves |
+| [`LiquidDrag`](docs/primitives/liquid-drag.md) | Motion drag with velocity-driven volume-preserving stretch; wobbles back on release | Plain drag, scales pinned at 1 |
+| [`DripFuse`](docs/primitives/drip-fuse.md) | A drop tears off a source body, flies, and fuses into a target; one cycle per `fire` | Static bodies, `onComplete` fires instantly |
 
 ### Materials
 
@@ -80,6 +86,16 @@ The playground doubles as the public docs site: hero, live demos, controls, and 
 
 - Design spec: [`docs/superpowers/specs/2026-07-01-liquid-engine-design.md`](docs/superpowers/specs/2026-07-01-liquid-engine-design.md)
 - Changelog: [`CHANGELOG.md`](CHANGELOG.md)
+
+## Development
+
+- `npm test`: run tests
+- `npm run typecheck`: type check the library
+- `npm run size`: check bundle size (11.6 kB brotli budget on the core entry via size-limit)
+- `npm run check:gpu-leak`: guard against GPU dependencies
+- `npm run check:pack`: verify npm pack contents
+
+All guards run in CI (Node 20 and 24).
 
 ## License
 
