@@ -13,3 +13,5 @@ export { Ripple } from "./Ripple";
 export type { RippleProps } from "./Ripple";
 export { JellyButton } from "./JellyButton";
 export type { JellyButtonProps } from "./JellyButton";
+export { Magnetic } from "./Magnetic";
+export type { MagneticProps } from "./Magnetic";
