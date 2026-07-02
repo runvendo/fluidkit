@@ -46,8 +46,13 @@
  * used by `LiquidTabs`/`JellyButton` for interrupted presses/transitions.
  *
  * Reduced motion: `fire` changes complete instantly — `onComplete` fires
- * from the change effect (no springs, no timers touched) and the scene
- * stays the static two-body rest state. `data-animating` is always `false`.
+ * from the change effect and the scene stays the static two-body rest
+ * state. `data-animating` is always `false`. A fire under reduced motion
+ * also CANCELS any cycle already in flight (same cleanup as a restart:
+ * timers cleared, springs snapped home, tension/fuse state reset, settle
+ * loop stopped), so the interrupted cycle's stale settle timer can never
+ * double-fire `onComplete` alongside the instant one, and no stale frames
+ * keep writing under the preference.
  */
 
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
@@ -77,7 +82,8 @@ export interface DripFuseProps extends HTMLAttributes<HTMLDivElement> {
   width?: number;
   /** Canvas height in px. Defaults to `80`. */
   height?: number;
-  /** Source/target body radius in px. Defaults to `18`. */
+  /** Source/target body radius in px. Defaults to `18`. Clamped to fit the
+   * canvas height, so oversized values never spill geometry. */
   size?: number;
   /**
    * Trigger. Any change (up or down) runs one drip cycle. Repeated fires
@@ -153,9 +159,16 @@ interface Anchors {
   sourceX: number;
   targetX: number;
   cy: number;
+  /** Source/target resting radius: the `size` prop, clamped to fit the
+   * canvas height so degenerate props never spill geometry past the paint
+   * box. Every body radius in the component derives from THIS, never the
+   * raw prop. */
+  size: number;
   /** Traveling drop's max radius, clamped to fit the canvas height. */
   dripR: number;
-  /** Target's briefly-swelled radius, clamped to fit the canvas height. */
+  /** Target's briefly-swelled radius: clamped to the canvas height but
+   * never below the resting radius, so the fuse bump can flatten to a
+   * no-op at degenerate props but never invert into a shrink-dip. */
   bumpR: number;
 }
 
@@ -166,15 +179,20 @@ interface Anchors {
  * bleed-canvas lesson, applied by leaving room up front instead of bleeding
  * a paint box past it.
  */
-function layout(width: number, height: number, size: number): Anchors {
-  const maxR = Math.min(size * FUSE_BUMP_FACTOR, height / 2 - 2);
-  const margin = Math.max(maxR, size);
+function layout(width: number, height: number, rawSize: number): Anchors {
+  const size = Math.min(rawSize, height / 2 - 2);
+  const bumpR = Math.max(
+    Math.min(rawSize * FUSE_BUMP_FACTOR, height / 2 - 2),
+    size
+  );
+  const margin = Math.max(bumpR, size);
   return {
     sourceX: margin,
     targetX: width - margin,
     cy: height / 2,
+    size,
     dripR: Math.min(size * DRIP_R_FACTOR, height / 2 - 2),
-    bumpR: maxR,
+    bumpR,
   };
 }
 
@@ -185,10 +203,10 @@ interface Scene {
 
 function buildStaticScene(
   anchors: Anchors,
-  size: number,
   wantSpecular: boolean,
   light: Vec | null
 ): Scene {
+  const { size } = anchors;
   const src: LiquidBody = { id: "src", x: anchors.sourceX, y: anchors.cy, r: size };
   const tgt: LiquidBody = { id: "tgt", x: anchors.targetX, y: anchors.cy, r: size };
   const path = circlePath(src, size) + circlePath(tgt, size);
@@ -238,8 +256,8 @@ export function DripFuse({
     !reflection || light === null ? null : light ?? defaultLight(width, height);
 
   const staticScene = useMemo(
-    () => buildStaticScene(anchors, size, resolved.specular, sceneLight),
-    [anchors, size, resolved.specular, sceneLight]
+    () => buildStaticScene(anchors, resolved.specular, sceneLight),
+    [anchors, resolved.specular, sceneLight]
   );
 
   // Spring slots: [0] drip x, [1] drip r, [2] target r. Per-slot default
@@ -248,7 +266,7 @@ export function DripFuse({
   // with explicit overrides.
   const springs = useMotionSprings(
     3,
-    (i) => (i === 0 ? anchors.sourceX + size : i === 1 ? 0 : size),
+    (i) => (i === 0 ? anchors.sourceX + anchors.size : i === 1 ? 0 : anchors.size),
     (i) => (i === 0 ? FLY_SPRING : i === 1 ? SWELL_SPRING : SETTLE_BACK_SPRING)
   );
 
@@ -260,6 +278,14 @@ export function DripFuse({
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // The settle timer outlives renders, so it reads `onComplete` through a
+  // latest-ref — a consumer swapping the callback mid-cycle gets the fresh
+  // one called, never the cycle-start capture.
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
+
   // React to `fire` flips: start (or restart) a cycle, or complete
   // synchronously under reduced motion.
   const prevFire = useRef(fire);
@@ -267,28 +293,37 @@ export function DripFuse({
     if (fire === prevFire.current) return;
     prevFire.current = fire;
 
+    // Both branches begin with the same restart cleanup: a fire always
+    // cancels whatever cycle is in flight (timers, fuse flag, tension
+    // hysteresis) so a stale settle timer can never double-fire onComplete.
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    if (bumpTimer.current) clearTimeout(bumpTimer.current);
+    settleTimer.current = null;
+    bumpTimer.current = null;
+    tension.current.clear();
+    fused.current = false;
+
     if (prefersReducedMotion) {
-      onComplete?.();
+      // Instant completion: springs snapped home, settle loop stopped (the
+      // resync effect re-writes the static scene), onComplete immediate.
+      springs.snapTo([anchors.sourceX + anchors.size, 0, anchors.size]);
+      setSettling(false);
+      onCompleteRef.current?.();
       return;
     }
 
-    tension.current.clear();
-    fused.current = false;
-    if (bumpTimer.current) clearTimeout(bumpTimer.current);
-
-    springs.snapTo([anchors.sourceX + size, 0, size]);
-    springs.setTargets([anchors.targetX, anchors.dripR, size]);
+    springs.snapTo([anchors.sourceX + anchors.size, 0, anchors.size]);
+    springs.setTargets([anchors.targetX, anchors.dripR, anchors.size]);
 
     setSettling(true);
-    if (settleTimer.current) clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(() => {
       setSettling(false);
       fused.current = false;
-      onComplete?.();
+      onCompleteRef.current?.();
     }, SETTLE_MS);
-    // `anchors`/`size`/`springs`/`onComplete` participate by current value,
-    // not as reactive deps — a fresh cycle always reads the latest closure,
-    // same pattern as LiquidTabs' value-change effect.
+    // `anchors`/`springs` participate by current value, not as reactive
+    // deps — a fresh cycle always reads the latest closure, same pattern as
+    // LiquidTabs' value-change effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fire, prefersReducedMotion]);
 
@@ -313,7 +348,7 @@ export function DripFuse({
     const targetR = springs.values[2].get();
 
     const bodies: LiquidBody[] = [
-      { id: "src", x: anchors.sourceX, y: anchors.cy, r: size },
+      { id: "src", x: anchors.sourceX, y: anchors.cy, r: anchors.size },
       { id: "tgt", x: anchors.targetX, y: anchors.cy, r: targetR },
     ];
     if (dripR > 0.5) bodies.push({ id: "drip", x: dripX, y: anchors.cy, r: dripR });
@@ -332,14 +367,14 @@ export function DripFuse({
     // and bump the target — an emergent event detected from the physical
     // state, not scheduled on a timer.
     if (!fused.current && dripR > 0.5) {
-      const stretch = Math.abs(dripX - anchors.targetX) / (dripR + size);
+      const stretch = Math.abs(dripX - anchors.targetX) / (dripR + anchors.size);
       if (stretch < FUSE_CONTACT) {
         fused.current = true;
         springs.setTarget(1, 0, FUSE_DRAIN_SPRING);
         springs.setTarget(2, anchors.bumpR, FUSE_BUMP_SPRING);
         if (bumpTimer.current) clearTimeout(bumpTimer.current);
         bumpTimer.current = setTimeout(() => {
-          springs.setTarget(2, size, SETTLE_BACK_SPRING);
+          springs.setTarget(2, anchors.size, SETTLE_BACK_SPRING);
         }, BUMP_MS);
       }
     }
