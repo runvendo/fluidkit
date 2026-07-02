@@ -170,6 +170,7 @@ export function LiquidTabs({
   const [settling, setSettling] = useState(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevSelected = useRef(selected);
+  const prevFlow = useRef(flow);
 
   // Measure tab boxes + container height. Re-runs on items/size/value change
   // and on resize. jsdom reports 0s (degenerate path until real layout).
@@ -206,6 +207,19 @@ export function LiquidTabs({
     // Reduced motion: always snap, no flow.
     if (prefersReducedMotion) {
       springs.snapTo(flowSpec.rest(toRect, height));
+      return;
+    }
+
+    // Flow changed: useMotionSprings recreated the spring array (different
+    // springCount) at degenerate values. Snap the new springs onto the
+    // current resting pill and abandon any in-flight settle — the previous
+    // flow's transition is meaningless now.
+    const flowChanged = prevFlow.current !== flow;
+    prevFlow.current = flow;
+    if (flowChanged) {
+      springs.snapTo(flowSpec.rest(toRect, height));
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+      setSettling(false);
       return;
     }
 
@@ -357,8 +371,8 @@ export function LiquidTabs({
             }}
             type="button"
             data-fluidkit="liquid-tab"
-            id={`${namespace}-tab-${item.id}`}
-            aria-controls={`${namespace}-panel-${item.id}`}
+            id={ctx ? `${namespace}-tab-${item.id}` : undefined}
+            aria-controls={ctx ? `${namespace}-panel-${item.id}` : undefined}
             aria-label={item.label == null ? item.ariaLabel : undefined}
             {...props}
             style={{

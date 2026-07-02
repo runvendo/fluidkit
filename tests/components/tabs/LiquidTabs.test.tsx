@@ -185,6 +185,16 @@ describe("LiquidTabs (bar)", () => {
       container.querySelector('[data-fluidkit="liquid-tabs"]')?.className
     ).toContain("mine");
   });
+
+  it("omits aria-controls when standalone (no Group panel to point at)", async () => {
+    const LiquidTabs = await loadTabs(false);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} />
+    );
+    const tab = container.querySelector('[data-fluidkit="liquid-tab"]') as HTMLElement;
+    expect(tab.getAttribute("aria-controls")).toBeNull();
+    expect(tab.getAttribute("id")).toBeNull();
+  });
 });
 
 describe("LiquidTabs (bar) — mid-transition re-measure", () => {
@@ -264,5 +274,64 @@ describe("LiquidTabs (bar) — mid-transition re-measure", () => {
     rerender(<LiquidTabs items={items2} value="two" onChange={() => {}} />);
 
     expect(snapTo).not.toHaveBeenCalled();
+  });
+
+  it("re-snaps the recreated springs when the flow prop changes (same selection)", async () => {
+    for (const prop of OFFSETS) {
+      Object.defineProperty(HTMLElement.prototype, prop, {
+        configurable: true,
+        value: OFFSET_VALUES[prop],
+      });
+    }
+
+    vi.resetModules();
+    vi.doMock("motion/react", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("motion/react")>();
+      return { ...actual, useReducedMotion: () => false };
+    });
+
+    const snapTo = vi.fn();
+    const setTargets = vi.fn();
+    const setTarget = vi.fn();
+    vi.doMock("../../../src/liquid/useMotionSprings", () => ({
+      // Return 3 stub values (slide's count); stretch uses 2 — extras are
+      // harmless. Recreated per render regardless of springCount change.
+      useMotionSprings: () => ({
+        values: Array.from({ length: 3 }, () => ({
+          get: () => 0,
+          getVelocity: () => 0,
+        })),
+        snapTo,
+        setTargets,
+        setTarget,
+      }),
+    }));
+
+    const { LiquidTabs } = await import(
+      "../../../src/components/tabs/LiquidTabs"
+    );
+
+    const { rerender } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} flow="slide" />
+    );
+
+    // Kick off a genuine transition so the bar is mid-flow (`settling` true) —
+    // this is the window in which the flow-change bug freezes the indicator,
+    // because the `prev === selected` guard skips the re-snap while settling.
+    rerender(
+      <LiquidTabs items={ITEMS} value="two" onChange={() => {}} flow="slide" />
+    );
+
+    // Ignore snaps up to now; watch only the flow switch.
+    snapTo.mockClear();
+
+    // Same selection, flow changed mid-transition: the recreated springs must
+    // be snapped onto the resting pill, not left frozen at the degenerate
+    // origin until the settle timer fires.
+    rerender(
+      <LiquidTabs items={ITEMS} value="two" onChange={() => {}} flow="stretch" />
+    );
+
+    expect(snapTo).toHaveBeenCalled();
   });
 });
