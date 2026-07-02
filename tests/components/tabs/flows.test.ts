@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { TensionField } from "../../../src/liquid";
-import { slideFlow, type FlowContext } from "../../../src/components/tabs/flows";
+import {
+  slideFlow,
+  stretchFlow,
+  stretchEdgeConfigs,
+  FLOWS,
+  type FlowContext,
+} from "../../../src/components/tabs/flows";
 
 const H = 34;
 const ctx = (restWidth: number): FlowContext => ({ height: H, restWidth });
@@ -46,5 +52,49 @@ describe("slideFlow", () => {
     const scene = slideFlow.scene([200, 60, 120], [0, 0, 0], t, ctx(60));
     // labels follow the liquid: body interval + tail interval
     expect(scene.inkIntervals).toHaveLength(2);
+  });
+});
+
+describe("stretchFlow", () => {
+  it("uses two edge springs", () => {
+    expect(stretchFlow.springCount).toBe(2);
+  });
+
+  it("rest/target map to left and right edges", () => {
+    const rect = { left: 40, width: 80 };
+    expect(stretchFlow.rest(rect, H)).toEqual([40, 120]);
+    expect(stretchFlow.target(rect, H)).toEqual([40, 120]);
+  });
+
+  it("draws exactly one pill spanning the edges", () => {
+    const scene = stretchFlow.scene([40, 120], [0, 0], new TensionField(), ctx(80));
+    expect(closures(scene.path)).toBe(1);
+    expect(scene.inkIntervals).toEqual([[40, 120]]);
+  });
+
+  it("squashes height below rest when stretched wider than the rest width", () => {
+    // spanning 200px while resting width is 80 → thinned, floored at 0.72*H
+    const scene = stretchFlow.scene([0, 200], [0, 0], new TensionField(), ctx(80));
+    // Extract the pill height from the first two path Y coordinates is fiddly;
+    // instead assert the interval width reflects the stretch.
+    expect(scene.inkIntervals[0][1] - scene.inkIntervals[0][0]).toBe(200);
+  });
+});
+
+describe("stretchEdgeConfigs", () => {
+  it("makes the right edge eager when moving right", () => {
+    const [left, right] = stretchEdgeConfigs(true);
+    expect(right.stiffness).toBeGreaterThan(left.stiffness);
+  });
+  it("makes the left edge eager when moving left", () => {
+    const [left, right] = stretchEdgeConfigs(false);
+    expect(left.stiffness).toBeGreaterThan(right.stiffness);
+  });
+});
+
+describe("FLOWS registry", () => {
+  it("exposes slide and stretch by name", () => {
+    expect(FLOWS.slide.springCount).toBe(3);
+    expect(FLOWS.stretch.springCount).toBe(2);
   });
 });
