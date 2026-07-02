@@ -16,6 +16,22 @@ npm install fluidkit react react-dom motion
 
 `react`, `react-dom`, and `motion` are peer dependencies (bring your own shared copy).
 
+### Optional GPU tier
+
+`LiquidMetal` and `WaterField` are real WebGL primitives. They live behind their own subpath exports (`fluidkit/liquid-metal`, `fluidkit/water-field`), not the core `fluidkit` entry, so the core bundle stays GPU-free whether or not you use them. Their GPU libraries are optional peer dependencies: installing fluidkit without them never warns, and importing the core entry never resolves them.
+
+```bash
+npm i @paper-design/shaders-react@0.0.76   # for fluidkit/liquid-metal (pinned exact)
+npm i webgl-fluid-enhanced                 # for fluidkit/water-field
+```
+
+```tsx
+import { LiquidMetal } from "fluidkit/liquid-metal";
+import { WaterField } from "fluidkit/water-field";
+```
+
+See [`docs/primitives/liquid-metal.md`](docs/primitives/liquid-metal.md) and [`docs/primitives/water-field.md`](docs/primitives/water-field.md) for props, fallback behavior, and caveats.
+
 ## Quick start
 
 ```tsx
@@ -53,6 +69,8 @@ function App() {
 | [`DripFuse`](docs/primitives/drip-fuse.md) | A drop tears off a source body, flies, and fuses into a target; one cycle per `fire` | Static bodies, `onComplete` fires instantly |
 | [`MeshGradient`](docs/primitives/mesh-gradient.md) | Ambient CSS backdrop: large blurred radial-gradient blobs drift slowly behind your content | Static blobs at their home position |
 | [`Aurora`](docs/primitives/aurora.md) | Ambient CSS backdrop: blurred horizontal bands drift across the upper portion of the container | Static bands at their home position |
+| [`LiquidMetal`](docs/primitives/liquid-metal.md) | Optional GPU tier: a real WebGL liquid-metal shader (`fluidkit/liquid-metal`) | Static metallic-gradient fallback |
+| [`WaterField`](docs/primitives/water-field.md) | Optional GPU tier: a real WebGL fluid simulation, pointer-interactive (`fluidkit/water-field`) | Static water-gradient fallback |
 
 ### Materials
 
