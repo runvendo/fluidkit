@@ -2,15 +2,17 @@
  * A cluster of liquid drops with surface tension: they drift together,
  * merge through real necks (touch-connect / snap-on-stretch), and split
  * again. Optionally an extra drop chases the pointer and merges with the
- * cluster. Rendered by the liquid engine; the material (glass / mercury /
- * flat) is a prop, not a different component.
+ * cluster (`followPointer`), and drops can be grabbed, dragged out until
+ * the neck tears, and released to spring home (`interactive`). Rendered by
+ * the liquid engine; the material (glass / mercury / flat) is a prop, not a
+ * different component.
  *
  * Reduced motion / off-screen: renders the drops as separate static dots
  * (no bridges, no animation loop).
  */
 
-import type { CSSProperties, HTMLAttributes } from "react";
-import { useEffect, useMemo, useRef } from "react";
+import type { CSSProperties, HTMLAttributes, PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAnimationFrame } from "motion/react";
 import {
   LiquidRenderer,
@@ -54,6 +56,18 @@ export interface DropletsProps extends HTMLAttributes<HTMLDivElement> {
   reflection?: boolean;
   /** An extra drop chases the pointer and merges with the cluster. */
   followPointer?: boolean;
+  /**
+   * Drops can be grabbed with the pointer and dragged out: the neck
+   * stretches, tears off past the snap distance, and the drop springs back
+   * and re-merges on release. Inert under reduced motion.
+   */
+  interactive?: boolean;
+  /** The pointer picked up a drop. */
+  onGrab?: (index: number) => void;
+  /** The dragged drop's last bridge snapped (it tore off the cluster). */
+  onTear?: (index: number) => void;
+  /** The pointer let go — the drop springs home and re-merges. */
+  onRelease?: (index: number) => void;
   /** Deterministic per-instance layout offset. */
   seed?: number;
 }
@@ -65,6 +79,10 @@ const CYCLE_MS = 1500;
 const SQUEEZE = 0.36;
 const DROP_SPRING = { stiffness: 170, damping: 15 };
 const POINTER_SPRING = { stiffness: 120, damping: 13 };
+/** Tight lag while a drop is held — liquid, but clearly in hand. */
+const GRAB_SPRING = { stiffness: 550, damping: 38 };
+/** Hit-test slack so drops are grabbable without pixel precision. */
+const GRAB_SLOP = 1.25;
 /** Radius variation so the cluster reads organic, not gridded. */
 const R_SCALE = [0.95, 1.2, 0.8];
 
@@ -106,6 +124,10 @@ export function Droplets({
   light,
   reflection = true,
   followPointer = false,
+  interactive = false,
+  onGrab,
+  onTear,
+  onRelease,
   seed = 0,
   className,
   style,
@@ -139,6 +161,8 @@ export function Droplets({
   );
   const pointer = useMotionSprings(2, () => -9999, POINTER_SPRING);
   const pointerActive = useRef(false);
+  const [grabbed, setGrabbed] = useState<number | null>(null);
+  const grab = useRef<{ index: number; connected: boolean } | null>(null);
 
   const tension = useRef(new TensionField());
   const phase = useRef(0);
@@ -171,9 +195,11 @@ export function Droplets({
       cycleT.current = 0;
       phase.current = 1 - phase.current;
       const squeeze = phase.current === 1 ? SQUEEZE : 1;
-      springs.setTargets(
-        homes.flatMap((h) => [center + h.x * squeeze, center + h.y * squeeze])
-      );
+      homes.forEach((h, i) => {
+        if (grab.current?.index === i) return; // held drop stays on the pointer
+        springs.setTarget(i * 2, center + h.x * squeeze);
+        springs.setTarget(i * 2 + 1, center + h.y * squeeze);
+      });
     }
     const bodies: LiquidBody[] = homes.map((h, i) => ({
       id: `d${i}`,
@@ -192,12 +218,87 @@ export function Droplets({
     renderer.current?.setScene(
       buildScene(bodies, tension.current, resolved.specular, sceneLight, true)
     );
+    // Tear detection: buildScene just updated the tension hysteresis, so a
+    // held drop that lost its last bridge this frame has torn off.
+    const g = grab.current;
+    if (g) {
+      const connectedNow = tension.current.connectedTo(`d${g.index}`);
+      if (g.connected && !connectedNow) onTear?.(g.index);
+      g.connected = connectedNow;
+    }
   });
+
+  const localPoint = (e: PointerEvent<HTMLDivElement>) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    return { x: e.clientX - box.left, y: e.clientY - box.top };
+  };
+
+  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (!interactive || !animating) return;
+    const p = localPoint(e);
+    for (let i = 0; i < homes.length; i++) {
+      const x = springs.values[i * 2].get();
+      const y = springs.values[i * 2 + 1].get();
+      if (Math.hypot(p.x - x, p.y - y) > homes[i].r * GRAB_SLOP) continue;
+      grab.current = {
+        index: i,
+        connected: tension.current.connectedTo(`d${i}`),
+      };
+      setGrabbed(i);
+      // Hide the chase drop while a drop is in hand.
+      pointerActive.current = false;
+      tension.current.clear((key) => key.includes("you"));
+      try {
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+      } catch {
+        // jsdom / detached nodes — capture is a nicety, not a requirement
+      }
+      springs.setTarget(i * 2, p.x, GRAB_SPRING);
+      springs.setTarget(i * 2 + 1, p.y, GRAB_SPRING);
+      onGrab?.(i);
+      return;
+    }
+  };
+
+  const handlePointerEnd = () => {
+    const g = grab.current;
+    if (!g) return;
+    grab.current = null;
+    setGrabbed(null);
+    const squeeze = phase.current === 1 ? SQUEEZE : 1;
+    const home = homes[g.index];
+    springs.setTarget(g.index * 2, center + home.x * squeeze, DROP_SPRING);
+    springs.setTarget(g.index * 2 + 1, center + home.y * squeeze, DROP_SPRING);
+    onRelease?.(g.index);
+  };
+
+  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const p = localPoint(e);
+    const g = grab.current;
+    if (g) {
+      springs.setTarget(g.index * 2, p.x, GRAB_SPRING);
+      springs.setTarget(g.index * 2 + 1, p.y, GRAB_SPRING);
+      return;
+    }
+    if (!followPointer) return;
+    if (!pointerActive.current) {
+      pointerActive.current = true;
+      pointer.snapTo([p.x, p.y]);
+    } else {
+      pointer.setTargets([p.x, p.y]);
+    }
+  };
 
   const containerStyle: CSSProperties = {
     position: "relative",
     width: side,
     height: side,
+    ...(interactive && animating
+      ? {
+          touchAction: "none",
+          cursor: grabbed != null ? "grabbing" : "grab",
+        }
+      : {}),
     ...style,
   };
 
@@ -208,21 +309,13 @@ export function Droplets({
       style={containerStyle}
       data-fluidkit="droplets"
       data-animating={animating}
+      data-grabbed={grabbed ?? undefined}
+      onPointerDown={interactive ? handlePointerDown : undefined}
       onPointerMove={
-        followPointer
-          ? (e) => {
-              const box = e.currentTarget.getBoundingClientRect();
-              const x = e.clientX - box.left;
-              const y = e.clientY - box.top;
-              if (!pointerActive.current) {
-                pointerActive.current = true;
-                pointer.snapTo([x, y]);
-              } else {
-                pointer.setTargets([x, y]);
-              }
-            }
-          : undefined
+        interactive || followPointer ? handlePointerMove : undefined
       }
+      onPointerUp={interactive ? handlePointerEnd : undefined}
+      onPointerCancel={interactive ? handlePointerEnd : undefined}
       onPointerLeave={
         followPointer
           ? () => {

@@ -31,6 +31,8 @@ export type SpringConfigResolver =
 export interface MotionSprings {
   values: MotionValue<number>[];
   setTargets(targets: readonly number[], config?: SpringConfig): void;
+  /** Retarget ONE slot, leaving the other slots' animations running. */
+  setTarget(index: number, target: number, config?: SpringConfig): void;
   snapTo(targets: readonly number[]): void;
 }
 
@@ -53,6 +55,13 @@ export function useMotionSprings(
             ...(override ?? resolve(i)),
           })
         );
+      },
+      setTarget(index, target, override) {
+        animations.current[index]?.stop();
+        animations.current[index] = animate(values[index], target, {
+          type: "spring",
+          ...(override ?? resolve(index)),
+        });
       },
       snapTo(targets) {
         animations.current.forEach((a) => a.stop());
