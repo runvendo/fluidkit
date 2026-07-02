@@ -11,11 +11,15 @@ const ITEMS: TabListItem[] = [
 function Harness({
   value,
   onChange,
+  onNavigate,
+  orientation,
 }: {
   value: string;
   onChange: (id: string) => void;
+  onNavigate?: (id: string) => void;
+  orientation?: "horizontal" | "vertical";
 }) {
-  const list = useTabList({ items: ITEMS, value, onChange });
+  const list = useTabList({ items: ITEMS, value, onChange, onNavigate, orientation });
   return (
     <div>
       {ITEMS.map((item, i) => (
@@ -83,5 +87,34 @@ describe("useTabList", () => {
     const { getByTestId } = render(<Harness value="a" onChange={onChange} />);
     fireEvent.click(getByTestId("c"));
     expect(onChange).toHaveBeenCalledWith("c");
+  });
+
+  it("onNavigate fires with the target id on ArrowRight (skipping disabled)", () => {
+    const onNavigate = vi.fn();
+    const { getByTestId } = render(
+      <Harness value="a" onChange={() => {}} onNavigate={onNavigate} />
+    );
+    fireEvent.keyDown(getByTestId("a"), { key: "ArrowRight" });
+    expect(onNavigate).toHaveBeenCalledWith("c"); // skipped disabled "b"
+  });
+
+  it("onNavigate does not fire on click", () => {
+    const onNavigate = vi.fn();
+    const { getByTestId } = render(
+      <Harness value="a" onChange={() => {}} onNavigate={onNavigate} />
+    );
+    fireEvent.click(getByTestId("c"));
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("vertical orientation: ArrowDown moves to the next enabled tab, ArrowRight does nothing", () => {
+    const onChange = vi.fn();
+    const { getByTestId } = render(
+      <Harness value="a" onChange={onChange} orientation="vertical" />
+    );
+    fireEvent.keyDown(getByTestId("a"), { key: "ArrowRight" });
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(getByTestId("a"), { key: "ArrowDown" });
+    expect(onChange).toHaveBeenCalledWith("c"); // skipped disabled "b"
   });
 });

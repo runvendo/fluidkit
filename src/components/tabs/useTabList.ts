@@ -1,11 +1,15 @@
 /**
  * Keyboard + ARIA behavior for the tab strip.
  *
- * Automatic activation (WAI-ARIA tabs pattern): Arrow/Home/End move focus AND
+ * Automatic activation (WAI-ARIA tabs pattern): Arrow/Home/End change the
  * selection, skipping disabled tabs and wrapping at the ends. The selected tab
  * owns the roving tabindex (0); the rest are -1 so Tab enters/leaves the strip
  * as a single stop. Enter/Space are no-ops here — the selected tab is already
  * active — but are swallowed so the page doesn't scroll on Space.
+ *
+ * The hook never touches the DOM (no refs, no focus() calls). Keyboard moves
+ * are reported via `onNavigate` so the caller (the LiquidTabs bar) can move
+ * DOM focus to the newly-selected tab button.
  */
 
 import type { KeyboardEvent } from "react";
@@ -19,6 +23,13 @@ export interface UseTabListOptions {
   items: readonly TabListItem[];
   value: string;
   onChange: (id: string) => void;
+  /**
+   * Fires only on keyboard navigation (Arrow/Home/End) with the id of the
+   * newly-selected enabled tab. The caller uses it to move DOM focus to that
+   * tab's button — the hook itself never touches the DOM. Not called on click
+   * (a native click already moves focus).
+   */
+  onNavigate?: (id: string) => void;
   orientation?: "horizontal" | "vertical";
 }
 
@@ -64,6 +75,7 @@ export function useTabList({
   items,
   value,
   onChange,
+  onNavigate,
   orientation = "horizontal",
 }: UseTabListOptions): UseTabListResult {
   const nextKey = orientation === "vertical" ? "ArrowDown" : "ArrowRight";
@@ -71,7 +83,10 @@ export function useTabList({
 
   function select(index: number): void {
     const item = items[index];
-    if (item && !item.disabled) onChange(item.id);
+    if (item && !item.disabled) {
+      onChange(item.id);
+      onNavigate?.(item.id);
+    }
   }
 
   return {
