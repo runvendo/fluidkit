@@ -30,6 +30,7 @@ import type {
 import { useMotionSprings } from "../liquid/useMotionSprings";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
+/** A width x height pair in px, for `MorphSurface`'s closed/open states. */
 export interface MorphSize {
   width: number;
   height: number;
@@ -39,12 +40,17 @@ export interface MorphSurfaceProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
   /** Controlled state: false = pill, true = panel. */
   open: boolean;
+  /** Pill size in px. Defaults to `{ width: 150, height: 46 }`. */
   closedSize?: MorphSize;
+  /** Panel size in px. Defaults to `{ width: 250, height: 200 }`. */
   openSize?: MorphSize;
   /** Corner radius of the open panel (the pill is always fully rounded). */
   radius?: number;
+  /** Rendered material. Defaults to `"glass"`. */
   material?: LiquidMaterial;
+  /** Glass tint (translucent white by default). */
   tint?: string;
+  /** Flat-material fill color. */
   color?: string;
   /** Scene light; null disables speculars. */
   light?: Vec | null;
@@ -82,6 +88,11 @@ interface Sat {
   park: number;
 }
 
+/**
+ * One liquid body that morphs between a closed pill and an open panel, with
+ * optional satellite droplets absorbed through real bridges on open. Content
+ * faces only cross-fade — text never scales. See the file doc for details.
+ */
 export function MorphSurface({
   open,
   closedSize = DEFAULT_CLOSED,

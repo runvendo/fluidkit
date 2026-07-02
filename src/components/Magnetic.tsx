@@ -72,6 +72,11 @@ const DEFAULT_STRENGTH = 0.3;
 const DEFAULT_RADIUS = 120;
 const DEFAULT_SPRING: SpringConfig = { stiffness: 200, damping: 20 };
 
+/**
+ * Behavior wrapper that pulls its child toward the pointer within `radius`
+ * px of its center (linear falloff, travel hard-capped at `radius / 2`) and
+ * springs back outside it. No liquid surface. See the file doc for details.
+ */
 export function Magnetic({
   strength = DEFAULT_STRENGTH,
   radius = DEFAULT_RADIUS,

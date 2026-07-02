@@ -39,7 +39,6 @@ describe("Droplets refraction opt-in", () => {
     vi.doMock("../../src/utils/featureDetect", () => ({
       supportsBackdropFilter: () => true,
       supportsRefraction: () => true,
-      supportsViewTransition: () => false,
     }));
     const mod = await import("../../src/components/Droplets");
     return mod.Droplets;

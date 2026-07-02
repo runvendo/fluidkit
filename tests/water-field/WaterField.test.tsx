@@ -56,9 +56,11 @@ async function loadWaterField(reducedMotion: boolean, webglSupported: boolean) {
     const actual = await importOriginal<typeof import("motion/react")>();
     return { ...actual, useReducedMotion: () => reducedMotion };
   });
-  vi.doMock("../../src/utils/supportsWebGL", () => ({
-    supportsWebGL: () => webglSupported,
-  }));
+  vi.doMock("../../src/utils/featureDetect", async (importOriginal) => {
+    const actual =
+      await importOriginal<typeof import("../../src/utils/featureDetect")>();
+    return { ...actual, supportsWebGL: () => webglSupported };
+  });
   const mod = await import("../../src/water-field/index");
   return mod.WaterField;
 }
@@ -78,9 +80,11 @@ async function loadWaterFieldWithMutableMotion(webglSupported: boolean) {
     const actual = await importOriginal<typeof import("motion/react")>();
     return { ...actual, useReducedMotion: () => motionBox.reducedMotion };
   });
-  vi.doMock("../../src/utils/supportsWebGL", () => ({
-    supportsWebGL: () => webglSupported,
-  }));
+  vi.doMock("../../src/utils/featureDetect", async (importOriginal) => {
+    const actual =
+      await importOriginal<typeof import("../../src/utils/featureDetect")>();
+    return { ...actual, supportsWebGL: () => webglSupported };
+  });
   const mod = await import("../../src/water-field/index");
   return { WaterField: mod.WaterField, motionBox };
 }
@@ -129,7 +133,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.doUnmock("motion/react");
-  vi.doUnmock("../../src/utils/supportsWebGL");
+  vi.doUnmock("../../src/utils/featureDetect");
   vi.resetModules();
   vi.unstubAllGlobals();
 });

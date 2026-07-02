@@ -67,7 +67,7 @@ import {
 } from "@paper-design/shaders-react";
 import { resolveColor, useInView, usePrefersReducedMotion } from "../utils";
 import { MIN_SPEED } from "../utils/constants";
-import { supportsWebGL } from "../utils/supportsWebGL";
+import { supportsWebGL } from "../utils/featureDetect";
 
 export interface LiquidMetalProps extends HTMLAttributes<HTMLDivElement> {
   /** Metal highlight/overlay color. Maps to the shader's `colorTint`. Defaults to `"#ffffff"` (the shader's own default). */
@@ -97,6 +97,12 @@ const DEFAULT_BACK = "#AAAAAC";
 /** Mirrors the shader's own `defaultPreset.params.distortion`. */
 const DEFAULT_INTENSITY = 0.07;
 
+/**
+ * Optional GPU tier (`fluidkit/liquid-metal`): a real WebGL liquid-metal
+ * shader with fluidkit's capability + motion gating and off-screen pausing.
+ * No WebGL or reduced motion renders a static metallic-gradient fallback;
+ * the shader never mounts. See the file doc for details.
+ */
 export function LiquidMetal({
   color,
   backgroundColor,

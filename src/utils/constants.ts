@@ -6,9 +6,9 @@
  * without `Math.random`/`Date.now` (which would break SSR determinism and
  * render-to-render stability).
  *
- * Droplets keeps its own copies of these numbers; they're intentionally not
- * imported from here to avoid coupling an already-shipped component to this
- * newer shared module.
+ * Droplets keeps its own copies of the golden-angle numbers (its `dropAngle`
+ * predates this module); it does share `MIN_SPEED`, which is the one
+ * contract-level constant here (the `speed` prop's clamp floor).
  */
 
 /** Golden angle in radians (~137.5°), used to spread indexed items around a circle. */

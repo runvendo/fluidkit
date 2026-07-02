@@ -51,6 +51,12 @@ const GLASS_RIPPLE_STYLE: CSSProperties = {
   boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.45)",
 };
 
+/**
+ * Material-style water ripple: expands from the pointer's tap/click position
+ * and fades out, clipped to the surface's box and border-radius. `material`
+ * here is the two-value subset `"flat" | "glass"` (no mercury ripple).
+ * Under reduced motion no ripple ever spawns.
+ */
 export function Ripple({
   color,
   duration,

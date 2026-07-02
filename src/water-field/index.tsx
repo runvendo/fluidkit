@@ -125,7 +125,7 @@ import type { CSSProperties, HTMLAttributes } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import WebGLFluidEnhanced from "webgl-fluid-enhanced";
 import { resolveColor, useInView, usePrefersReducedMotion } from "../utils";
-import { supportsWebGL } from "../utils/supportsWebGL";
+import { supportsWebGL } from "../utils/featureDetect";
 
 /**
  * The installed package doesn't export its config type (`Config`/
@@ -163,6 +163,13 @@ const DEFAULT_INTENSITY = 0.6;
 /** Cool, restrained water-like duo used for the fallback gradient and as the default palette anchor. */
 const DEFAULT_COLORS: readonly [string, string] = ["#a8dadc", "#1d3557"];
 
+/**
+ * Optional GPU tier (`fluidkit/water-field`): a real WebGL fluid simulation
+ * (pointer-interactive splats) with fluidkit's capability + motion gating,
+ * off-screen pausing, and unmount teardown. No WebGL or reduced motion
+ * renders a static water-gradient fallback; the sim is never constructed.
+ * See the file doc for details.
+ */
 export function WaterField({
   colors,
   intensity = DEFAULT_INTENSITY,

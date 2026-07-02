@@ -134,6 +134,12 @@ function layoutBands(colors: string[], speed: number, intensity: number): Band[]
   });
 }
 
+/**
+ * Ambient background layer: slow-drifting, heavily blurred horizontal bands
+ * composited via `blend` (default `"screen"`; use `"normal"`/`"multiply"`
+ * on light surfaces), pure CSS. Place it inside a `position: relative`
+ * parent. See the file doc for details.
+ */
 export function Aurora({
   colors = DEFAULT_COLORS,
   intensity = 0.6,

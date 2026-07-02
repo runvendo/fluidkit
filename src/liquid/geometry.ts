@@ -10,6 +10,7 @@
  * "neck".
  */
 
+/** A 2D point in px — the shape of every component's `light` prop. */
 export interface Vec {
   x: number;
   y: number;

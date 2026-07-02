@@ -98,6 +98,11 @@ function buildJellyScene(
   return { path, speculars };
 }
 
+/**
+ * A pill-shaped engine button that squashes on press via GEOMETRY, not a
+ * CSS transform, so the label never scales. Real `<button>` semantics
+ * (focus, Enter/Space, disabled). See the file doc for details.
+ */
 export function JellyButton({
   material = "glass",
   tint,

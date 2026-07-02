@@ -67,6 +67,11 @@ const RISE_Y_PX = 12;
 const HIDDEN_BLUR = "blur(2px)";
 const VISIBLE_BLUR = "blur(0px)";
 
+/**
+ * Headless stagger primitive behind `<FlowStagger>`: returns `containerProps`
+ * and `itemProps` prop bags to spread onto Motion elements for the staggered
+ * rise/un-blur entrance with FLIP glides. See the file doc for details.
+ */
 export function useFlow({
   stagger = DEFAULT_STAGGER_S,
   transition,

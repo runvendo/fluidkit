@@ -12,6 +12,7 @@
 import type { CSSProperties } from "react";
 import { supportsBackdropFilter } from "../utils/featureDetect";
 
+/** How an engine body renders: clear glass, solid mercury, or a flat fill. */
 export type LiquidMaterial = "glass" | "mercury" | "flat";
 
 export interface ResolveMaterialOptions {

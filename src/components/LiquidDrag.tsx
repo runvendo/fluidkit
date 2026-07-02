@@ -142,6 +142,12 @@ export function velocityToStretch(
   return { scaleX, scaleY: 1 / scaleX };
 }
 
+/**
+ * Motion's own drag gesture plus a velocity-driven, volume-preserving
+ * stretch that wobbles back to rest on release. `elasticity={0}` and
+ * reduced motion pin the scales at exactly 1 while dragging stays
+ * functional. See the file doc for details.
+ */
 export function LiquidDrag({
   elasticity = DEFAULT_ELASTICITY,
   axis,

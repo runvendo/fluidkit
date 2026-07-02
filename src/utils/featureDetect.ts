@@ -38,14 +38,34 @@ export function supportsRefraction(): boolean {
   );
 }
 
-/** Whether the View Transitions API (`document.startViewTransition`) is available. */
-export function supportsViewTransition(): boolean {
+/**
+ * Whether the current environment can create a WebGL rendering context.
+ *
+ * Internal (not exported from the utils barrel): gates the GPU-tier
+ * primitives (`fluidkit/liquid-metal`, `fluidkit/water-field`) so they never
+ * boot a shader/simulation on a device or browser that can't run one.
+ *
+ * The probe result is cached at module level after the first real probe:
+ * browsers cap the number of live WebGL contexts per page (evicting the
+ * oldest when the cap is exceeded), so creating a throwaway probe context
+ * for every mounted GPU component would needlessly burn slots. Capability
+ * doesn't change within a page load, so one probe is enough. Detection
+ * stays lazy — nothing runs until the first component actually asks. The
+ * SSR `false` (no `document`) is deliberately NOT cached, so the same
+ * module instance answers correctly if `document` appears later.
+ */
+let cachedWebGLResult: boolean | undefined;
+
+export function supportsWebGL(): boolean {
+  if (cachedWebGLResult !== undefined) return cachedWebGLResult;
   try {
-    return (
-      typeof document !== "undefined" &&
-      typeof document.startViewTransition === "function"
+    if (typeof document === "undefined") return false;
+    const canvas = document.createElement("canvas");
+    cachedWebGLResult = !!(
+      canvas.getContext("webgl2") || canvas.getContext("webgl")
     );
   } catch {
-    return false;
+    cachedWebGLResult = false;
   }
+  return cachedWebGLResult;
 }

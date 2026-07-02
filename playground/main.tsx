@@ -15,7 +15,7 @@ import {
   Ripple,
   Thinking,
 } from "../src/index";
-import type { LiquidMaterial } from "../src/liquid";
+import type { LiquidMaterial } from "../src/index";
 // The optional GPU tier lives behind its own subpath exports, not the core
 // entry above — imported here exactly as a consumer would write it
 // (`fluidkit/liquid-metal` / `fluidkit/water-field`), resolved by the

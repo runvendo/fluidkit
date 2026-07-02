@@ -232,6 +232,12 @@ function anchorStyle(x: number, y: number): CSSProperties {
   return { position: "absolute", left: x, top: y, transform: "translate(-50%, -50%)" };
 }
 
+/**
+ * One-shot liquid transfer: a drop swells off a source body, tears free,
+ * springs to a target, and fuses in. Triggered by any change to the `fire`
+ * counter; rapid fires coalesce into one cycle and one `onComplete`.
+ * Reduced motion completes instantly. See the file doc for details.
+ */
 export function DripFuse({
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,

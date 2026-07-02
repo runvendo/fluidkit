@@ -32,6 +32,7 @@ import type {
 } from "../liquid";
 import { useMotionSprings } from "../liquid/useMotionSprings";
 import { useInView, usePrefersReducedMotion } from "../utils";
+import { MIN_SPEED } from "../utils/constants";
 
 export interface DropletsProps extends HTMLAttributes<HTMLDivElement> {
   /** Number of drops in the cluster. */
@@ -40,7 +41,9 @@ export interface DropletsProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
   /** Px extent the cluster spreads across. */
   spread?: number;
-  /** Merge/split cycle speed multiplier. */
+  /** Merge/split cycle speed multiplier. Defaults to `1`; clamped with the
+   * shared `MIN_SPEED` floor (same contract as the ambient backgrounds), so
+   * `0`/negative values read as "as slow as possible", never wedged. */
   speed?: number;
   /** Rendered material. */
   material?: LiquidMaterial;
@@ -120,6 +123,12 @@ function layoutHomes(
   });
 }
 
+/**
+ * A cluster of liquid drops with surface tension: they drift, merge through
+ * real necks, and split again. Optional pointer chasing (`followPointer`)
+ * and grab/tear/re-merge interaction (`interactive`). See the file doc for
+ * the full behavior contract.
+ */
 export function Droplets({
   count = DEFAULT_COUNT,
   size = DEFAULT_SIZE,
@@ -201,9 +210,11 @@ export function Droplets({
     if (!animating) renderer.current?.setScene(staticScene);
   }, [animating, staticScene]);
 
+  const clampedSpeed = Math.max(speed, MIN_SPEED);
+
   useAnimationFrame((_, delta) => {
     if (!animating) return;
-    cycleT.current += delta * speed;
+    cycleT.current += delta * clampedSpeed;
     if (cycleT.current > CYCLE_MS) {
       cycleT.current = 0;
       phase.current = 1 - phase.current;

@@ -21,6 +21,11 @@ export interface TabPanelProps {
   children: ReactNode;
 }
 
+/**
+ * Content panel bound to a tab by id (exposed as `LiquidTabs.Panel`). Only
+ * the active panel renders; content cross-fades on switch (hard swap under
+ * reduced motion). Renders nothing outside a `LiquidTabs.Group`.
+ */
 export function TabPanel({ id, children }: TabPanelProps) {
   const ctx = useTabsContext();
   const prefersReducedMotion = usePrefersReducedMotion();

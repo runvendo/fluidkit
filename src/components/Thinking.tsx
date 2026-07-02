@@ -13,6 +13,11 @@ export interface ThinkingProps
   label?: string;
 }
 
+/**
+ * Organic "working" indicator: a `Droplets` preset (three drops, brisker
+ * cycle) carrying `role="status"` and an accessible `label`. Renders a
+ * `Droplets` root, so its `data-fluidkit` attribute reads `"droplets"`.
+ */
 export function Thinking({
   label = "Thinking",
   size = 18,

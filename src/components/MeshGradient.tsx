@@ -105,6 +105,11 @@ function layoutBlobs(colors: string[], speed: number): Blob[] {
   });
 }
 
+/**
+ * Ambient background layer: large, softly blurred radial-gradient blobs
+ * drifting slowly behind content, pure CSS (zero per-frame JS). Place it
+ * inside a `position: relative` parent. See the file doc for details.
+ */
 export function MeshGradient({
   colors = DEFAULT_COLORS,
   speed = 1,

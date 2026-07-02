@@ -86,6 +86,12 @@ export interface UseSquishResult {
   pressed: boolean;
 }
 
+/**
+ * Headless press-squash primitive: volume-preserving `scaleX`/`scaleY`
+ * Motion values plus the pointer/keyboard handlers that drive them, for
+ * jelly-pressing arbitrary elements via CSS transform. Under reduced motion
+ * pressing is inert. See the file doc for details.
+ */
 export function useSquish({
   intensity = DEFAULT_INTENSITY,
   spring = DEFAULT_SPRING,

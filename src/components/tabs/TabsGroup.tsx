@@ -37,10 +37,16 @@ export interface TabsGroupProps {
   value?: string;
   /** Uncontrolled initial selected id. */
   defaultValue?: string;
+  /** Fires with the newly-selected tab id. */
   onChange?: (id: string) => void;
   children: ReactNode;
 }
 
+/**
+ * Shared tab state for a `LiquidTabs` bar and its `TabPanel`s (exposed as
+ * `LiquidTabs.Group`). Owns the selected value and the id namespace used
+ * for aria-controls / aria-labelledby wiring.
+ */
 export function TabsGroup({
   value,
   defaultValue,

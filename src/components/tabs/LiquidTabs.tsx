@@ -39,7 +39,11 @@ import { mixColor, tabCoverage, type RGB } from "./tint";
 import { useTabList } from "./useTabList";
 import { useTabsContext } from "./TabsGroup";
 
+/** Indicator material: `"ink"` (opaque pill, tinted labels) or `"glass"`.
+ * Deliberately narrower than the engine's `LiquidMaterial` — an ink tab
+ * indicator is not a liquid-body material. */
 export type LiquidTabsMaterial = "ink" | "glass";
+/** Tab strip sizing preset. */
 export type LiquidTabsSize = "sm" | "md" | "lg";
 
 export interface LiquidTabsItem {
@@ -50,19 +54,26 @@ export interface LiquidTabsItem {
   icon?: ReactNode;
   /** Accessible name for icon-only tabs. */
   ariaLabel?: string;
+  /** Disabled tabs render dimmed, are skipped by keyboard navigation, and
+   * never become selected. */
   disabled?: boolean;
 }
 
 export interface LiquidTabsProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "onChange" | "defaultValue"> {
+  /** The tabs, in order. */
   items: LiquidTabsItem[];
   /** Controlled active id. */
   value?: string;
   /** Uncontrolled initial active id. */
   defaultValue?: string;
+  /** Fires with the newly-selected tab id (click or keyboard). */
   onChange?: (id: string) => void;
+  /** Indicator travel choreography. Defaults to `"slide"`. */
   flow?: FlowName;
+  /** Indicator material. Defaults to `"ink"`. */
   material?: LiquidTabsMaterial;
+  /** Sizing preset. Defaults to `"md"`. */
   size?: LiquidTabsSize;
   /** Ink color (ignored by the glass material). Defaults to `currentColor`. */
   color?: string;
@@ -108,6 +119,12 @@ const sameRects = (
   return true;
 };
 
+/**
+ * The flagship liquid tab strip: a `role="tablist"` bar whose active-tab
+ * indicator is an engine body that flows between tabs (`flow`), with
+ * WAI-ARIA keyboard navigation. Compose with `LiquidTabs.Group` and
+ * `LiquidTabs.Panel` for wired panels. See the file doc for details.
+ */
 export function LiquidTabs({
   items,
   value,

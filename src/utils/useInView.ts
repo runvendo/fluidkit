@@ -22,6 +22,12 @@ export interface UseInViewResult<T extends Element> {
   inView: boolean;
 }
 
+/**
+ * Watches a DOM node with IntersectionObserver and reports whether it's in
+ * view — fluidkit's shared off-screen pause gate. Defaults to `true` when
+ * IntersectionObserver is unavailable (SSR, old browsers), so primitives
+ * animate rather than freeze.
+ */
 export function useInView<T extends Element = Element>(
   options?: IntersectionObserverInit
 ): UseInViewResult<T> {

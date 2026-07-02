@@ -43,6 +43,11 @@ export interface FlowStaggerProps
   style?: CSSProperties;
 }
 
+/**
+ * Staggered rise + un-blur + settle entrance for a list of children, with
+ * Motion FLIP glides on add/remove/reorder. Reduced motion collapses to a
+ * simultaneous fade. See the file doc for details.
+ */
 export function FlowStagger({
   stagger,
   transition,

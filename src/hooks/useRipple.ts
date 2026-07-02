@@ -56,6 +56,11 @@ export interface UseRippleResult {
 
 const DEFAULT_DURATION_MS = 600;
 
+/**
+ * Headless primitive behind `<Ripple>`: owns the ripple lifecycle (spawn on
+ * pointer down, `remove` once the caller's exit animation finishes) but
+ * renders nothing itself. Under reduced motion no ripple ever spawns.
+ */
 export function useRipple({
   color,
   duration = DEFAULT_DURATION_MS,

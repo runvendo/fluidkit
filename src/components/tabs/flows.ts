@@ -138,6 +138,8 @@ export function stretchEdgeConfigs(
   return movingRight ? [lazy, eager] : [eager, lazy];
 }
 
+/** Indicator travel choreography: `"slide"` (droplet with a lagging tail)
+ * or `"stretch"` (taffy pill spanning two edge springs). */
 export type FlowName = "slide" | "stretch";
 
 export const FLOWS: Record<FlowName, Flow> = {

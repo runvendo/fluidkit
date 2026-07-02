@@ -18,6 +18,7 @@ import { animate, motionValue } from "motion/react";
 
 type PlaybackControls = ReturnType<typeof animate>;
 
+/** Spring tuning for the `spring` props (Magnetic, LiquidDrag, useSquish). */
 export interface SpringConfig {
   stiffness: number;
   damping: number;
