@@ -1,5 +1,7 @@
 # fluidkit
 
+[![CI](https://github.com/yousefh409/fluidkit/actions/workflows/ci.yml/badge.svg)](https://github.com/yousefh409/fluidkit/actions/workflows/ci.yml)
+
 A React library of liquid UI animations built on one idea: **one liquid engine, swappable materials.** Shapes are real metaball geometry (computed bezier bridges applied as a live `clip-path`), motion is spring-driven with surface tension (drops connect on touch, stretch, and snap), and the same shape renders as clear glass, mercury, or a flat fill via a `material` prop. Built on top of [Motion](https://motion.dev).
 
 ## The core principle
@@ -80,6 +82,16 @@ The playground doubles as the public docs site: hero, live demos, controls, and 
 
 - Design spec: [`docs/superpowers/specs/2026-07-01-liquid-engine-design.md`](docs/superpowers/specs/2026-07-01-liquid-engine-design.md)
 - Changelog: [`CHANGELOG.md`](CHANGELOG.md)
+
+## Development
+
+- `npm test` — Run tests
+- `npm run typecheck` — Type check the library
+- `npm run size` — Check bundle size (8.7 kB brotli budget via size-limit)
+- `npm run check:gpu-leak` — Guard against GPU dependencies
+- `npm run check:pack` — Verify npm pack contents
+
+All guards run in CI (Node 20 and 24).
 
 ## License
 

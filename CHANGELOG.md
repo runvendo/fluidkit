@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **CI on GitHub Actions.** Runs `typecheck`, `test`, `build`, `size` (bundle budget), `check:gpu-leak` (core-bundle guard), and `check:pack` (verify npm contents) on Node 20 and 24.
+- **Bundle-size budget.** 8.7 kB brotli on the core entry via size-limit; enforced in CI.
+- **GPU dependency guard.** Core bundle verified free of GPU dependencies to support the upcoming optional GPU tier.
+- **npm pack verification.** Guard ensures pack contents match expectations; runs in CI.
+- **MIT LICENSE file added.**
+
 ## 0.3.0
 
 - **LiquidTabs on the liquid engine.** The indicator is now an engine body: on tab change the old pill drains while the new one fills, a metaball tension bridge stretches between them, snaps free past the snap distance, and the new pill settles on a taut spring. Labels stay on an unfiltered sibling layer; reduced motion snaps instantly.
