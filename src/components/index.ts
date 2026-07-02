@@ -1,6 +1,8 @@
 // Public components will be re-exported from here as they are implemented.
 export { Droplets } from "./Droplets";
 export type { DropletsProps } from "./Droplets";
+export { Thinking } from "./Thinking";
+export type { ThinkingProps } from "./Thinking";
 export { Metaballs } from "./Metaballs";
 export type { MetaballsProps } from "./Metaballs";
 export { MorphSurface } from "./MorphSurface";
