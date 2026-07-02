@@ -182,13 +182,30 @@ function ThinkingDemo() {
 
 function TabsDemo() {
   const [value, setValue] = useState("chat");
-  return <Card id="liquid-tabs" title="LiquidTabs" desc="The indicator is an engine body: mass drains from the old tab, flows across a tension bridge, snaps free, and settles taut. Labels stay crisp on their own layer." hint="click a tab — watch the mass flow" wall
+  const [flow, setFlow] = useState<"slide" | "stretch">("slide");
+  const [material, setMaterial] = useState<"ink" | "glass">("ink");
+  const [size, setSize] = useState<"sm" | "md" | "lg">("md");
+  const [disableOne, setDisableOne] = useState(false);
+  const items = [
+    { id: "chat", label: "Chat" },
+    { id: "automations", label: "Automations", disabled: disableOne },
+    { id: "connections", label: "Connections" },
+  ];
+  return <Card id="liquid-tabs" title="LiquidTabs" desc="The active indicator is a liquid engine body that flows between tabs; label color tracks how much ink covers each tab, and the labels stay crisp on their own layer." hint="click a tab — try each flow and material" wall
     code={`<LiquidTabs
   items={[{ id: "chat", label: "Chat" }, { id: "files", label: "Files" }]}
-  value={value}
-  onChange={setValue}
+  defaultValue="chat"
+  flow="${flow}"
+  material="${material}"
+  size="${size}"
 />`}
-    stage={<LiquidTabs value={value} onChange={setValue} color="#23242c" items={[{ id: "chat", label: "Chat" }, { id: "automations", label: "Automations" }, { id: "connections", label: "Connections" }]} style={{ display: "flex", gap: 4, padding: 5, borderRadius: 999, background: "rgba(255,255,255,.55)", backdropFilter: "blur(14px) saturate(1.6)", WebkitBackdropFilter: "blur(14px) saturate(1.6)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.6), 0 10px 28px rgba(46,44,72,.16)" }} />} />;
+    stage={<LiquidTabs value={value} onChange={setValue} flow={flow} material={material} size={size} color="#23242c" items={items} />}
+    controls={<>
+      <Seg label="flow" value={flow} set={setFlow} options={["slide", "stretch"]} />
+      <Seg label="material" value={material} set={setMaterial} options={["ink", "glass"]} />
+      <Seg label="size" value={size} set={setSize} options={["sm", "md", "lg"]} />
+      <Toggle label="disable Automations" value={disableOne} set={setDisableOne} />
+    </>} />;
 }
 
 function FlowDemo() {
