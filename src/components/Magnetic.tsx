@@ -9,21 +9,28 @@
  * a magnet has to feel the pointer approaching before it's ever touched,
  * and a hover/pointermove handler on the element only fires once the
  * pointer is already inside its box. The listener computes the pointer's
- * distance to the element's center via `getBoundingClientRect()` on every
+ * distance to the element's HOME center: `getBoundingClientRect()` on every
  * move (deliberately not cached across frames — correct under scroll,
- * simple, and cheap enough at pointermove frequency) and retargets two
- * springs (`x`, `y`) that ride directly on the wrapper's `motion.div`
- * style. Motion animates those springs on its own frame loop, so the
- * component itself never re-renders while the pointer moves — React commits
- * happen only when props change, never per pointermove (see the Profiler
+ * simple, and cheap enough at pointermove frequency) measures the
+ * TRANSLATED box, so the current spring offsets are subtracted back out.
+ * Without that correction each retarget would compute from an
+ * already-moved center — a feedback loop that weakens the pull and wobbles
+ * at the radius edge. The pull is a pure function of pointer vs. home.
+ * The two springs (`x`, `y`) ride directly on the wrapper's `motion.div`
+ * style; Motion animates them on its own frame loop, so the component
+ * itself never re-renders while the pointer moves — React commits happen
+ * only when props change, never per pointermove (see the Profiler
  * constraint test).
  *
  * Only attached while `!prefersReducedMotion && inView` (an off-screen or
- * reduced-motion instance costs nothing and pulls nothing). The listener is
- * created and torn down entirely inside an effect, so nothing touches
+ * reduced-motion instance costs nothing and pulls nothing). The listeners
+ * are created and torn down entirely inside an effect, so nothing touches
  * `window` at import or initial render — SSR-safe. Losing tracking context
- * (pointer leaves the window, or a mid-gesture `pointercancel`) snaps the
- * target back to rest, same as being outside `radius`.
+ * (pointer leaves the window — `pointerout` with a null `relatedTarget` —
+ * window blur, or a mid-gesture `pointercancel`) retargets back to rest,
+ * same as being outside `radius`; and when the gate itself flips off
+ * (reduced motion turning on, scrolling off-screen) the offsets snap home
+ * so the element never freezes displaced.
  */
 
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
@@ -107,9 +114,12 @@ export function Magnetic({
       const node = nodeRef.current;
       if (!node) return;
 
+      // The rect measures the TRANSLATED box (the transform moves it), so
+      // subtract the current offsets to recover the untranslated home
+      // center — the pull must be a pure function of pointer vs. home.
       const rect = node.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
+      const cx = rect.left + rect.width / 2 - offset.values[0].get();
+      const cy = rect.top + rect.height / 2 - offset.values[1].get();
       const dx = e.clientX - cx;
       const dy = e.clientY - cy;
       const dist = Math.hypot(dx, dy);
@@ -137,15 +147,38 @@ export function Magnetic({
       retarget(tx, ty);
     }
 
-    window.addEventListener("pointermove", handlePointerMove);
+    // The pointer leaving the window entirely fires `pointerout` on the
+    // last element with a null `relatedTarget`; an in-page element hop
+    // always carries the element being entered, so those pass through.
+    function handlePointerOut(e: PointerEvent) {
+      if (e.relatedTarget === null) reset();
+    }
+
+    // Passive hint: the handler never calls preventDefault.
+    window.addEventListener("pointermove", handlePointerMove, {
+      passive: true,
+    });
+    window.addEventListener("pointerout", handlePointerOut);
     window.addEventListener("blur", reset);
     window.addEventListener("pointercancel", reset);
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerout", handlePointerOut);
       window.removeEventListener("blur", reset);
       window.removeEventListener("pointercancel", reset);
     };
-  }, [animating, radius, strength, spring, offset]);
+    // `spring` participates by value (stiffness/damping), not identity, so
+    // inline `spring={{ ... }}` literals don't churn the window listeners
+    // every parent render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animating, radius, strength, spring.stiffness, spring.damping, offset]);
+
+  // When the gate flips off (reduced motion turning on, scrolling
+  // off-screen) the element must never freeze displaced — snap straight
+  // home, matching the reduced-motion "instant, no animation" posture.
+  useEffect(() => {
+    if (!animating) offset.snapTo([0, 0]);
+  }, [animating, offset]);
 
   return (
     <motion.div

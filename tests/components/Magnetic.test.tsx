@@ -64,6 +64,9 @@ describe("Magnetic", () => {
   afterEach(() => {
     vi.doUnmock("motion/react");
     vi.resetModules();
+    // A failing assertion between spyOn and mockRestore would otherwise
+    // leak the window spy into every later test.
+    vi.restoreAllMocks();
   });
 
   it('renders its children inside a data-fluidkit="magnetic" wrapper', async () => {
@@ -107,7 +110,7 @@ describe("Magnetic", () => {
     addSpy.mockRestore();
   });
 
-  it("attaches window pointermove/blur/pointercancel listeners once mounted and animating", async () => {
+  it("attaches window pointermove/pointerout/blur/pointercancel listeners once mounted and animating", async () => {
     const { Magnetic } = await loadMagnetic(false);
     const addSpy = vi.spyOn(window, "addEventListener");
     render(
@@ -115,13 +118,109 @@ describe("Magnetic", () => {
         <span>x</span>
       </Magnetic>
     );
-    expect(addSpy).toHaveBeenCalledWith("pointermove", expect.any(Function));
+    // pointermove is a passive hint: the handler never calls preventDefault.
+    expect(addSpy).toHaveBeenCalledWith("pointermove", expect.any(Function), {
+      passive: true,
+    });
+    expect(addSpy).toHaveBeenCalledWith("pointerout", expect.any(Function));
     expect(addSpy).toHaveBeenCalledWith("blur", expect.any(Function));
     expect(addSpy).toHaveBeenCalledWith(
       "pointercancel",
       expect.any(Function)
     );
     addSpy.mockRestore();
+  });
+
+  it("computes attraction from the home center, not the translated position", async () => {
+    const { Magnetic } = await loadMagnetic(false);
+    const { container } = render(
+      <Magnetic>
+        <span>x</span>
+      </Magnetic>
+    );
+    const root = () =>
+      container.querySelector('[data-fluidkit="magnetic"]') as HTMLElement;
+
+    // Simulate a real browser, where the transform MOVES the measured box:
+    // getBoundingClientRect reflects the current translation (jsdom's
+    // default all-zeros rect never moves, which would hide the feedback
+    // loop this test guards against).
+    const el = root();
+    el.getBoundingClientRect = () => {
+      const { x, y } = readTranslate(el);
+      return {
+        left: x,
+        top: y,
+        right: x,
+        bottom: y,
+        x,
+        y,
+        width: 0,
+        height: 0,
+        toJSON: () => ({}),
+      } as DOMRect;
+    };
+
+    // Home center (0,0), pointer at (30,0), defaults strength 0.3 / radius
+    // 120: dist 30 → falloff 0.75 → target x = 30 · 0.3 · 0.75 = 6.75.
+    moveWindowPointer(30, 0);
+    await vi.waitFor(
+      () => {
+        expect(readTranslate(root()).x).toBeCloseTo(6.75, 1);
+      },
+      { timeout: 3000, interval: 10 }
+    );
+
+    // Re-fire at the SAME pointer position once displaced. A pure
+    // pointer-vs-home computation retargets to the same 6.75; measuring the
+    // already-translated center would compute dx = 30 - 6.75 and shrink the
+    // target to ~5.62 (weakened pull / hysteresis feedback loop).
+    moveWindowPointer(30, 0);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(readTranslate(root()).x).toBeCloseTo(6.75, 1);
+  });
+
+  it("window pointerout with relatedTarget null (pointer left the window) retargets back to 0", async () => {
+    const { Magnetic } = await loadMagnetic(false);
+    const { container } = render(
+      <Magnetic>
+        <span>x</span>
+      </Magnetic>
+    );
+    const root = () =>
+      container.querySelector('[data-fluidkit="magnetic"]') as HTMLElement;
+
+    moveWindowPointer(30, 0);
+    await vi.waitFor(() => {
+      expect(readTranslate(root()).x).toBeGreaterThan(0);
+    });
+
+    // relatedTarget null = the pointer exited the viewport entirely (an
+    // in-page element hop always carries the element being entered).
+    fireEvent.pointerOut(window, { relatedTarget: null });
+    await settlesNear(root, { x: 0, y: 0 });
+  });
+
+  it("window pointerout onto an in-page element does NOT reset the pull", async () => {
+    const { Magnetic } = await loadMagnetic(false);
+    const { container, getByText } = render(
+      <Magnetic>
+        <span>x</span>
+      </Magnetic>
+    );
+    const root = () =>
+      container.querySelector('[data-fluidkit="magnetic"]') as HTMLElement;
+
+    // Let the spring fully settle at its target (30 · 0.3 · 0.75 = 6.75)
+    // before the hop, so the assertion isn't racing the rise.
+    moveWindowPointer(30, 0);
+    await settlesNear(root, { x: 6.75, y: 0 }, 1);
+
+    // Hopping between elements bubbles pointerout to window too, but with a
+    // relatedTarget — the magnet must keep pulling.
+    fireEvent.pointerOut(window, { relatedTarget: getByText("x") });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(readTranslate(root()).x).toBeCloseTo(6.75, 1);
   });
 
   it("window pointermove inside the radius pulls the wrapper toward the pointer", async () => {
@@ -259,6 +358,7 @@ describe("Magnetic", () => {
       "pointermove",
       expect.any(Function)
     );
+    expect(removeSpy).toHaveBeenCalledWith("pointerout", expect.any(Function));
     expect(removeSpy).toHaveBeenCalledWith("blur", expect.any(Function));
     expect(removeSpy).toHaveBeenCalledWith(
       "pointercancel",
@@ -267,7 +367,7 @@ describe("Magnetic", () => {
     removeSpy.mockRestore();
   });
 
-  it("removes the window listener when reduced motion flips on mid-mount (gating flip)", async () => {
+  it("gating flip (reduced motion turning on) removes the listener AND returns a displaced element home", async () => {
     const { Magnetic, state } = await loadMagnetic(false);
     const { container, rerender } = render(
       <Magnetic>
@@ -277,6 +377,12 @@ describe("Magnetic", () => {
     const root = () =>
       container.querySelector('[data-fluidkit="magnetic"]') as HTMLElement;
 
+    // Displace first — the flip must never freeze the element mid-pull.
+    moveWindowPointer(30, 0);
+    await vi.waitFor(() => {
+      expect(readTranslate(root()).x).toBeGreaterThan(0);
+    });
+
     state.reduced = true;
     rerender(
       <Magnetic>
@@ -284,6 +390,10 @@ describe("Magnetic", () => {
       </Magnetic>
     );
 
+    // Back at rest…
+    await settlesNear(root, { x: 0, y: 0 });
+
+    // …and the listener is gone: further movement does nothing.
     moveWindowPointer(30, 0);
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(readTranslate(root())).toEqual({ x: 0, y: 0 });
