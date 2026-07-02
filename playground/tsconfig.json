@@ -9,10 +9,5 @@
     },
     "noEmit": true
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  // vite.config.ts runs in a Node build-time context (not the browser DOM
-  // context every other playground file targets) and needs @types/node,
-  // which this project doesn't depend on — out of scope for "typecheck the
-  // playground sources"; Vite itself is what validates that file.
-  "exclude": ["vite.config.ts"]
+  "include": ["**/*.ts", "**/*.tsx"]
 }

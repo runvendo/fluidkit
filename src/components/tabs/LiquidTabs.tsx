@@ -21,7 +21,6 @@ import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -34,6 +33,7 @@ import { LiquidRenderer, TensionField, resolveMaterial } from "../../liquid";
 import type { LiquidSceneHandle } from "../../liquid";
 import { useMotionSprings } from "../../liquid/useMotionSprings";
 import { resolveColor, usePrefersReducedMotion } from "../../utils";
+import { useIsomorphicLayoutEffect } from "../../utils/useIsomorphicLayoutEffect";
 import { FLOWS, stretchEdgeConfigs, type FlowName, type TabRect } from "./flows";
 import { mixColor, tabCoverage, type RGB } from "./tint";
 import { useTabList } from "./useTabList";
@@ -191,7 +191,7 @@ export function LiquidTabs({
 
   // Measure tab boxes + container height. Re-runs on items/size/value change
   // and on resize. jsdom reports 0s (degenerate path until real layout).
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     function measure() {
       const h = containerRef.current?.offsetHeight ?? 0;
       const next = new Map<string, TabRect>();
@@ -214,7 +214,7 @@ export function LiquidTabs({
   }, [items, size, selected]);
 
   // React to selection changes: retarget springs (or snap under reduced motion).
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const prev = prevSelected.current;
     prevSelected.current = selected;
 
