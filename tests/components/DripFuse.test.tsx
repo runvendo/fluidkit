@@ -190,7 +190,7 @@ describe("DripFuse", () => {
     expect(root.style.height).toBe("100px");
   });
 
-  it("a fire under reduced motion cancels a cycle already in flight: the interrupted cycle's onComplete never runs", async () => {
+  it("a fire under reduced motion cancels a cycle already in flight, and each of the two triggers gets exactly one completion", async () => {
     const { DripFuse, state } = await loadDripFuseMutable(false);
     const onComplete = vi.fn();
     const { container, rerender } = render(
@@ -203,21 +203,27 @@ describe("DripFuse", () => {
     expect(root.getAttribute("data-animating")).toBe("true");
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // ...flip prefers-reduced-motion mid-cycle, then fire again. The second
-    // fire must give the running cycle the same cleanup as a restart: the
-    // stale settle timer is cancelled (its onComplete never runs) and the
-    // instant reduced-motion completion fires — exactly ONE call total.
+    // ...flip prefers-reduced-motion mid-cycle (no new fire yet). Per the
+    // PRM-mid-cycle contract (file doc), a bare preference flip has no new
+    // cycle to hand `onComplete` to, so the in-flight one — fire=1's —
+    // completes immediately right here: ONE call.
     state.reduced = true;
     rerender(<DripFuse fire={1} onComplete={onComplete} />);
-    rerender(<DripFuse fire={2} onComplete={onComplete} />);
-
     expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(root.getAttribute("data-animating")).toBe("false");
+    expect(root.getAttribute("data-phase")).toBe("idle");
+
+    // ...then fire again. This IS a new cycle (a genuine restart), so it
+    // gets its own completion — under reduced motion that's instant too:
+    // a SECOND call, for fire=2.
+    rerender(<DripFuse fire={2} onComplete={onComplete} />);
+    expect(onComplete).toHaveBeenCalledTimes(2);
     expect(root.getAttribute("data-animating")).toBe("false");
     expect(root.getAttribute("data-phase")).toBe("idle");
 
     // Static two-body scene resynced, and no stale timer double-fires.
     await new Promise((resolve) => setTimeout(resolve, 1100));
-    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(onComplete).toHaveBeenCalledTimes(2);
     const clip = container.querySelector(
       '[data-fluidkit="liquid-clip"]'
     ) as HTMLElement;
@@ -303,6 +309,44 @@ describe("DripFuse", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
     expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("prefers-reduced-motion flipping on mid-cycle with no new fire stops the loop and completes immediately", async () => {
+    const { DripFuse, state } = await loadDripFuseMutable(false);
+    const onComplete = vi.fn();
+    const { container, rerender } = render(
+      <DripFuse fire={0} onComplete={onComplete} />
+    );
+    const root = container.firstChild as HTMLElement;
+    const clip = container.querySelector(
+      '[data-fluidkit="liquid-clip"]'
+    ) as HTMLElement;
+
+    // Start an animated cycle...
+    rerender(<DripFuse fire={1} onComplete={onComplete} />);
+    expect(root.getAttribute("data-animating")).toBe("true");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(root.getAttribute("data-phase")).not.toBe("idle");
+
+    // ...flip the OS preference mid-cycle. No new `fire` — just a plain
+    // rerender so the mocked hook re-reads the mutated preference, the
+    // same mechanism a real `prefers-reduced-motion` media-query change
+    // triggers via Motion's own subscription.
+    state.reduced = true;
+    rerender(<DripFuse fire={1} onComplete={onComplete} />);
+
+    // The cycle completes immediately — no new fire required — matching
+    // the "reduced motion always finishes instantly" contract.
+    expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(root.getAttribute("data-animating")).toBe("false");
+    expect(root.getAttribute("data-phase")).toBe("idle");
+    const closures = (clip.style.clipPath.match(/Z/g) ?? []).length;
+    expect(closures).toBe(2);
+
+    // And it stays that way — the original (now-defused) settle timer must
+    // not fire a second, stale completion once its natural window elapses.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    expect(onComplete).toHaveBeenCalledTimes(1);
   });
 
   it("a cycle steps through the full phase sequence: idle -> swell -> fly -> fuse -> idle", async () => {

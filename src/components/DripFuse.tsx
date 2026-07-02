@@ -53,6 +53,17 @@
  * loop stopped), so the interrupted cycle's stale settle timer can never
  * double-fire `onComplete` alongside the instant one, and no stale frames
  * keep writing under the preference.
+ *
+ * Reduced motion can also flip ON mid-cycle with NO new `fire` (the OS
+ * preference changing, or any unrelated parent re-render). The running
+ * cycle gets the same instant-completion treatment: timers/tension/fuse
+ * state reset, springs snapped to rest, the static two-body scene
+ * resynced, and `onComplete` fires immediately. This is deliberately
+ * DIFFERENT from a same-preference restart, where an interrupted cycle's
+ * `onComplete` never runs — a restart hands the callback to the NEW
+ * cycle's completion instead. A bare preference flip creates no new cycle,
+ * so there's nothing to hand off to; letting the in-flight one finish is
+ * what keeps it coherent with "reduced motion always completes instantly."
  */
 
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
@@ -333,6 +344,26 @@ export function DripFuse({
       if (bumpTimer.current) clearTimeout(bumpTimer.current);
     };
   }, []);
+
+  // Reduced motion flipping on mid-cycle with no new `fire` (the effect
+  // above only reacts to `fire` changing) would otherwise let the cycle run
+  // to its natural end while `data-animating` already reads `false`. Give
+  // it the same instant-completion treatment as a fire under reduced
+  // motion — see the file doc's reduced-motion section for why this cycle's
+  // `onComplete` fires here instead of never running.
+  useEffect(() => {
+    if (!prefersReducedMotion || !settling) return;
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    if (bumpTimer.current) clearTimeout(bumpTimer.current);
+    settleTimer.current = null;
+    bumpTimer.current = null;
+    tension.current.clear();
+    fused.current = false;
+    springs.snapTo([anchors.sourceX + anchors.size, 0, anchors.size]);
+    setSettling(false);
+    onCompleteRef.current?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefersReducedMotion, settling]);
 
   // The loop mutates the DOM behind React's back; when it isn't running,
   // resync the declarative static scene so it wins again.

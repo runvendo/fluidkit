@@ -335,3 +335,102 @@ describe("LiquidTabs (bar) — mid-transition re-measure", () => {
     expect(snapTo).toHaveBeenCalled();
   });
 });
+
+describe("LiquidTabs (bar) — PRM mid-transition hygiene", () => {
+  const OFFSETS = ["offsetHeight", "offsetWidth", "offsetLeft"] as const;
+  const OFFSET_VALUES: Record<(typeof OFFSETS)[number], number> = {
+    offsetHeight: 40,
+    offsetWidth: 80,
+    offsetLeft: 10,
+  };
+
+  afterEach(() => {
+    for (const prop of OFFSETS) {
+      Object.defineProperty(HTMLElement.prototype, prop, {
+        configurable: true,
+        value: 0,
+      });
+    }
+    vi.doUnmock("motion/react");
+    vi.doUnmock("../../../src/liquid/useMotionSprings");
+    vi.resetModules();
+  });
+
+  it("stops a mid-transition cycle and resyncs the resting scene when reduced motion flips on with no new selection", async () => {
+    for (const prop of OFFSETS) {
+      Object.defineProperty(HTMLElement.prototype, prop, {
+        configurable: true,
+        value: OFFSET_VALUES[prop],
+      });
+    }
+
+    vi.resetModules();
+    // Mutable box: the mocked hook re-reads it on every render, the same
+    // mechanism a real `prefers-reduced-motion` media-query change would
+    // trigger via Motion's own subscription (see DripFuse's
+    // `loadDripFuseMutable`/WaterField's `loadWaterFieldWithMutableMotion`).
+    const state = { reduced: false };
+    vi.doMock("motion/react", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("motion/react")>();
+      return { ...actual, useReducedMotion: () => state.reduced };
+    });
+
+    // Spring values frozen at 999 (never updated by snapTo/setTargets,
+    // which are spies here) — a stand-in for "still mid-flight". If the
+    // settle loop keeps painting from these after the PRM flip, the clip
+    // stays pinned at the 999-derived geometry instead of resyncing to the
+    // real resting scene (built straight from the measured rects, not the
+    // springs).
+    const snapTo = vi.fn();
+    const setTargets = vi.fn();
+    const setTarget = vi.fn();
+    vi.doMock("../../../src/liquid/useMotionSprings", () => ({
+      useMotionSprings: (count: number) => ({
+        values: Array.from({ length: count }, () => ({
+          get: () => 999,
+          getVelocity: () => 0,
+        })),
+        snapTo,
+        setTargets,
+        setTarget,
+      }),
+    }));
+
+    const { LiquidTabs } = await import(
+      "../../../src/components/tabs/LiquidTabs"
+    );
+
+    const { container, rerender } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} flow="slide" />
+    );
+    const clip = container.querySelector(
+      '[data-fluidkit="liquid-tab-indicator"] [data-fluidkit="liquid-clip"]'
+    ) as HTMLElement;
+    const restingClip = clip.style.clipPath;
+
+    // Start a genuine transition — settling turns on.
+    rerender(
+      <LiquidTabs items={ITEMS} value="two" onChange={() => {}} flow="slide" />
+    );
+
+    // Let the loop paint at least one frame from the (frozen) in-flight
+    // spring values.
+    await vi.waitFor(() => {
+      expect(clip.style.clipPath).not.toBe(restingClip);
+    });
+    const midFlightClip = clip.style.clipPath;
+
+    // Flip reduced motion mid-transition — no new selection, just a plain
+    // rerender so the mocked hook re-reads the mutated preference.
+    state.reduced = true;
+    rerender(
+      <LiquidTabs items={ITEMS} value="two" onChange={() => {}} flow="slide" />
+    );
+
+    // The loop must stop immediately: the clip resyncs to the real resting
+    // scene rather than continuing to paint the frozen mid-flight geometry
+    // until the original settle window elapses.
+    expect(clip.style.clipPath).not.toBe(midFlightClip);
+    expect(clip.style.clipPath).toBe(restingClip);
+  });
+});

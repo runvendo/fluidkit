@@ -204,9 +204,16 @@ export function LiquidTabs({
     const toRect = rects.get(selected);
     if (!toRect || height <= 0) return;
 
-    // Reduced motion: always snap, no flow.
+    // Reduced motion: always snap, no flow. If a transition was mid-flight
+    // when the preference flipped on, stop it here too — otherwise the
+    // stale settle timer (started by the transition, untouched by this
+    // branch) keeps `settling` true — and the rAF loop recomputing — until
+    // its original window elapses, even though the pill already snapped to
+    // rest.
     if (prefersReducedMotion) {
       springs.snapTo(flowSpec.rest(toRect, height));
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+      setSettling(false);
       return;
     }
 

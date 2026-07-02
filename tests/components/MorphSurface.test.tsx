@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, render } from "@testing-library/react";
 import { Profiler } from "react";
 
 async function loadMorphSurface(reduced: boolean) {
@@ -10,6 +10,32 @@ async function loadMorphSurface(reduced: boolean) {
   });
   const mod = await import("../../src/components/MorphSurface");
   return mod.MorphSurface;
+}
+
+/**
+ * Minimal IntersectionObserver mock (same shape as
+ * tests/components/Aurora.test.tsx) so off-screen pausing can be exercised
+ * by hand-firing entries — needed to flip `animating` off mid-settle via the
+ * inView route (PRM already flips it statically per-test via
+ * `loadMorphSurface`, which can't change mid-test).
+ */
+class MockIntersectionObserver implements IntersectionObserver {
+  static instances: MockIntersectionObserver[] = [];
+
+  readonly root: Element | Document | null = null;
+  readonly rootMargin: string = "";
+  readonly thresholds: ReadonlyArray<number> = [];
+
+  callback: IntersectionObserverCallback;
+  disconnect = vi.fn();
+  observe = vi.fn();
+  unobserve = vi.fn();
+  takeRecords = vi.fn(() => []);
+
+  constructor(callback: IntersectionObserverCallback) {
+    this.callback = callback;
+    MockIntersectionObserver.instances.push(this);
+  }
 }
 
 describe("MorphSurface", () => {
@@ -111,5 +137,58 @@ describe("MorphSurface", () => {
     const root = container.firstChild as HTMLElement;
     expect(parseInt(root.style.width, 10)).toBeGreaterThanOrEqual(200);
     expect(parseInt(root.style.height, 10)).toBeGreaterThanOrEqual(160);
+  });
+
+  describe("off-screen mid-settle (settle-timer hygiene)", () => {
+    beforeEach(() => {
+      MockIntersectionObserver.instances = [];
+      vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("clears `settling` when scrolled off-screen mid-settle, so re-entering view without a new `open` transition does not resume the loop", async () => {
+      const MorphSurface = await loadMorphSurface(false);
+      const { container, rerender } = render(<MorphSurface open={false} />);
+      const root = container.firstChild as HTMLElement;
+      const observer = MockIntersectionObserver.instances[0];
+
+      // Come into view, then flip `open` — starts a real settle window.
+      act(() => {
+        observer.callback(
+          [{ isIntersecting: true } as IntersectionObserverEntry],
+          observer
+        );
+      });
+      rerender(<MorphSurface open />);
+      expect(root.getAttribute("data-animating")).toBe("true");
+
+      // Scroll off-screen mid-settle: `animating` flips false. The wart:
+      // the settle effect's cleanup (keyed to `animating`) cancels the
+      // pending `setSettling(false)` timeout with no replacement, so
+      // `settling` sticks true even though nothing else clears it.
+      act(() => {
+        observer.callback(
+          [{ isIntersecting: false } as IntersectionObserverEntry],
+          observer
+        );
+      });
+      expect(root.getAttribute("data-animating")).toBe("false");
+
+      // Scroll back into view — `open` never changed, so no new transition
+      // starts. If `settling` stuck true, this alone would make
+      // `data-animating` read true again (the loop "recomputing a settled
+      // scene every frame" the wart describes) even though nothing is
+      // actually transitioning.
+      act(() => {
+        observer.callback(
+          [{ isIntersecting: true } as IntersectionObserverEntry],
+          observer
+        );
+      });
+      expect(root.getAttribute("data-animating")).toBe("false");
+    });
   });
 });

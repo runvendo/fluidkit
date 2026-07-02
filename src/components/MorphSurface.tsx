@@ -164,6 +164,16 @@ export function MorphSurface({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, animating]);
 
+  // If `animating` flips off mid-settle (scroll-out, PRM turning on), the
+  // effect above re-runs (its cleanup is keyed on `animating`) and cancels
+  // the pending settle timer with no replacement — so clear `settling` here
+  // too, or it would stick true and make the rAF loop recompute a settled
+  // scene every frame once animation resumes, even with no new `open`
+  // transition (the JellyButton hygiene pattern).
+  useEffect(() => {
+    if (!animating) setSettling(false);
+  }, [animating]);
+
   const staticScene = useMemo(
     () =>
       buildMorphScene(
