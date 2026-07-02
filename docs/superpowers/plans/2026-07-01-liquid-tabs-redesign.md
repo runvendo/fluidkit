@@ -1074,6 +1074,18 @@ describe("LiquidTabs (bar)", () => {
     }
   });
 
+  it("moves DOM focus to the newly selected tab on arrow-key navigation", async () => {
+    const LiquidTabs = await loadTabs(false);
+    const { container } = render(<LiquidTabs items={ITEMS} defaultValue="one" />);
+    const tabs = container.querySelectorAll('[data-fluidkit="liquid-tab"]');
+    (tabs[0] as HTMLElement).focus();
+    fireEvent.keyDown(tabs[0], { key: "ArrowRight" });
+    // selection advanced to "two" and browser focus followed it
+    const active = container.querySelectorAll('[data-fluidkit="liquid-tab"]');
+    expect(active[1].getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(active[1]);
+  });
+
   it("merges consumer className", async () => {
     const LiquidTabs = await loadTabs(false);
     const { container } = render(
@@ -1228,12 +1240,20 @@ export function LiquidTabs({
     [ctx, isControlled, onChange]
   );
 
-  const tabList = useTabList({ items, value: selected, onChange: setSelected });
-
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
   const renderer = useRef<LiquidSceneHandle>(null);
   const tension = useRef(new TensionField());
+
+  // Keyboard nav moves selection AND DOM focus (WAI-ARIA automatic
+  // activation). The hook is ref-free, so it reports keyboard moves via
+  // `onNavigate` and the bar — which owns the button refs — moves focus.
+  const tabList = useTabList({
+    items,
+    value: selected,
+    onChange: setSelected,
+    onNavigate: (id) => tabRefs.current.get(id)?.focus(),
+  });
 
   const [rects, setRects] = useState<Map<string, TabRect>>(new Map());
   const [height, setHeight] = useState(0);
