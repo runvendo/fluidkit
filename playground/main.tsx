@@ -2,6 +2,7 @@ import { StrictMode, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { CSSProperties, ReactNode } from "react";
 import {
+  Aurora,
   DripFuse,
   Droplets,
   FlowStagger,
@@ -9,6 +10,7 @@ import {
   LiquidDrag,
   LiquidTabs,
   Magnetic,
+  MeshGradient,
   MorphSurface,
   Ripple,
   Thinking,
@@ -88,6 +90,16 @@ function Card({ id, title, desc, hint, wall, stage, controls, code, onStageClick
 
 const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
 const AXES: ("free" | "x" | "y")[] = ["free", "x", "y"];
+const AURORA_BLENDS: ("screen" | "normal" | "multiply")[] = ["screen", "normal", "multiply"];
+
+type MeshPalette = "pastel" | "citrus" | "mint";
+const MESH_PALETTE_KEYS: MeshPalette[] = ["pastel", "citrus", "mint"];
+/** Tasteful, restrained light-mode presets — each a 3-hue set in the same spirit as MeshGradient's own default. */
+const MESH_PALETTES: Record<MeshPalette, string[]> = {
+  pastel: ["#dbe4ff", "#e7d6f7", "#fbdce6"],
+  citrus: ["#ffe8b8", "#ffd0a8", "#ffb8c8"],
+  mint: ["#c8f0e0", "#b8e8f0", "#d0d8f7"],
+};
 
 /* ------------------------- hero ------------------------- */
 function Hero() {
@@ -115,6 +127,8 @@ function Hero() {
             ["magnetic", "Magnetic"],
             ["liquid-drag", "LiquidDrag"],
             ["drip-fuse", "DripFuse"],
+            ["mesh-gradient", "MeshGradient"],
+            ["aurora", "Aurora"],
           ].map(([id, label]) => (
             <a key={id} href={`#${id}`}>{label}</a>
           ))}
@@ -390,6 +404,53 @@ const [completed, setCompleted] = useState(0);
     controls={<><button className="btn" onClick={() => setFire((f) => f + 1)}>Fire</button><Seg label="material" value={material} set={setMaterial} options={MATERIALS} /></>} />;
 }
 
+function MeshGradientDemo() {
+  const [palette, setPalette] = useState<MeshPalette>("pastel");
+  const [speed, setSpeed] = useState(1);
+  const [blur, setBlur] = useState(60);
+  return <Card id="mesh-gradient" title="MeshGradient" desc="Ambient CSS backdrop: a handful of large, softly blurred radial-gradient blobs drift on long-period keyframe loops behind your content — zero per-frame JS once mounted. Pauses off-screen and renders a static frame under reduced motion." hint="ambient — sits behind the panel below"
+    code={`<MeshGradient
+  colors={${JSON.stringify(MESH_PALETTES[palette])}}
+  speed={${speed}}
+  blur={${blur}}
+/>`}
+    stage={
+      <>
+        <MeshGradient colors={MESH_PALETTES[palette]} speed={speed} blur={blur} />
+        <div style={{ position: "relative", background: "rgba(255,255,255,.72)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderRadius: 16, padding: "16px 20px", textAlign: "center", boxShadow: "0 10px 28px rgba(46,44,72,.12)" }}>
+          <div style={{ fontWeight: 650, fontSize: 13, color: "#23242c", marginBottom: 3 }}>Dashboard</div>
+          <div style={{ fontSize: 11.5, color: "#6b6c75" }}>MeshGradient is the layer behind this card</div>
+        </div>
+      </>
+    }
+    controls={<><Seg label="colors" value={palette} set={setPalette} options={MESH_PALETTE_KEYS} /><Slider label="speed" value={speed} set={setSpeed} min={0.3} max={3} step={0.1} /><Slider label="blur" value={blur} set={setBlur} min={20} max={100} step={5} suffix="px" /></>} />;
+}
+
+function AuroraDemo() {
+  const [intensity, setIntensity] = useState(0.6);
+  const [speed, setSpeed] = useState(1);
+  const [blend, setBlend] = useState<"screen" | "normal" | "multiply">("screen");
+  return <Card id="aurora" title="Aurora" desc={`Ambient CSS backdrop: blurred horizontal bands drift across the upper portion of the container. "blend" controls how bands composite: screen glows on dark/mid surfaces but washes toward invisible on white, so use normal or multiply on light surfaces.`} hint="same props, dark vs. light — blend is honest about the difference"
+    code={`<Aurora
+  intensity={${intensity}}
+  speed={${speed}}
+  blend="${blend}"
+/>`}
+    stage={
+      <>
+        <div style={{ position: "absolute", inset: "0 50% 0 0", overflow: "hidden", background: "#15161c" }}>
+          <Aurora intensity={intensity} speed={speed} blend={blend} />
+          <span style={{ position: "absolute", left: 10, bottom: 8, fontSize: 10.5, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", color: "rgba(255,255,255,.5)" }}>dark</span>
+        </div>
+        <div style={{ position: "absolute", inset: "0 0 0 50%", overflow: "hidden", background: "#fff", borderLeft: "1px solid #ecedf2" }}>
+          <Aurora intensity={intensity} speed={speed} blend={blend} />
+          <span style={{ position: "absolute", left: 10, bottom: 8, fontSize: 10.5, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", color: "rgba(28,29,35,.4)" }}>light</span>
+        </div>
+      </>
+    }
+    controls={<><Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} /><Slider label="speed" value={speed} set={setSpeed} min={0.3} max={3} step={0.1} /><Seg label="blend" value={blend} set={setBlend} options={AURORA_BLENDS} /></>} />;
+}
+
 function App() {
   return (
     <>
@@ -406,6 +467,8 @@ function App() {
         <MagneticDemo />
         <LiquidDragDemo />
         <DripFuseDemo />
+        <MeshGradientDemo />
+        <AuroraDemo />
       </div>
       <footer className="footer">
         MIT · <a href="https://github.com/yousefh409/fluidkit">github.com/yousefh409/fluidkit</a>

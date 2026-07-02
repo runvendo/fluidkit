@@ -51,6 +51,8 @@ function App() {
 | [`Magnetic`](docs/primitives/magnetic.md) | Pulls its child toward the pointer inside a radius, springs back outside it | No listener, element never moves |
 | [`LiquidDrag`](docs/primitives/liquid-drag.md) | Motion drag with velocity-driven volume-preserving stretch; wobbles back on release | Plain drag, scales pinned at 1 |
 | [`DripFuse`](docs/primitives/drip-fuse.md) | A drop tears off a source body, flies, and fuses into a target; one cycle per `fire` | Static bodies, `onComplete` fires instantly |
+| [`MeshGradient`](docs/primitives/mesh-gradient.md) | Ambient CSS backdrop: large blurred radial-gradient blobs drift slowly behind your content | Static blobs at their home position |
+| [`Aurora`](docs/primitives/aurora.md) | Ambient CSS backdrop: blurred horizontal bands drift across the upper portion of the container | Static bands at their home position |
 
 ### Materials
 
@@ -91,7 +93,7 @@ The playground doubles as the public docs site: hero, live demos, controls, and 
 
 - `npm test`: run tests
 - `npm run typecheck`: type check the library
-- `npm run size`: check bundle size (11.6 kB brotli budget on the core entry via size-limit)
+- `npm run size`: check bundle size (14.9 kB brotli budget on the core entry via size-limit)
 - `npm run check:gpu-leak`: guard against GPU dependencies
 - `npm run check:pack`: verify npm pack contents
 
