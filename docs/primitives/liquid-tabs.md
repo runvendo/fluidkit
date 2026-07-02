@@ -1,15 +1,15 @@
 # LiquidTabs
 
-A tab strip whose active-tab indicator glides between tabs and stretches like mercury as it moves.
+A tab strip whose active-tab indicator is a liquid engine body. On tab change the indicator doesn't slide — it flows: the old tab's pill drains while the new one fills, a tension bridge (the engine's metaball neck) stretches between them, snaps free past the snap distance, and the new pill settles on a taut, slightly-overshooting spring.
 
 ## Layering
 
-Tab labels must never live inside a goo-filtered element (CSS `filter` rasterizes an element's entire subtree, blurring any text inside it). `LiquidTabs` renders two overlaid but sibling layers inside an unfiltered container:
+Tab labels must never sit inside a filtered or rasterized subtree (the library's non-negotiable: animate the surface, never the text). `LiquidTabs` renders two overlaid but sibling layers inside the container:
 
-1. **Indicator layer**: absolutely positioned, `pointer-events: none`, carries the goo filter. Contains only the moving pill, never text.
-2. **Buttons layer**: the `role="tab"` buttons with their labels, on top, fully interactive, no filter.
+1. **Indicator layer**: absolutely positioned, `pointer-events: none`, `aria-hidden`. Contains only the liquid body — engine geometry applied as a `clip-path` over a flat material fill. Never any text, no filters anywhere.
+2. **Buttons layer**: the `role="tab"` buttons with their labels, on top, fully interactive.
 
-The indicator's position is measured (`offsetLeft` / `offsetWidth` of the active button) in a layout effect and animated to, rather than riding along via `layoutId`, since the two layers are siblings.
+Tab boxes are measured (`offsetLeft` / `offsetWidth`) in a layout effect (with a ResizeObserver keeping them fresh); the engine geometry is driven from those measurements, and per-frame scenes are written imperatively to the DOM — the animation never re-renders React.
 
 ## Props
 
@@ -48,4 +48,4 @@ function Tabs() {
 
 ## Degrades to
 
-Under `prefers-reduced-motion`, the goo filter is dropped and the indicator's transition duration is zeroed, so the pill snaps instantly to the active tab instead of gliding and stretching. Because the labels live on their own unfiltered layer at all times, they stay crisp in every state: the goo effect only ever touches the indicator.
+Under `prefers-reduced-motion` the indicator snaps instantly to the active tab: no springs, no bridge, a single static pill. Because the labels live on their own unfiltered sibling layer at all times, they stay crisp in every state.

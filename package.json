@@ -1,7 +1,27 @@
 {
   "name": "fluidkit",
-  "version": "0.1.0",
-  "description": "A React library of fluid / liquid UI animations built on top of Motion.",
+  "version": "0.3.0",
+  "description": "Liquid UI animations for React — one metaball engine, swappable glass/mercury/flat materials, built on Motion.",
+  "keywords": [
+    "react",
+    "animation",
+    "liquid",
+    "glass",
+    "metaball",
+    "fluid",
+    "motion",
+    "ui",
+    "backdrop-filter",
+    "spring"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yousefh409/fluidkit.git"
+  },
+  "homepage": "https://github.com/yousefh409/fluidkit#readme",
+  "bugs": {
+    "url": "https://github.com/yousefh409/fluidkit/issues"
+  },
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -26,7 +46,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "dev": "vite playground"
+    "dev": "vite playground",
+    "build:site": "vite build playground"
   },
   "peerDependencies": {
     "motion": ">=11",

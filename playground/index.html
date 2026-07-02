@@ -3,7 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>fluidkit playground</title>
+    <meta name="description" content="Liquid UI animations for React — one metaball engine, swappable glass/mercury/flat materials, built on Motion." />
+    <title>fluidkit — liquid UI animations for React</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='13' cy='16' r='9' fill='%234a6cf7'/%3E%3Ccircle cx='24' cy='16' r='5' fill='%234a6cf7'/%3E%3C/svg%3E" />
     <style>
       * { box-sizing: border-box; }
       body {
@@ -11,8 +13,29 @@
         font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
         padding: 28px; letter-spacing: -0.01em;
       }
-      h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.02em; }
-      .sub { color: #5c5d66; font-size: 13.5px; margin: 0 0 24px; max-width: 74ch; line-height: 1.6; }
+      h1 { font-size: 34px; margin: 0 0 8px; letter-spacing: -0.025em; }
+      .sub { color: #5c5d66; font-size: 14px; margin: 0 0 18px; max-width: 58ch; line-height: 1.65; }
+
+      /* hero: copy on the left, one big liquid moment on the right */
+      .hero { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 24px; align-items: stretch; max-width: 1000px; margin: 8px 0 28px; }
+      .hero-copy { display: flex; flex-direction: column; justify-content: center; }
+      .hero-stage { position: relative; min-height: 380px; border-radius: 22px; overflow: hidden; display: grid; place-items: center; cursor: pointer; box-shadow: 0 1px 3px rgba(24,25,36,.07); }
+      .hero-drops { position: absolute; right: 14px; bottom: 6px; }
+      .toc { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+      .toc a { font-size: 12px; font-weight: 600; color: #3a3b44; text-decoration: none; background: #fff; border: 1px solid #e2e3ea; border-radius: 999px; padding: 5px 12px; }
+      .toc a:hover { border-color: #b9bcc9; }
+      @media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+
+      /* copy-paste snippet */
+      .snippet { position: relative; margin-top: 10px; background: #191a20; border-radius: 11px; overflow: hidden; }
+      .snippet pre { margin: 0; padding: 11px 76px 11px 14px; overflow-x: auto; }
+      .snippet code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; line-height: 1.55; color: #d7d9e2; white-space: pre; }
+      .snippet .copy { position: absolute; top: 7px; right: 7px; font: inherit; font-size: 10.5px; font-weight: 600; letter-spacing: .03em; color: #d7d9e2; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.14); border-radius: 7px; padding: 3px 9px; cursor: pointer; }
+      .snippet .copy:hover { background: rgba(255,255,255,.16); }
+
+      .footer { max-width: 1000px; margin: 26px 0 8px; font-size: 12px; color: #6b6c75; }
+      .footer a { color: inherit; }
+      section.card { scroll-margin-top: 16px; }
       .hint {
         position: absolute; top: 12px; left: 0; right: 0; text-align: center;
         font-size: 11px; color: rgba(28,29,35,.4); letter-spacing: 0.04em; text-transform: uppercase;
@@ -59,8 +82,9 @@
       [data-fluidkit="liquid-tab"] {
         position: relative; background: transparent; border: 0; font: inherit; font-size: 13px; font-weight: 600;
         color: #3a3b44; padding: 8px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+        transition: color .16s ease .32s; /* losing tab stays legible until its pill drains */
       }
-      [data-fluidkit="liquid-tab"][aria-selected="true"] { color: #fff; }
+      [data-fluidkit="liquid-tab"][aria-selected="true"] { color: #fff; transition-delay: .12s; }
 
       /* interactive controls */
       .controls { display: flex; flex-wrap: wrap; gap: 16px 18px; padding: 13px 15px; border-top: 1px solid #ecedf2; background: #fafafd; }

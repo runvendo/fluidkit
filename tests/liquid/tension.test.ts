@@ -57,6 +57,16 @@ describe("TensionField", () => {
     expect(field.bridges(pair(40 * 1.1))).toBe(""); // must touch again
   });
 
+  it("connectedTo(id) reflects live bridges", () => {
+    const field = new TensionField();
+    field.bridges(pair(40 * 1.0)); // touch → connect
+    expect(field.connectedTo("a")).toBe(true);
+    expect(field.connectedTo("b")).toBe(true);
+    expect(field.connectedTo("nope")).toBe(false);
+    field.bridges(pair(40 * (SNAP_STRETCH + 0.05))); // snap
+    expect(field.connectedTo("a")).toBe(false);
+  });
+
   it("ignores degenerate bodies", () => {
     const field = new TensionField();
     const bodies: LiquidBody[] = [

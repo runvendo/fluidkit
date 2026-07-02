@@ -28,6 +28,36 @@ describe("useMotionSprings", () => {
     expect(result.current.values.map((v) => v.get())).toEqual([5, 7]);
   });
 
+  it("accepts a per-slot config function and resolves it for every slot", async () => {
+    const configs: number[] = [];
+    const { result } = renderHook(() =>
+      useMotionSprings(
+        2,
+        () => 0,
+        (i) => {
+          configs[i] = i;
+          return { stiffness: 900, damping: 90 };
+        }
+      )
+    );
+    result.current.setTargets([50, 60]);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect(result.current.values.map((v) => Math.round(v.get()))).toEqual([
+      50, 60,
+    ]);
+    expect(configs).toEqual([0, 1]);
+  });
+
+  it("setTarget() retargets one slot without touching the others", async () => {
+    const { result } = renderHook(() =>
+      useMotionSprings(2, (i) => i * 10, { stiffness: 900, damping: 90 })
+    );
+    result.current.setTarget(0, 99, { stiffness: 900, damping: 90 });
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect(Math.round(result.current.values[0].get())).toBe(99);
+    expect(result.current.values[1].get()).toBe(10); // untouched
+  });
+
   it("setTargets() eventually settles values at the targets", async () => {
     const { result } = renderHook(() =>
       useMotionSprings(1, () => 0, { stiffness: 800, damping: 80 })

@@ -46,7 +46,14 @@ export function circlePath(center: Vec, r: number): string {
   );
 }
 
-/** Closed rounded-rectangle subpath centered on `center`. */
+/**
+ * Closed rounded-rectangle subpath centered on `center`.
+ *
+ * Wound COUNTERCLOCKWISE (sweep flag 0) to match `circlePath` — the nonzero
+ * fill rule only unions overlapping subpaths that wind the same direction;
+ * opposite windings cancel and punch a hole wherever a circle overlaps the
+ * rect.
+ */
 export function roundRectPath(
   center: Vec,
   width: number,
@@ -57,14 +64,14 @@ export function roundRectPath(
   const x = center.x - width / 2;
   const y = center.y - height / 2;
   return (
-    `M ${fmt(x + r)} ${fmt(y)} L ${fmt(x + width - r)} ${fmt(y)} ` +
-    `A ${fmt(r)} ${fmt(r)} 0 0 1 ${fmt(x + width)} ${fmt(y + r)} ` +
-    `L ${fmt(x + width)} ${fmt(y + height - r)} ` +
-    `A ${fmt(r)} ${fmt(r)} 0 0 1 ${fmt(x + width - r)} ${fmt(y + height)} ` +
-    `L ${fmt(x + r)} ${fmt(y + height)} ` +
-    `A ${fmt(r)} ${fmt(r)} 0 0 1 ${fmt(x)} ${fmt(y + height - r)} ` +
-    `L ${fmt(x)} ${fmt(y + r)} ` +
-    `A ${fmt(r)} ${fmt(r)} 0 0 1 ${fmt(x + r)} ${fmt(y)} Z `
+    `M ${fmt(x + r)} ${fmt(y)} ` +
+    `A ${fmt(r)} ${fmt(r)} 0 0 0 ${fmt(x)} ${fmt(y + r)} ` +
+    `L ${fmt(x)} ${fmt(y + height - r)} ` +
+    `A ${fmt(r)} ${fmt(r)} 0 0 0 ${fmt(x + r)} ${fmt(y + height)} ` +
+    `L ${fmt(x + width - r)} ${fmt(y + height)} ` +
+    `A ${fmt(r)} ${fmt(r)} 0 0 0 ${fmt(x + width)} ${fmt(y + height - r)} ` +
+    `L ${fmt(x + width)} ${fmt(y + r)} ` +
+    `A ${fmt(r)} ${fmt(r)} 0 0 0 ${fmt(x + width - r)} ${fmt(y)} Z `
   );
 }
 

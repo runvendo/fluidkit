@@ -10,4 +10,10 @@ export default defineConfig({
   server: {
     fs: { allow: [".."] },
   },
+  // `npm run build:site` bundles the playground into a deployable static
+  // site at the repo root.
+  build: {
+    outDir: "../dist-site",
+    emptyOutDir: true,
+  },
 });

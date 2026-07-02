@@ -19,7 +19,12 @@ The material is a prop, not a separate component: the same shapes render as clea
 | `color` | `string` | `currentColor` | Flat-material fill. |
 | `light` | `{x, y} \| null` | above, 30% from left | Scene light in px (container coords). `null` disables highlights. |
 | `reflection` | `boolean` | `true` | Paint specular reflections on glass. |
+| `refraction` | `boolean` | `false` | Edge lensing on glass (SVG displacement inside `backdrop-filter`, Chromium-only; degrades silently to plain glass blur). |
 | `followPointer` | `boolean` | `false` | An extra drop chases the pointer and merges with the cluster. |
+| `interactive` | `boolean` | `false` | Drops can be grabbed, dragged, torn off, and re-merged (see below). |
+| `onGrab` | `(index: number) => void` | — | The pointer picked up a drop. |
+| `onTear` | `(index: number) => void` | — | The dragged drop's last bridge snapped (it tore off the cluster). |
+| `onRelease` | `(index: number) => void` | — | The pointer let go; the drop springs home. |
 | `seed` | `number` | `0` | Deterministic per-instance layout offset. |
 
 ## Usage
@@ -32,6 +37,21 @@ import { Droplets } from "fluidkit";
 ```
 
 Glass needs something colorful behind it to refract; place it over an image or gradient backdrop.
+
+## Interaction
+
+With `interactive`, drops become tangible:
+
+1. **Grab** — pointer-down on a drop picks it up (`onGrab`); it follows the pointer on a tight spring.
+2. **Drag** — while it's still touching the cluster, the surface-tension neck stretches between them.
+3. **Tear** — past the snap distance the neck breaks (`onTear`) and the drop travels free.
+4. **Release** — on pointer-up (`onRelease`) the drop springs back to its home and re-merges on touch.
+
+The tear/re-merge physics are the engine's normal tension hysteresis — nothing special-cased. Under reduced motion `interactive` is inert (the cluster renders as static dots).
+
+```tsx
+<Droplets interactive onTear={(i) => console.log(`drop ${i} tore off`)} />
+```
 
 ## Degrades to
 

@@ -19,6 +19,12 @@ export interface ResolveMaterialOptions {
   tint?: string;
   /** Fill for the `flat` material. */
   color?: string;
+  /**
+   * `url(#id)` of a refraction displacement filter (from `useRefraction`,
+   * already gated on `supportsRefraction()`) prepended to the glass
+   * backdrop chain. Null/undefined renders plain glass blur.
+   */
+  refractionUrl?: string | null;
 }
 
 export interface ResolvedMaterial {
@@ -31,8 +37,10 @@ export interface ResolvedMaterial {
 
 const GLASS_TINT = "rgba(255,255,255,0.3)";
 const GLASS_BACKDROP = "blur(16px) saturate(1.8)";
+/** Refracting glass frosts less, so the lensing stays legible. */
+const GLASS_BACKDROP_REFRACT = "blur(8px) saturate(1.8)";
 const GLASS_FALLBACK_FILL = "rgba(255,255,255,0.65)";
-const MERCURY_FILL = "#aab0bb";
+const MERCURY_FILL = "#cdd3dd";
 
 export function resolveMaterial(
   material: LiquidMaterial,
@@ -46,12 +54,15 @@ export function resolveMaterial(
         specular: true,
       };
     }
+    const backdrop = options.refractionUrl
+      ? `${options.refractionUrl} ${GLASS_BACKDROP_REFRACT}`
+      : GLASS_BACKDROP;
     return {
       kind: "glass",
       fillStyle: {
         background: options.tint ?? GLASS_TINT,
-        backdropFilter: GLASS_BACKDROP,
-        WebkitBackdropFilter: GLASS_BACKDROP,
+        backdropFilter: backdrop,
+        WebkitBackdropFilter: backdrop,
       },
       specular: true,
     };

@@ -38,12 +38,24 @@ describe("resolveMaterial", () => {
     expect(m.specular).toBe(true); // still lit — it is still "glass" to the user
   });
 
-  it("mercury: SOLID fill (no gradient), NO specular", async () => {
+  it("glass: prepends the refraction filter to the backdrop chain when given", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(true);
+    const m = resolveMaterial("glass", { refractionUrl: "url(#rf)" });
+    expect(m.fillStyle.backdropFilter).toBe("url(#rf) blur(8px) saturate(1.8)");
+  });
+
+  it("glass: ignores the refraction url when backdrop-filter is unsupported", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(false);
+    const m = resolveMaterial("glass", { refractionUrl: "url(#rf)" });
+    expect(m.fillStyle.backdropFilter).toBeUndefined();
+  });
+
+  it("mercury: SOLID fill (no gradient), NO specular, light silver default", async () => {
     const { resolveMaterial } = await loadWithBackdropSupport(true);
     const m = resolveMaterial("mercury");
     expect(m.specular).toBe(false);
     expect(String(m.fillStyle.background)).not.toContain("gradient");
-    expect(m.fillStyle.background).toBe("#aab0bb");
+    expect(m.fillStyle.background).toBe("#cdd3dd");
   });
 
   it("mercury: honors a custom color", async () => {

@@ -60,6 +60,15 @@ export class TensionField {
     return path;
   }
 
+  /** Whether any live bridge involves `id`. */
+  connectedTo(id: string): boolean {
+    for (const key of this.connected) {
+      const [a, b] = key.split("|");
+      if (a === id || b === id) return true;
+    }
+    return false;
+  }
+
   /** Forget connections (all of them, or those whose key matches). */
   clear(predicate?: (key: string) => boolean): void {
     if (!predicate) {

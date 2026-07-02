@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
+import { Profiler } from "react";
 
 async function loadMorphSurface(reduced: boolean) {
   vi.resetModules();
@@ -78,6 +79,28 @@ describe("MorphSurface", () => {
     const root = container.firstChild as HTMLElement;
     expect(root.getAttribute("data-state")).toBe("open");
     expect(root.getAttribute("data-animating")).toBe("false");
+  });
+
+  it("commits no React updates per animation frame while settling", async () => {
+    const MorphSurface = await loadMorphSurface(false);
+    const onRender = vi.fn();
+    const { rerender } = render(
+      <Profiler id="morph" onRender={onRender}>
+        <MorphSurface open={false} />
+      </Profiler>
+    );
+    rerender(
+      <Profiler id="morph" onRender={onRender}>
+        <MorphSurface open />
+      </Profiler>
+    );
+    // Let the settle window state flip land (one commit), then several rAF
+    // ticks: the morph keeps springing, but frames are imperative DOM
+    // writes, never React commits.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const commitsAfterFlip = onRender.mock.calls.length;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(onRender.mock.calls.length).toBe(commitsAfterFlip);
   });
 
   it("sizes its container to fit the open state plus satellite margin", async () => {

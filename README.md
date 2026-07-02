@@ -35,22 +35,22 @@ function App() {
 }
 ```
 
-## Primitives (v0.2)
+## Primitives (v0.3)
 
 | Primitive | What it does | Degrades to |
 |---|---|---|
 | [`MorphSurface`](docs/primitives/morph-surface.md) | One liquid body: pill morphs into panel, satellite droplets absorbed through real bridges | Instant snap + opacity-only face fade |
-| [`Droplets`](docs/primitives/droplets.md) | Drop cluster with surface tension; optional pointer-chasing drop | Separate static dots |
+| [`Droplets`](docs/primitives/droplets.md) | Drop cluster with surface tension; grab / drag / tear / re-merge with the pointer (`interactive`) | Separate static dots |
 | [`Thinking`](docs/primitives/thinking.md) | Working indicator: droplets merge and split (`role="status"`) | Three static dots |
 | [`FlowStagger`](docs/primitives/flow-stagger.md) | Staggered rise + un-blur entrance for list items, FLIP on reorder | Simple simultaneous fade |
-| [`LiquidTabs`](docs/primitives/liquid-tabs.md) | Tab indicator that glides and stretches like mercury | Plain sliding pill, snaps instantly |
+| [`LiquidTabs`](docs/primitives/liquid-tabs.md) | Tab indicator on the engine: mass flows across a tension bridge and snaps free | Plain pill, snaps instantly |
 | [`Ripple`](docs/primitives/ripple.md) | Pointer-origin water ripple on tap/click | No ripple, children render normally |
 
 ### Materials
 
 `MorphSurface`, `Droplets`, and `Thinking` take `material`:
 
-- `glass` — white tint + backdrop blur/saturation, specular highlights from one configurable scene light (`light` prop), toggleable via `reflection`. A drop of water is liquid glass.
+- `glass` — white tint + backdrop blur/saturation, specular highlights from one configurable scene light (`light` prop), toggleable via `reflection`. Opt-in `refraction` adds Chromium-only edge lensing (SVG displacement inside `backdrop-filter`; degrades silently). A drop of water is liquid glass.
 - `mercury` — solid liquid metal; no gradient, no painted highlight.
 - `flat` — plain color; also the automatic fallback when `backdrop-filter` is unsupported.
 
@@ -65,14 +65,21 @@ function App() {
 
 ## Roadmap
 
-- **v0.2 (this release)**: the liquid engine + `Droplets`, `Thinking`, `MorphSurface` in glass/mercury/flat.
-- **v0.3**: `LiquidTabs` on the engine, drag-merge-snap pointer interactions, docs site.
+- **v0.2**: the liquid engine + `Droplets`, `Thinking`, `MorphSurface` in glass/mercury/flat.
+- **v0.3 (this release)**: `LiquidTabs` on the engine, grab/tear/re-merge pointer interactions, opt-in refraction, per-frame DOM writes (no React commits in animation loops), docs site.
 - **v1.0**: stable API, a11y pass, npm publish.
+
+## Docs site
+
+The playground doubles as the public docs site: hero, live demos, controls, and copy-paste snippets for every primitive.
+
+- Develop: `npm run dev`
+- Build: `npm run build:site` → static bundle in `dist-site/`, deployable to any static host (GitHub Pages, Netlify, Vercel — no server needed).
 
 ## More
 
 - Design spec: [`docs/superpowers/specs/2026-07-01-liquid-engine-design.md`](docs/superpowers/specs/2026-07-01-liquid-engine-design.md)
-- Playground: `npm run dev`
+- Changelog: [`CHANGELOG.md`](CHANGELOG.md)
 
 ## License
 
