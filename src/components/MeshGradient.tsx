@@ -28,6 +28,8 @@
 import type { CSSProperties, HTMLAttributes } from "react";
 import { useEffect, useMemo } from "react";
 import { resolveColor, useInView, usePrefersReducedMotion } from "../utils";
+import { GOLDEN_ANGLE, GOLDEN_RATIO_FRAC } from "../utils/constants";
+import { injectStyleOnce } from "../utils/injectStyleOnce";
 
 export interface MeshGradientProps extends HTMLAttributes<HTMLDivElement> {
   /** Blob colors, one blob per entry. Defaults to a soft pastel light-mode set. */
@@ -67,26 +69,14 @@ const KEYFRAMES_CSS = `
 }
 `;
 
-/**
- * Injects the shared drift keyframes into `<head>` once per document.
- * Guarded by a presence check on a stable id rather than a ref-count: cheap
- * and idempotent across many `MeshGradient` instances. The tradeoff is that
- * the `<style>` tag outlives every unmounted instance (never removed) — an
- * acceptable cost for a few bytes of shared, content-free CSS.
- */
-function injectKeyframes() {
-  if (typeof document === "undefined") return;
-  if (document.getElementById(KEYFRAMES_STYLE_ID)) return;
-  const style = document.createElement("style");
-  style.id = KEYFRAMES_STYLE_ID;
-  style.textContent = KEYFRAMES_CSS;
-  document.head.appendChild(style);
-}
-
 /** Deterministic per-blob angle — same golden-angle scheme as Droplets' `dropAngle`. */
 function blobAngle(index: number): number {
-  return index * 2.399963;
+  return index * GOLDEN_ANGLE;
 }
+
+/** Minimum drift speed multiplier — kills the divide-by-zero `Infinity`
+ * keyframe duration a `speed={0}` (or negative) prop would otherwise produce. */
+const MIN_SPEED = 0.01;
 
 interface Blob {
   color: string;
@@ -100,7 +90,7 @@ interface Blob {
 function layoutBlobs(colors: string[], speed: number): Blob[] {
   return colors.map((color, i) => {
     const angle = blobAngle(i);
-    const frac = (i * 0.618034) % 1; // golden-ratio fractional phase, deterministic
+    const frac = (i * GOLDEN_RATIO_FRAC) % 1; // golden-ratio fractional phase, deterministic
     const periodS = (MIN_PERIOD_S + frac * PERIOD_SPAN_S) / speed;
     return {
       color: resolveColor(color, DEFAULT_COLORS[i % DEFAULT_COLORS.length]),
@@ -128,10 +118,14 @@ export function MeshGradient({
   const animating = !prefersReducedMotion && inView;
 
   useEffect(() => {
-    injectKeyframes();
+    injectStyleOnce(KEYFRAMES_STYLE_ID, KEYFRAMES_CSS);
   }, []);
 
-  const blobs = useMemo(() => layoutBlobs(colors, speed), [colors, speed]);
+  const clampedSpeed = Math.max(speed, MIN_SPEED);
+  const blobs = useMemo(
+    () => layoutBlobs(colors, clampedSpeed),
+    [colors, clampedSpeed]
+  );
 
   const wrapperStyle: CSSProperties = {
     position: "absolute",

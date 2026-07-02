@@ -29,3 +29,5 @@ export { DripFuse } from "./DripFuse";
 export type { DripFuseProps } from "./DripFuse";
 export { MeshGradient } from "./MeshGradient";
 export type { MeshGradientProps } from "./MeshGradient";
+export { Aurora } from "./Aurora";
+export type { AuroraProps } from "./Aurora";

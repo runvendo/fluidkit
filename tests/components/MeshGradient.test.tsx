@@ -184,6 +184,29 @@ describe("MeshGradient", () => {
     });
   });
 
+  it("clamps speed to a small positive minimum, avoiding Infinity-duration keyframes at speed=0", async () => {
+    const MeshGradient = await loadMeshGradient(false);
+    const { container } = render(<MeshGradient speed={0} />);
+
+    blobs(container).forEach((el) => {
+      const duration = parseFloat(el.style.animationDuration);
+      expect(Number.isFinite(duration)).toBe(true);
+      expect(duration).toBeGreaterThan(0);
+    });
+  });
+
+  it("injects the drift keyframes style tag into the document head on mount", async () => {
+    const MeshGradient = await loadMeshGradient(false);
+    expect(document.getElementById("fluidkit-mesh-gradient-keyframes")).toBeNull();
+
+    render(<MeshGradient />);
+
+    const style = document.getElementById("fluidkit-mesh-gradient-keyframes");
+    expect(style).not.toBeNull();
+    expect(style?.tagName).toBe("STYLE");
+    expect(style?.textContent).toContain("@keyframes");
+  });
+
   it("does not touch document merely by importing the module (SSR-safe)", async () => {
     vi.resetModules();
     vi.doMock("motion/react", async (importOriginal) => {
