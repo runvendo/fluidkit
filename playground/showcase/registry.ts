@@ -1,0 +1,46 @@
+import type { ComponentType } from "react";
+
+export type ShowcasePage = {
+  /** Hash-route segment: the page lives at `#/<slug>`. */
+  slug: string;
+  /** Sidebar label + page identity. */
+  title: string;
+  /** Lazy import — pages export their component as `default`. */
+  load: () => Promise<{ default: ComponentType }>;
+  /** GPU-tier pages are grouped under a "GPU tier" label in the sidebar. */
+  isGpu?: boolean;
+};
+
+/**
+ * Ordered list of showcase pages — the sidebar and router read this top to
+ * bottom, and the first entry is the landing page.
+ *
+ * One line per page, added in the SAME COMMIT as the page file lands in
+ * `./pages/` — never commit an entry whose page doesn't exist yet.
+ *
+ * Final order:
+ *   Demos, Droplets, MorphSurface, Thinking, LiquidTabs, FlowStagger,
+ *   Ripple, JellyButton, Magnetic, LiquidDrag, DripFuse, MeshGradient,
+ *   Aurora, then the GPU tier: LiquidMetal, WaterField.
+ *
+ * Example entry:
+ *   { slug: "jelly-button", title: "JellyButton", load: () => import("./pages/JellyButton") },
+ * GPU entries additionally set `isGpu: true`.
+ */
+export const REGISTRY: ShowcasePage[] = [
+  { slug: "demos", title: "Demos", load: () => import("./pages/Demos") },
+  { slug: "droplets", title: "Droplets", load: () => import("./pages/Droplets") },
+  { slug: "morph-surface", title: "MorphSurface", load: () => import("./pages/MorphSurface") },
+  { slug: "thinking", title: "Thinking", load: () => import("./pages/Thinking") },
+  { slug: "liquid-tabs", title: "LiquidTabs", load: () => import("./pages/LiquidTabs") },
+  { slug: "flow-stagger", title: "FlowStagger", load: () => import("./pages/FlowStagger") },
+  { slug: "ripple", title: "Ripple", load: () => import("./pages/Ripple") },
+  { slug: "jelly-button", title: "JellyButton", load: () => import("./pages/JellyButton") },
+  { slug: "magnetic", title: "Magnetic", load: () => import("./pages/Magnetic") },
+  { slug: "liquid-drag", title: "LiquidDrag", load: () => import("./pages/LiquidDrag") },
+  { slug: "drip-fuse", title: "DripFuse", load: () => import("./pages/DripFuse") },
+  { slug: "mesh-gradient", title: "MeshGradient", load: () => import("./pages/MeshGradient") },
+  { slug: "aurora", title: "Aurora", load: () => import("./pages/Aurora") },
+  { slug: "liquid-metal", title: "LiquidMetal", load: () => import("./pages/LiquidMetal"), isGpu: true },
+  { slug: "water-field", title: "WaterField", load: () => import("./pages/WaterField"), isGpu: true },
+];

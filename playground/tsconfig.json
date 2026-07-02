@@ -1,0 +1,18 @@
+{
+  // Typecheck config for the playground/showcase site:
+  //   npx tsc --noEmit -p playground/tsconfig.json
+  // Mirrors the vite aliases in vite.config.ts so tsc resolves the
+  // "fluidkit" / "fluidkit/*" GPU-subpath imports straight to source.
+  // vite.config.ts itself is excluded: it needs @types/node (node:url,
+  // __dirname), which the repo intentionally doesn't ship.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "fluidkit/liquid-metal": ["../src/liquid-metal/index.tsx"],
+      "fluidkit/water-field": ["../src/water-field/index.tsx"],
+      "fluidkit": ["../src/index.ts"]
+    }
+  },
+  "include": ["main.tsx", "vite-env.d.ts", "showcase", "demos"]
+}
