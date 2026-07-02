@@ -7,3 +7,4 @@ coverage/
 # Visual-verification scratch (Playwright screenshots / traces)
 .playwright-mcp/
 pg-*.png
+hero-*.png
