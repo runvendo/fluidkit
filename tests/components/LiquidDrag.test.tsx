@@ -18,8 +18,14 @@ async function loadLiquidDrag(initialReduced: boolean) {
     return { ...actual, useReducedMotion: () => state.reduced };
   });
   const mod = await import("../../src/components/LiquidDrag");
-  return { LiquidDrag: mod.LiquidDrag, state };
+  return {
+    LiquidDrag: mod.LiquidDrag,
+    velocityToStretch: mod.velocityToStretch,
+    state,
+  };
 }
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Motion writes `x`/`y`/`scaleX`/`scaleY` motion values onto the element as
  * substrings of the inline `transform` (confirmed against Magnetic's
@@ -304,5 +310,167 @@ describe("LiquidDrag", () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(onRender.mock.calls.length).toBe(commitsAfterMount);
+  });
+
+  it("flipping reduced motion ON mid-drag pins scales at exactly 1 while position keeps tracking", async () => {
+    const { LiquidDrag, state } = await loadLiquidDrag(false);
+    const { container, rerender } = render(
+      <LiquidDrag>
+        <span>x</span>
+      </LiquidDrag>
+    );
+    const root = container.querySelector(
+      '[data-fluidkit="liquid-drag"]'
+    ) as HTMLElement;
+    stubRect(root);
+
+    // Get genuinely mid-stretch first — the flip must never freeze the
+    // wrapper deformed (same review lesson as Magnetic's gating-flip test).
+    let cx = await fastDrag(root, 8, 60);
+    expect(readTransform(root).scaleX).toBeGreaterThan(1);
+
+    state.reduced = true;
+    rerender(
+      <LiquidDrag>
+        <span>x</span>
+      </LiquidDrag>
+    );
+
+    // Keep the same drag gesture going after the flip.
+    for (let i = 0; i < 5; i++) {
+      cx += 60;
+      pointerMove(cx, 0);
+      await sleep(8);
+    }
+
+    // Scales land at EXACTLY 1 — the literal-bypass path, not a spring
+    // still wobbling toward 1 — while the drag position keeps following
+    // the pointer (drag itself is never gated by reduced motion).
+    await vi.waitFor(() => {
+      const t = readTransform(root);
+      expect(t.scaleX).toBe(1);
+      expect(t.scaleY).toBe(1);
+      expect(t.x).toBeCloseTo(cx, 0);
+    });
+    expect(root.getAttribute("data-animating")).toBe("false");
+
+    pointerUp(cx, 0);
+  });
+
+  it("a mid-mount elasticity change is live in the stretch pipeline (no stale closure)", async () => {
+    const { LiquidDrag } = await loadLiquidDrag(false);
+    const { container, rerender } = render(
+      <LiquidDrag elasticity={1}>
+        <span>x</span>
+      </LiquidDrag>
+    );
+    const root = container.querySelector(
+      '[data-fluidkit="liquid-drag"]'
+    ) as HTMLElement;
+    stubRect(root);
+
+    // elasticity=1 clamps at 1.25 — drag until the live stretch clearly
+    // exceeds what the NEW clamp (1.01 below) could ever allow.
+    pointerDown(root, 0, 0);
+    let cx = 0;
+    for (let i = 0; i < 60 && readTransform(root).scaleX <= 1.08; i++) {
+      cx += 60;
+      pointerMove(cx, 0);
+      await sleep(8);
+    }
+    expect(readTransform(root).scaleX).toBeGreaterThan(1.08);
+
+    // Same mount, new elasticity. If a future Motion version memoized the
+    // useTransform callback (stale closure over the old elasticity), the
+    // raw target would stay ~1.25 and the spring would hold well above the
+    // new clamp for as long as the velocity stays high.
+    rerender(
+      <LiquidDrag elasticity={0.04}>
+        <span>x</span>
+      </LiquidDrag>
+    );
+
+    // Keep the velocity pegged while the smoothing spring adapts
+    // (~320ms), then sample: every reading must respect the new clamp
+    // (1.01) plus spring-wobble headroom — nowhere near the stale ~1.25.
+    for (let i = 0; i < 40; i++) {
+      cx += 60;
+      pointerMove(cx, 0);
+      await sleep(8);
+    }
+    let maxScaleX = 0;
+    for (let i = 0; i < 10; i++) {
+      cx += 60;
+      pointerMove(cx, 0);
+      await sleep(8);
+      maxScaleX = Math.max(maxScaleX, readTransform(root).scaleX);
+    }
+    expect(maxScaleX).toBeLessThan(1.05);
+
+    pointerUp(cx, 0);
+  });
+});
+
+describe("velocityToStretch (the pure velocity → scale mapping)", () => {
+  afterEach(() => {
+    vi.doUnmock("motion/react");
+    vi.resetModules();
+  });
+
+  const ELASTICITY = 0.4; // default → clamp at 1 + 0.4 · 0.25 = 1.1
+  const FAST = 5000; // comfortably past the full-stretch velocity
+
+  it("degenerates to the classic stretch/compress pair on a pure single-axis drag", async () => {
+    const { velocityToStretch } = await loadLiquidDrag(false);
+    const alongX = velocityToStretch(FAST, 0, ELASTICITY);
+    expect(alongX.scaleX).toBeCloseTo(1.1, 6);
+    expect(alongX.scaleY).toBeCloseTo(1 / 1.1, 6);
+
+    const alongY = velocityToStretch(0, -FAST, ELASTICITY);
+    expect(alongY.scaleY).toBeCloseTo(1.1, 6);
+    expect(alongY.scaleX).toBeCloseTo(1 / 1.1, 6);
+  });
+
+  it("is shear-free at exactly 45°: scaleX = scaleY = 1 by symmetry", async () => {
+    const { velocityToStretch } = await loadLiquidDrag(false);
+    for (const [vx, vy] of [
+      [FAST, FAST],
+      [-FAST, FAST],
+      [FAST, -FAST],
+      [-FAST, -FAST],
+    ]) {
+      const s = velocityToStretch(vx, vy, ELASTICITY);
+      expect(s.scaleX).toBeCloseTo(1, 6);
+      expect(s.scaleY).toBeCloseTo(1, 6);
+    }
+  });
+
+  it("has no step across the diagonal: samples just either side differ only slightly", async () => {
+    const { velocityToStretch } = await loadLiquidDrag(false);
+    // Both samples at full velocity, a hair either side of 45°. A binary
+    // dominant-axis pick would cliff scaleX from 1.1 to 1/1.1 (~19%) here.
+    const xDominant = velocityToStretch(FAST * 1.01, FAST, ELASTICITY);
+    const yDominant = velocityToStretch(FAST, FAST * 1.01, ELASTICITY);
+    expect(Math.abs(xDominant.scaleX - yDominant.scaleX)).toBeLessThan(0.01);
+    expect(Math.abs(xDominant.scaleY - yDominant.scaleY)).toBeLessThan(0.01);
+    // And both sit near the shear-free identity, not near the clamp.
+    expect(xDominant.scaleX).toBeGreaterThan(0.99);
+    expect(xDominant.scaleX).toBeLessThan(1.01);
+  });
+
+  it("preserves volume (scaleX · scaleY = 1) and respects the clamp at every angle", async () => {
+    const { velocityToStretch } = await loadLiquidDrag(false);
+    const maxStretch = 1 + ELASTICITY * 0.25;
+    for (let deg = 0; deg < 360; deg += 15) {
+      const rad = (deg * Math.PI) / 180;
+      const s = velocityToStretch(
+        FAST * Math.cos(rad),
+        FAST * Math.sin(rad),
+        ELASTICITY
+      );
+      expect(s.scaleX * s.scaleY).toBeCloseTo(1, 6);
+      expect(s.scaleX).toBeGreaterThanOrEqual(1 / maxStretch - 1e-9);
+      expect(s.scaleX).toBeLessThanOrEqual(maxStretch + 1e-9);
+    }
   });
 });

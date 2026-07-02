@@ -3,14 +3,19 @@
  * (`drag`, `dragConstraints`, `dragSnapToOrigin`) — dragging itself is never
  * reimplemented. The liquid feel comes entirely from a stretch pipeline
  * layered on top: `useVelocity` on the drag `x`/`y` motion values feeds
- * `useTransform`, which maps velocity into a volume-preserving scale (the
- * dominant axis stretches, the cross axis compresses by the reciprocal, so
- * `scaleX · scaleY` stays ~1, the same trick as `useSquish`/`JellyButton`),
- * clamped to at most `1 + elasticity · 0.25`. A `useSpring` smooths that raw
- * target, so a hard release doesn't snap the shape — it wobbles back to 1
- * with the spring's natural overshoot. Every step of this pipeline is
- * Motion values driving Motion's own render loop; the component never calls
- * `setState` per drag frame (see the Profiler constraint test).
+ * `useTransform`, which maps velocity into a volume-preserving scale
+ * (`scaleX · scaleY` stays ~1, the same trick as `useSquish`/`JellyButton`):
+ * total stretch grows with overall speed, clamped to at most
+ * `1 + elasticity · 0.25`, and is split CONTINUOUSLY between the axes by
+ * each axis's squared-velocity share — a fast horizontal drag stretches X
+ * and compresses Y, an exactly-45° drag is shear-free (both scales 1), and
+ * rolling the drag angle between them glides smoothly with no step at the
+ * diagonal (see `velocityToStretch` for why a binary dominant-axis pick is
+ * not acceptable here). A `useSpring` smooths the raw target, so a hard
+ * release doesn't snap the shape — it wobbles back to 1 with the spring's
+ * natural overshoot. Every step of this pipeline is Motion values driving
+ * Motion's own render loop; the component never calls `setState` per drag
+ * frame (see the Profiler constraint test).
  *
  * `elasticity` closes over the CURRENT render's value inside the
  * `useTransform` callbacks — Motion's `useCombineMotionValues` internals
@@ -93,32 +98,48 @@ const DEFAULT_SPRING: SpringConfig = { stiffness: 300, damping: 12 };
 const FULL_STRETCH_VELOCITY = 1500;
 
 /**
- * Pure velocity → scale mapping: the dominant axis stretches proportionally
- * to its speed (clamped to `1 + elasticity · 0.25`), the cross axis
- * compresses to the reciprocal so the "volume" (`scaleX · scaleY`) stays
- * ~1. `elasticity <= 0` (or both velocities at rest) short-circuits to the
+ * Pure velocity → scale mapping. Total stretch grows with OVERALL speed
+ * (clamped to `1 + elasticity · 0.25`), then splits continuously between
+ * the axes by each axis's squared-velocity share (`wx = vx²/(vx²+vy²)`),
+ * lerped in log space:
+ *
+ *   scaleX = stretch^(wx − wy),  scaleY = stretch^(wy − wx) = 1/scaleX
+ *
+ * so the "volume" (`scaleX · scaleY`) is exactly 1 at every angle. A pure
+ * single-axis drag (`wy = 0`) degenerates to the classic stretch/compress
+ * pair; an exactly-45° drag (`wx = wy`) yields the shear-free identity; and
+ * rolling the drag angle between them is CONTINUOUS. A binary
+ * dominant-axis pick is not acceptable here: it steps `scaleX` between
+ * `stretch` and `1/stretch` (~19% cliff at full velocity) the instant
+ * dominance flips, and a slow flip lands squarely in the underdamped
+ * smoothing spring's passband as visible axis-swap wobble.
+ *
+ * `elasticity <= 0` (or both velocities at rest) short-circuits to the
  * identity scale.
+ *
+ * @internal Exported for unit tests only — not part of the public API
+ * surface (`src/components/index.ts` re-exports only the component).
  */
-function velocityToStretch(
+export function velocityToStretch(
   vx: number,
   vy: number,
   elasticity: number
 ): { scaleX: number; scaleY: number } {
   if (elasticity <= 0) return { scaleX: 1, scaleY: 1 };
 
-  const speedX = Math.abs(vx);
-  const speedY = Math.abs(vy);
-  if (speedX === 0 && speedY === 0) return { scaleX: 1, scaleY: 1 };
+  const speedSq = vx * vx + vy * vy;
+  if (speedSq === 0) return { scaleX: 1, scaleY: 1 };
 
   const maxStretch = 1 + elasticity * 0.25;
-  const dominantSpeed = Math.max(speedX, speedY);
-  const t = Math.min(dominantSpeed / FULL_STRETCH_VELOCITY, 1);
+  const t = Math.min(Math.sqrt(speedSq) / FULL_STRETCH_VELOCITY, 1);
   const stretch = 1 + t * (maxStretch - 1);
-  const compress = 1 / stretch;
 
-  return speedX >= speedY
-    ? { scaleX: stretch, scaleY: compress }
-    : { scaleX: compress, scaleY: stretch };
+  // wx − wy = 2·wx − 1 ∈ [−1, 1]: +1 pins the full stretch on X, −1 on Y,
+  // 0 (the diagonal) is the identity.
+  const wx = (vx * vx) / speedSq;
+  const scaleX = Math.exp(Math.log(stretch) * (2 * wx - 1));
+
+  return { scaleX, scaleY: 1 / scaleX };
 }
 
 export function LiquidDrag({
