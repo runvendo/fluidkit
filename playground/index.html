@@ -82,9 +82,9 @@
       [data-fluidkit="liquid-tab"] {
         position: relative; background: transparent; border: 0; font: inherit; font-size: 13px; font-weight: 600;
         color: #3a3b44; padding: 8px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap;
-        transition: color .16s ease .1s; /* wait a beat: color lands with the liquid mass */
+        transition: color .16s ease .32s; /* losing tab stays legible until its pill drains */
       }
-      [data-fluidkit="liquid-tab"][aria-selected="true"] { color: #fff; }
+      [data-fluidkit="liquid-tab"][aria-selected="true"] { color: #fff; transition-delay: .12s; }
 
       /* interactive controls */
       .controls { display: flex; flex-wrap: wrap; gap: 16px 18px; padding: 13px 15px; border-top: 1px solid #ecedf2; background: #fafafd; }

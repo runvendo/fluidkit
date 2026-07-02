@@ -50,12 +50,12 @@ describe("resolveMaterial", () => {
     expect(m.fillStyle.backdropFilter).toBeUndefined();
   });
 
-  it("mercury: SOLID fill (no gradient), NO specular", async () => {
+  it("mercury: SOLID fill (no gradient), NO specular, light silver default", async () => {
     const { resolveMaterial } = await loadWithBackdropSupport(true);
     const m = resolveMaterial("mercury");
     expect(m.specular).toBe(false);
     expect(String(m.fillStyle.background)).not.toContain("gradient");
-    expect(m.fillStyle.background).toBe("#aab0bb");
+    expect(m.fillStyle.background).toBe("#cdd3dd");
   });
 
   it("mercury: honors a custom color", async () => {

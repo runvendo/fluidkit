@@ -131,7 +131,7 @@ function DropletsDemo() {
   const [interactive, setInteractive] = useState(true);
   const [refraction, setRefraction] = useState(false);
   return <Card id="droplets" title="Droplets" desc="Liquid drops with surface tension: touch-connect, stretch, snap. Grab one, drag it out until the neck tears, release to re-merge." hint="drag a drop — tear it off" wall
-    stage={<Droplets followPointer={!interactive} interactive={interactive} count={count} size={size} spread={spread} speed={speed} material={material} reflection={reflection} refraction={refraction} color="#8d94a1" />}
+    stage={<Droplets followPointer={!interactive} interactive={interactive} count={count} size={size} spread={spread} speed={speed} material={material} reflection={reflection} refraction={refraction} color={material === "flat" ? "#8d94a1" : undefined} />}
     code={`<Droplets interactive material="${material}"${refraction ? " refraction" : ""} />`}
     controls={<><Seg label="material" value={material} set={setMaterial} options={MATERIALS} /><Toggle label="interactive" value={interactive} set={setInteractive} /><Toggle label="reflection" value={reflection} set={setReflection} /><Toggle label="refraction" value={refraction} set={setRefraction} /><Slider label="count" value={count} set={setCount} min={1} max={5} /><Slider label="size" value={size} set={setSize} min={20} max={64} /><Slider label="spread" value={spread} set={setSpread} min={40} max={160} /><Slider label="speed" value={speed} set={setSpeed} min={0.2} max={3} step={0.1} /></>} />;
 }
@@ -175,7 +175,7 @@ function ThinkingDemo() {
   const [size, setSize] = useState(18), [speed, setSpeed] = useState(1.2);
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   return <Card id="thinking" title="Thinking" desc="Working indicator: three droplets merge and split with fast-settle tension. role=status for assistive tech." wall
-    stage={<Thinking size={size} speed={speed} material={material} color="#8d94a1" />}
+    stage={<Thinking size={size} speed={speed} material={material} color={material === "flat" ? "#8d94a1" : undefined} />}
     code={`{isWorking && <Thinking label="Generating" material="${material}" />}`}
     controls={<><Seg label="material" value={material} set={setMaterial} options={MATERIALS} /><Slider label="size" value={size} set={setSize} min={10} max={32} /><Slider label="speed" value={speed} set={setSpeed} min={0.3} max={3} step={0.1} /></>} />;
 }
