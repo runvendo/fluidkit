@@ -2,15 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 
 /**
- * `LiquidTabs` composes `useGoo()` (reduced-motion-aware goo filter) and
- * `usePrefersReducedMotion()`, both of which read Motion's
- * `useReducedMotion()` under the hood. Matching the pattern proven in
- * tests/components/ThinkingBlob.test.tsx, we mock `motion/react` per test,
- * always keeping the real `motion` factory (via `importOriginal`) so
- * `motion.div`'s `layoutId` FLIP machinery still renders — only
- * `useReducedMotion` is overridden. Each test resets the module registry so
- * `LiquidTabs` and its dependency chain are re-imported fresh against the
- * mock.
+ * Same mocking pattern as the other component tests: mock `motion/react`
+ * per test via `importOriginal` so only `useReducedMotion` is overridden,
+ * and reset the module registry so `LiquidTabs` and its dependency chain
+ * are re-imported fresh against the mock.
  */
 
 async function mockReducedMotion(reduced: boolean) {
@@ -166,14 +161,42 @@ describe("LiquidTabs", () => {
       />
     );
 
-    const indicator = container.querySelector(
-      '[data-fluidkit="liquid-tab-indicator"]'
-    ) as HTMLElement;
-
-    // jsdom's CSSOM normalizes hex colors to rgb() for backgroundColor, so
-    // the serialized inline style differs from the raw hex string passed in;
+    // The color lands on the engine's material fill layer now, not on a
+    // styled box. jsdom's CSSOM normalizes hex colors to rgb():
     // #abcdef === rgb(171, 205, 239) is what actually matters here.
-    expect(indicator.style.backgroundColor).toBe("rgb(171, 205, 239)");
+    const fill = container.querySelector(
+      '[data-fluidkit="liquid-tab-indicator"] [data-fluidkit="liquid-fill"]'
+    ) as HTMLElement;
+    expect(fill.style.backgroundColor).toBe("rgb(171, 205, 239)");
+  });
+
+  it("draws the indicator as engine geometry (clip-path), never a filtered box", async () => {
+    const LiquidTabs = await mockReducedMotion(false);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} />
+    );
+
+    const clip = container.querySelector(
+      '[data-fluidkit="liquid-tab-indicator"] [data-fluidkit="liquid-clip"]'
+    ) as HTMLElement;
+    expect(clip).not.toBeNull();
+    expect(clip.style.clipPath).toContain("path(");
+  });
+
+  it("snaps to a single pill (one subpath, no bridge) under reduced motion", async () => {
+    const LiquidTabs = await mockReducedMotion(true);
+    const { container, rerender } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} />
+    );
+    rerender(<LiquidTabs items={ITEMS} value="three" onChange={() => {}} />);
+
+    const clip = container.querySelector(
+      '[data-fluidkit="liquid-tab-indicator"] [data-fluidkit="liquid-clip"]'
+    ) as HTMLElement;
+    // One closed subpath = the active pill only; a mid-flight bridge scene
+    // would concatenate several.
+    const closures = (clip.style.clipPath.match(/Z/g) ?? []).length;
+    expect(closures).toBe(1);
   });
 
   it("gives the tab strip role=tablist and each tab role=tab", async () => {
