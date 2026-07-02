@@ -15,4 +15,8 @@ export type {
 } from "./materials";
 export { resolveMaterial } from "./materials";
 export { LiquidRenderer } from "./LiquidRenderer";
-export type { LiquidRendererProps } from "./LiquidRenderer";
+export type {
+  LiquidRendererProps,
+  LiquidScene,
+  LiquidSceneHandle,
+} from "./LiquidRenderer";

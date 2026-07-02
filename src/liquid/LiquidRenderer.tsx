@@ -12,18 +12,41 @@
  *   3. spec    — svg with EXPLICIT 100% width/height, clipped to the shape,
  *                radial-gradient ellipses (no blur filters)
  *   4. content — unclipped overlay; only ever cross-fades, never scales
+ *
+ * Animation loops drive the scene through the imperative `LiquidSceneHandle`
+ * (via `ref`): per-frame clip-path strings and specular ellipse attributes
+ * are written straight to the DOM nodes, so a 60fps loop never re-renders
+ * React. The declarative `path`/`speculars` props remain the SSR/static
+ * rendering; `specularSlots` sizes the ellipse pool the handle may write to
+ * (scenes can light fewer bodies on some frames — unused slots are hidden).
  */
 
 import type { CSSProperties, ReactNode } from "react";
-import { useId } from "react";
+import { forwardRef, useId, useImperativeHandle, useRef } from "react";
 import type { ResolvedMaterial } from "./materials";
 import type { SpecularSpot } from "./specular";
+
+export interface LiquidScene {
+  /** Concatenated SVG subpaths for `clip-path: path(...)`. */
+  path: string;
+  speculars?: SpecularSpot[];
+}
+
+export interface LiquidSceneHandle {
+  /** Write the scene straight to the DOM (no React render). */
+  setScene(scene: LiquidScene): void;
+}
 
 export interface LiquidRendererProps {
   /** Concatenated SVG subpaths for `clip-path: path(...)`. */
   path: string;
   material: ResolvedMaterial;
   speculars?: SpecularSpot[];
+  /**
+   * Size of the specular ellipse pool available to `setScene` (defaults to
+   * `speculars.length`). Slots beyond the current scene are hidden.
+   */
+  specularSlots?: number;
   shadow?: boolean;
   /**
    * Clips the content overlay to the liquid shape so content is revealed
@@ -35,18 +58,69 @@ export interface LiquidRendererProps {
 
 const layer: CSSProperties = { position: "absolute", inset: 0 };
 const fmtDeg = (n: number) => n.toFixed(1);
+const HIDDEN_SPOT: SpecularSpot = {
+  cx: 0,
+  cy: 0,
+  rx: 0,
+  ry: 0,
+  rotate: 0,
+  opacity: 0,
+};
 
-export function LiquidRenderer({
-  path,
-  material,
-  speculars = [],
-  shadow = false,
-  clipContent = false,
-  children,
-}: LiquidRendererProps) {
+function writeSpot(node: SVGEllipseElement, s: SpecularSpot): void {
+  node.setAttribute("cx", String(s.cx));
+  node.setAttribute("cy", String(s.cy));
+  node.setAttribute("rx", String(s.rx));
+  node.setAttribute("ry", String(s.ry));
+  node.setAttribute("transform", `rotate(${fmtDeg(s.rotate)} ${s.cx} ${s.cy})`);
+  node.setAttribute("opacity", String(s.opacity));
+}
+
+export const LiquidRenderer = forwardRef<
+  LiquidSceneHandle,
+  LiquidRendererProps
+>(function LiquidRenderer(
+  {
+    path,
+    material,
+    speculars = [],
+    specularSlots,
+    shadow = false,
+    clipContent = false,
+    children,
+  },
+  ref
+) {
   const gradientId = useId();
   const clipPath = `path('${path}')`;
-  const showSpec = material.specular && speculars.length > 0;
+  const slots = Math.max(specularSlots ?? speculars.length, speculars.length);
+  const showSpec = material.specular && slots > 0;
+
+  const shadowRef = useRef<HTMLDivElement>(null);
+  const clipRef = useRef<HTMLDivElement>(null);
+  const specRef = useRef<SVGSVGElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const ellipseRefs = useRef<(SVGEllipseElement | null)[]>([]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      setScene(scene: LiquidScene) {
+        const nextClip = `path('${scene.path}')`;
+        if (shadowRef.current) shadowRef.current.style.clipPath = nextClip;
+        if (clipRef.current) clipRef.current.style.clipPath = nextClip;
+        if (specRef.current) specRef.current.style.clipPath = nextClip;
+        if (clipContent && contentRef.current) {
+          contentRef.current.style.clipPath = nextClip;
+        }
+        const spots = scene.speculars ?? [];
+        ellipseRefs.current.forEach((node, i) => {
+          if (node) writeSpot(node, spots[i] ?? HIDDEN_SPOT);
+        });
+      },
+    }),
+    [clipContent]
+  );
 
   return (
     <>
@@ -60,12 +134,17 @@ export function LiquidRenderer({
           aria-hidden
         >
           <div
+            ref={shadowRef}
             data-fluidkit="liquid-shadow"
             style={{ ...layer, background: "rgba(46,44,72,0.16)", clipPath }}
           />
         </div>
       )}
-      <div data-fluidkit="liquid-clip" style={{ ...layer, clipPath }}>
+      <div
+        ref={clipRef}
+        data-fluidkit="liquid-clip"
+        style={{ ...layer, clipPath }}
+      >
         <div
           data-fluidkit="liquid-fill"
           style={{ ...layer, ...material.fillStyle }}
@@ -73,6 +152,7 @@ export function LiquidRenderer({
       </div>
       {showSpec && (
         <svg
+          ref={specRef}
           data-fluidkit="liquid-spec"
           width="100%"
           height="100%"
@@ -86,22 +166,29 @@ export function LiquidRenderer({
               <stop offset="100%" stopColor="rgba(255,255,255,0)" />
             </radialGradient>
           </defs>
-          {speculars.map((s, i) => (
-            <ellipse
-              key={i}
-              cx={s.cx}
-              cy={s.cy}
-              rx={s.rx}
-              ry={s.ry}
-              transform={`rotate(${fmtDeg(s.rotate)} ${s.cx} ${s.cy})`}
-              fill={`url(#${gradientId})`}
-              opacity={s.opacity}
-            />
-          ))}
+          {Array.from({ length: slots }, (_, i) => {
+            const s = speculars[i] ?? HIDDEN_SPOT;
+            return (
+              <ellipse
+                key={i}
+                ref={(node) => {
+                  ellipseRefs.current[i] = node;
+                }}
+                cx={s.cx}
+                cy={s.cy}
+                rx={s.rx}
+                ry={s.ry}
+                transform={`rotate(${fmtDeg(s.rotate)} ${s.cx} ${s.cy})`}
+                fill={`url(#${gradientId})`}
+                opacity={s.opacity}
+              />
+            );
+          })}
         </svg>
       )}
       {children != null && (
         <div
+          ref={contentRef}
           data-fluidkit="liquid-content"
           style={clipContent ? { ...layer, clipPath } : { ...layer }}
         >
@@ -110,4 +197,4 @@ export function LiquidRenderer({
       )}
     </>
   );
-}
+});
