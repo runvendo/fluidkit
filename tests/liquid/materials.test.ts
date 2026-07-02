@@ -38,6 +38,18 @@ describe("resolveMaterial", () => {
     expect(m.specular).toBe(true); // still lit — it is still "glass" to the user
   });
 
+  it("glass: prepends the refraction filter to the backdrop chain when given", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(true);
+    const m = resolveMaterial("glass", { refractionUrl: "url(#rf)" });
+    expect(m.fillStyle.backdropFilter).toBe("url(#rf) blur(16px) saturate(1.8)");
+  });
+
+  it("glass: ignores the refraction url when backdrop-filter is unsupported", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(false);
+    const m = resolveMaterial("glass", { refractionUrl: "url(#rf)" });
+    expect(m.fillStyle.backdropFilter).toBeUndefined();
+  });
+
   it("mercury: SOLID fill (no gradient), NO specular", async () => {
     const { resolveMaterial } = await loadWithBackdropSupport(true);
     const m = resolveMaterial("mercury");

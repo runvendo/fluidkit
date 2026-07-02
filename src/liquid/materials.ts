@@ -19,6 +19,12 @@ export interface ResolveMaterialOptions {
   tint?: string;
   /** Fill for the `flat` material. */
   color?: string;
+  /**
+   * `url(#id)` of a refraction displacement filter (from `useRefraction`,
+   * already gated on `supportsRefraction()`) prepended to the glass
+   * backdrop chain. Null/undefined renders plain glass blur.
+   */
+  refractionUrl?: string | null;
 }
 
 export interface ResolvedMaterial {
@@ -46,12 +52,15 @@ export function resolveMaterial(
         specular: true,
       };
     }
+    const backdrop = options.refractionUrl
+      ? `${options.refractionUrl} ${GLASS_BACKDROP}`
+      : GLASS_BACKDROP;
     return {
       kind: "glass",
       fillStyle: {
         background: options.tint ?? GLASS_TINT,
-        backdropFilter: GLASS_BACKDROP,
-        WebkitBackdropFilter: GLASS_BACKDROP,
+        backdropFilter: backdrop,
+        WebkitBackdropFilter: backdrop,
       },
       specular: true,
     };

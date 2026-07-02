@@ -21,6 +21,7 @@ import {
   defaultLight,
   resolveMaterial,
   specularPlacement,
+  useRefraction,
 } from "../liquid";
 import type {
   LiquidBody,
@@ -54,6 +55,12 @@ export interface DropletsProps extends HTMLAttributes<HTMLDivElement> {
   light?: Vec | null;
   /** Paint specular reflections on glass. Defaults to `true`. */
   reflection?: boolean;
+  /**
+   * Edge lensing on glass via an SVG displacement filter inside
+   * `backdrop-filter` (Chromium-only; silently degrades to plain glass
+   * blur elsewhere). Defaults to `false`.
+   */
+  refraction?: boolean;
   /** An extra drop chases the pointer and merges with the cluster. */
   followPointer?: boolean;
   /**
@@ -123,6 +130,7 @@ export function Droplets({
   color,
   light,
   reflection = true,
+  refraction = false,
   followPointer = false,
   interactive = false,
   onGrab,
@@ -143,9 +151,14 @@ export function Droplets({
     () => layoutHomes(count, size, spread, seed),
     [count, size, spread, seed]
   );
+  const { url: refractionUrl, defs: refractionDefs } = useRefraction(
+    refraction && material === "glass",
+    side,
+    side
+  );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, refractionUrl }),
+    [material, tint, color, refractionUrl]
   );
   const sceneLight =
     !reflection || light === null ? null : light ?? defaultLight(side, side);
@@ -326,6 +339,7 @@ export function Droplets({
       }
       {...rest}
     >
+      {refractionDefs}
       <LiquidRenderer
         ref={renderer}
         path={staticScene.path}

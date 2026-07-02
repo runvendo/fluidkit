@@ -19,6 +19,7 @@ The material is a prop, not a separate component: the same shapes render as clea
 | `color` | `string` | `currentColor` | Flat-material fill. |
 | `light` | `{x, y} \| null` | above, 30% from left | Scene light in px (container coords). `null` disables highlights. |
 | `reflection` | `boolean` | `true` | Paint specular reflections on glass. |
+| `refraction` | `boolean` | `false` | Edge lensing on glass (SVG displacement inside `backdrop-filter`, Chromium-only; degrades silently to plain glass blur). |
 | `followPointer` | `boolean` | `false` | An extra drop chases the pointer and merges with the cluster. |
 | `interactive` | `boolean` | `false` | Drops can be grabbed, dragged, torn off, and re-merged (see below). |
 | `onGrab` | `(index: number) => void` | — | The pointer picked up a drop. |

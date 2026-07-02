@@ -14,6 +14,8 @@ export type {
   ResolveMaterialOptions,
 } from "./materials";
 export { resolveMaterial } from "./materials";
+export type { RefractionDef } from "./refraction";
+export { displacementMapUri, useRefraction } from "./refraction";
 export { LiquidRenderer } from "./LiquidRenderer";
 export type {
   LiquidRendererProps,

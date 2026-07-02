@@ -20,6 +20,7 @@ The flagship primitive. One liquid body morphs between a closed (pill) and open 
 | `tint` / `color` | `string` | — | Glass tint / flat fill. |
 | `light` | `{x, y} \| null` | above, 30% from left | Scene light; `null` disables highlights. |
 | `reflection` | `boolean` | `true` | Paint specular reflections on glass. |
+| `refraction` | `boolean` | `false` | Edge lensing on glass (SVG displacement inside `backdrop-filter`, Chromium-only; degrades silently to plain glass blur). |
 | `satellites` | `boolean` | `true` | Droplets absorbed into the surface on open. |
 | `closedContent` | `ReactNode` | — | Face shown on the pill. |
 | `openContent` | `ReactNode` | — | Face shown on the panel. |

@@ -18,6 +18,7 @@ import {
   resolveMaterial,
   roundRectPath,
   specularPlacement,
+  useRefraction,
 } from "../liquid";
 import type {
   LiquidBody,
@@ -49,6 +50,12 @@ export interface MorphSurfaceProps
   light?: Vec | null;
   /** Paint specular reflections on glass. Defaults to `true`. */
   reflection?: boolean;
+  /**
+   * Edge lensing on glass via an SVG displacement filter inside
+   * `backdrop-filter` (Chromium-only; silently degrades to plain glass
+   * blur elsewhere). Defaults to `false`.
+   */
+  refraction?: boolean;
   /** Satellite droplets absorbed into the surface on open. */
   satellites?: boolean;
   /** Content shown on the closed pill. */
@@ -85,6 +92,7 @@ export function MorphSurface({
   color,
   light,
   reflection = true,
+  refraction = false,
   satellites = true,
   closedContent,
   openContent,
@@ -108,9 +116,14 @@ export function MorphSurface({
     [closedSize.width]
   );
 
+  const { url: refractionUrl, defs: refractionDefs } = useRefraction(
+    refraction && material === "glass",
+    width,
+    height
+  );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, refractionUrl }),
+    [material, tint, color, refractionUrl]
   );
   const sceneLight =
     !reflection || light === null
@@ -233,6 +246,7 @@ export function MorphSurface({
       data-animating={animating && settling}
       {...rest}
     >
+      {refractionDefs}
       <LiquidRenderer
         ref={renderer}
         path={staticScene.path}
