@@ -246,6 +246,11 @@ export function Droplets({
     return { x: e.clientX - box.left, y: e.clientY - box.top };
   };
 
+  /** Keep a dragged drop fully inside the canvas (the clip ends at the
+   * container edge, so an escaped drop would just get sliced off). */
+  const clampToCanvas = (v: number, r: number) =>
+    Math.max(r, Math.min(side - r, v));
+
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if (!interactive || !animating) return;
     const p = localPoint(e);
@@ -266,8 +271,8 @@ export function Droplets({
       } catch {
         // jsdom / detached nodes — capture is a nicety, not a requirement
       }
-      springs.setTarget(i * 2, p.x, GRAB_SPRING);
-      springs.setTarget(i * 2 + 1, p.y, GRAB_SPRING);
+      springs.setTarget(i * 2, clampToCanvas(p.x, homes[i].r), GRAB_SPRING);
+      springs.setTarget(i * 2 + 1, clampToCanvas(p.y, homes[i].r), GRAB_SPRING);
       onGrab?.(i);
       return;
     }
@@ -289,8 +294,9 @@ export function Droplets({
     const p = localPoint(e);
     const g = grab.current;
     if (g) {
-      springs.setTarget(g.index * 2, p.x, GRAB_SPRING);
-      springs.setTarget(g.index * 2 + 1, p.y, GRAB_SPRING);
+      const r = homes[g.index].r;
+      springs.setTarget(g.index * 2, clampToCanvas(p.x, r), GRAB_SPRING);
+      springs.setTarget(g.index * 2 + 1, clampToCanvas(p.y, r), GRAB_SPRING);
       return;
     }
     if (!followPointer) return;

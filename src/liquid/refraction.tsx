@@ -3,11 +3,12 @@
  * an SVG displacement filter referenced from `backdrop-filter`, so the
  * backdrop bends at the surface's rim like it would through thick glass.
  *
- * The displacement map is a static data-URI SVG: red encodes X displacement,
- * green encodes Y, and a radial overlay holds the CENTER at neutral gray so
- * only the rim lenses. `feDisplacementMap` inside `backdrop-filter` is
- * effectively Chromium-only today, so everything gates on
- * `supportsRefraction()` and silently degrades to plain glass blur.
+ * The displacement map is a static data-URI SVG lens: red encodes X
+ * displacement, green encodes Y, ramping across the scene so the backdrop
+ * is pulled toward the center — glass magnifies what's behind it.
+ * `feDisplacementMap` inside `backdrop-filter` is effectively
+ * Chromium-only today, so everything gates on `supportsRefraction()` and
+ * silently degrades to plain glass blur.
  *
  * Constraints honored: the filter applies to the material FILL child (the
  * clip-path stays on its wrapper); the defs carrier svg has explicit 0x0
@@ -18,40 +19,33 @@ import type { ReactNode } from "react";
 import { useId, useMemo } from "react";
 import { supportsRefraction } from "../utils/featureDetect";
 
-/** Displacement strength in px at the rim. */
-const REFRACTION_SCALE = 24;
-/** Fraction of the radius that stays optically flat (no displacement). */
-const NEUTRAL_CORE = 0.68;
-
-/** Neutral gray for a displacement map: R=G=128 → zero displacement. */
-const NEUTRAL = "#808000";
+/** Displacement strength in px (peak, at the scene's edges). */
+const REFRACTION_SCALE = 60;
 
 /**
  * Pure: data-URI SVG displacement map for a `width`x`height` scene.
  * Red ramps across X, green across Y (screen-composited so the channels
- * stay independent); a radial neutral core limits lensing to the rim.
+ * stay independent), forming a lens that pulls the sampled backdrop toward
+ * the scene center. The ramps are S-curves — nearly neutral through the
+ * middle, steep at the edges — so the center stays optically flat and the
+ * lensing concentrates at the rim, like thick glass.
  */
 export function displacementMapUri(width: number, height: number): string {
+  // Channel value 0.5 = no displacement; the plateau around the center
+  // keeps mid-scene shift under ~10% of peak.
+  const ramp = (color: string) =>
+    `<stop offset="0" stop-color="#${color === "r" ? "ff0000" : "00ff00"}"/>` +
+    `<stop offset="0.35" stop-color="#${color === "r" ? "960000" : "009600"}"/>` +
+    `<stop offset="0.65" stop-color="#${color === "r" ? "690000" : "006900"}"/>` +
+    `<stop offset="1" stop-color="#000000"/>`;
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
     `<defs>` +
-    `<linearGradient id="rx" x1="0" y1="0" x2="1" y2="0">` +
-    `<stop offset="0" stop-color="#ff0000"/>` +
-    `<stop offset="1" stop-color="#000000"/>` +
-    `</linearGradient>` +
-    `<linearGradient id="gy" x1="0" y1="0" x2="0" y2="1">` +
-    `<stop offset="0" stop-color="#00ff00"/>` +
-    `<stop offset="1" stop-color="#000000"/>` +
-    `</linearGradient>` +
-    `<radialGradient id="core" cx="0.5" cy="0.5" r="0.5">` +
-    `<stop offset="0" stop-color="${NEUTRAL}" stop-opacity="1"/>` +
-    `<stop offset="${NEUTRAL_CORE}" stop-color="${NEUTRAL}" stop-opacity="1"/>` +
-    `<stop offset="1" stop-color="${NEUTRAL}" stop-opacity="0"/>` +
-    `</radialGradient>` +
+    `<linearGradient id="rx" x1="0" y1="0" x2="1" y2="0">${ramp("r")}</linearGradient>` +
+    `<linearGradient id="gy" x1="0" y1="0" x2="0" y2="1">${ramp("g")}</linearGradient>` +
     `</defs>` +
     `<rect width="100%" height="100%" fill="url(#rx)"/>` +
     `<rect width="100%" height="100%" fill="url(#gy)" style="mix-blend-mode:screen"/>` +
-    `<rect width="100%" height="100%" fill="url(#core)"/>` +
     `</svg>`;
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }

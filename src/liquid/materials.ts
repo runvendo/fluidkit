@@ -37,6 +37,8 @@ export interface ResolvedMaterial {
 
 const GLASS_TINT = "rgba(255,255,255,0.3)";
 const GLASS_BACKDROP = "blur(16px) saturate(1.8)";
+/** Refracting glass frosts less, so the lensing stays legible. */
+const GLASS_BACKDROP_REFRACT = "blur(8px) saturate(1.8)";
 const GLASS_FALLBACK_FILL = "rgba(255,255,255,0.65)";
 const MERCURY_FILL = "#aab0bb";
 
@@ -53,7 +55,7 @@ export function resolveMaterial(
       };
     }
     const backdrop = options.refractionUrl
-      ? `${options.refractionUrl} ${GLASS_BACKDROP}`
+      ? `${options.refractionUrl} ${GLASS_BACKDROP_REFRACT}`
       : GLASS_BACKDROP;
     return {
       kind: "glass",

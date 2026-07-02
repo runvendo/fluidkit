@@ -41,7 +41,7 @@ describe("resolveMaterial", () => {
   it("glass: prepends the refraction filter to the backdrop chain when given", async () => {
     const { resolveMaterial } = await loadWithBackdropSupport(true);
     const m = resolveMaterial("glass", { refractionUrl: "url(#rf)" });
-    expect(m.fillStyle.backdropFilter).toBe("url(#rf) blur(16px) saturate(1.8)");
+    expect(m.fillStyle.backdropFilter).toBe("url(#rf) blur(8px) saturate(1.8)");
   });
 
   it("glass: ignores the refraction url when backdrop-filter is unsupported", async () => {

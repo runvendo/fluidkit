@@ -1,13 +1,13 @@
 /**
  * Tab strip whose active-tab indicator is a liquid engine body.
  *
- * On tab change the indicator doesn't slide — it FLOWS: the old tab's pill
- * drains while the new tab's pill fills, and while both hold mass a tension
- * bridge (the engine's metaball neck) stretches between their facing edges.
- * As the old pill drains, the bridge's stretch (gap / combined radii) grows
- * past `SNAP_STRETCH` and the neck snaps free; the new pill settles on a
- * taut, slightly-overshooting spring. All of it is one `clip-path` scene
- * written imperatively per frame — no filters, no per-frame React commits.
+ * On tab change the indicator doesn't slide — it FLOWS: a drop of mass
+ * leaves the old tab's pill (stretching a tension bridge that thins and
+ * snaps past `SNAP_STRETCH` — the engine's real hysteresis), flies to the
+ * target tab, and merges into the new pill on touch, while the old pill
+ * drains and the new one fills and settles on a taut, slightly-overshooting
+ * spring. All of it is one `clip-path` scene written imperatively per frame
+ * — no filters, no per-frame React commits.
  *
  * Layering: the indicator lives on its own absolutely-positioned,
  * `pointer-events:none` layer BEHIND the buttons; the `<button role="tab">`
@@ -34,15 +34,12 @@ import {
 import { useAnimationFrame } from "motion/react";
 import {
   LiquidRenderer,
-  bridgePath,
+  TensionField,
   circlePath,
-  dist,
-  neckWaist,
   resolveMaterial,
   roundRectPath,
 } from "../liquid";
-import type { LiquidSceneHandle } from "../liquid";
-import { SNAP_STRETCH } from "../liquid/tension";
+import type { LiquidBody, LiquidSceneHandle } from "../liquid";
 import { useMotionSprings } from "../liquid/useMotionSprings";
 import { resolveColor, usePrefersReducedMotion } from "../utils";
 
@@ -62,9 +59,13 @@ export interface LiquidTabsProps
 }
 
 /** New pill fills on a taut spring with a touch of overshoot. */
-const FILL_SPRING = { stiffness: 420, damping: 30 };
-/** Old pill drains slightly slower, so the bridge visibly carries mass. */
-const DRAIN_SPRING = { stiffness: 260, damping: 26 };
+const FILL_SPRING = { stiffness: 380, damping: 30 };
+/** Old pill drains a beat behind, so the mass visibly leaves it. */
+const DRAIN_SPRING = { stiffness: 300, damping: 27 };
+/** The traveling drop of mass — quick, but slow enough to read. */
+const FLY_SPRING = { stiffness: 230, damping: 24 };
+/** Traveling drop radius, as a fraction of the indicator height. */
+const FLY_R = 0.42;
 /** How long the rAF loop keeps recomputing after a change (springs settle). */
 const SETTLE_MS = 1100;
 
@@ -80,28 +81,30 @@ interface Transition {
   from: TabRect;
   to: TabRect;
   height: number;
-  /** True until the bridge's stretch passes SNAP_STRETCH — then gone. */
-  connected: boolean;
 }
 
 /**
- * One frame of the bridge-flow: draining pill + filling pill + (while
- * connected) a metaball neck between their facing edges. Returns the scene
- * path and whether the bridge survived this frame.
+ * One frame of the bridge-flow: the old pill drains, the new pill fills,
+ * and a drop of mass flies between them. Bridges come from the tension
+ * field's real hysteresis: the drop starts touching the old pill's facing
+ * edge (connected), stretches a neck as it departs until the neck snaps,
+ * then reconnects on touch as it lands in the new pill.
  */
 function transitionScene(
   t: Transition,
+  tension: TensionField,
   drain: number,
-  fill: number
-): { path: string; connected: boolean } {
+  fill: number,
+  flyX: number
+): string {
   const h = t.height;
   const cy = h / 2;
   const fromCx = t.from.left + t.from.width / 2;
   const toCx = t.to.left + t.to.width / 2;
   const dir = Math.sign(toCx - fromCx) || 1;
 
-  // Pills collapse height-first-last: width drains, then the last of the
-  // mass shrinks away (and the filling pill sprouts as a droplet).
+  // Pills collapse width-first, height-last: the draining pill shrinks to a
+  // droplet before vanishing, and the filling pill sprouts from one.
   const fromH = h * clamp01(drain * 2.5);
   const toH = h * clamp01(fill * 2.5);
   const fromW = Math.max(t.from.width * clamp01(drain), fromH);
@@ -115,24 +118,32 @@ function transitionScene(
     path += roundRectPath({ x: toCx, y: cy }, toW, toH, toH / 2);
   }
 
-  // Bridge anchors sit just inside each pill's facing edge.
+  // Tension bodies: anchors just inside each pill's facing edge + the
+  // traveling drop. Anchors render inside their pills, so the only visible
+  // extras are the drop and the necks.
   const rF = fromH / 2;
   const rT = toH / 2;
-  let connected = t.connected;
-  if (connected && rF > 0.5 && rT > 0.5) {
-    const aF = { x: fromCx + dir * Math.max(fromW / 2 - rF, 0), y: cy };
-    const aT = { x: toCx - dir * Math.max(toW / 2 - rT, 0), y: cy };
-    const stretch = dist(aF, aT) / (rF + rT);
-    if (stretch >= SNAP_STRETCH) {
-      connected = false; // snapped — for good, this transition
-    } else {
-      path +=
-        circlePath(aF, rF) +
-        circlePath(aT, rT) +
-        bridgePath(aF, rF, aT, rT, neckWaist(Math.max(stretch, 1)));
-    }
+  const fly: LiquidBody = { id: "fly", x: flyX, y: cy, r: h * FLY_R };
+  const bodies: LiquidBody[] = [fly];
+  if (rF > 0.5) {
+    bodies.push({
+      id: "from",
+      x: fromCx + dir * Math.max(fromW / 2 - rF, 0),
+      y: cy,
+      r: rF,
+    });
   }
-  return { path, connected };
+  if (rT > 0.5) {
+    bodies.push({
+      id: "to",
+      x: toCx - dir * Math.max(toW / 2 - rT, 0),
+      y: cy,
+      r: rT,
+    });
+  }
+  path += circlePath(fly, fly.r);
+  path += tension.bridges(bodies);
+  return path;
 }
 
 /** Resting pill: the active tab's box as a fully-rounded engine body. */
@@ -163,14 +174,16 @@ export function LiquidTabs({
   const [rect, setRect] = useState<TabRect | null>(null);
   const [height, setHeight] = useState(0);
 
-  // Springs for the two masses: slot 0 drains 1→0, slot 1 fills 0→1.
+  // Springs: slot 0 drains 1→0, slot 1 fills 0→1, slot 2 is the traveling
+  // drop's x.
   const springs = useMotionSprings(
-    2,
-    (i) => (i === 0 ? 0 : 1),
-    (i) => (i === 0 ? DRAIN_SPRING : FILL_SPRING)
+    3,
+    (i) => (i === 0 ? 0 : i === 1 ? 1 : -9999),
+    (i) => (i === 0 ? DRAIN_SPRING : i === 1 ? FILL_SPRING : FLY_SPRING)
   );
 
   const transition = useRef<Transition | null>(null);
+  const tension = useRef(new TensionField());
   const [settling, setSettling] = useState(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -212,14 +225,19 @@ export function LiquidTabs({
     const h = containerRef.current?.offsetHeight ?? 0;
     if (!fromEl || !toEl || h <= 0) return;
 
-    transition.current = {
-      from: { left: fromEl.offsetLeft, width: fromEl.offsetWidth },
-      to: { left: toEl.offsetLeft, width: toEl.offsetWidth },
-      height: h,
-      connected: true,
-    };
-    springs.snapTo([1, 0]);
-    springs.setTargets([0, 1]);
+    const from: TabRect = { left: fromEl.offsetLeft, width: fromEl.offsetWidth };
+    const to: TabRect = { left: toEl.offsetLeft, width: toEl.offsetWidth };
+    transition.current = { from, to, height: h };
+    tension.current.clear();
+    // The drop starts tucked against the old pill's facing edge (touching
+    // its tension anchor, so the bridge starts connected) and flies to the
+    // new tab's center.
+    const fromCx = from.left + from.width / 2;
+    const toCx = to.left + to.width / 2;
+    const dir = Math.sign(toCx - fromCx) || 1;
+    const start = fromCx + dir * Math.max(from.width / 2 - h / 2, 0);
+    springs.snapTo([1, 0, start]);
+    springs.setTargets([0, 1, toCx]);
     setSettling(true);
     if (settleTimer.current) clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(() => setSettling(false), SETTLE_MS);
@@ -242,14 +260,14 @@ export function LiquidTabs({
 
   useAnimationFrame(() => {
     if (!settling || !transition.current) return;
-    const t = transition.current;
-    const scene = transitionScene(
-      t,
+    const path = transitionScene(
+      transition.current,
+      tension.current,
       springs.values[0].get(),
-      springs.values[1].get()
+      springs.values[1].get(),
+      springs.values[2].get()
     );
-    t.connected = scene.connected;
-    renderer.current?.setScene({ path: scene.path });
+    renderer.current?.setScene({ path });
   });
 
   const containerStyle: CSSProperties = {

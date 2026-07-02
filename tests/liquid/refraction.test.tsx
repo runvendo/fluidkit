@@ -28,9 +28,8 @@ describe("displacementMapUri", () => {
     const svg = decodeURIComponent(uri.slice("data:image/svg+xml,".length));
     expect(svg).toContain('width="200"');
     expect(svg).toContain('height="100"');
-    // Red drives X displacement, green drives Y; the center must stay
-    // neutral so only the rim lenses.
-    expect(svg).toContain("radialGradient");
+    // Red drives X displacement, green drives Y — a lens ramp per axis.
+    expect(svg).toContain("linearGradient");
   });
 });
 
