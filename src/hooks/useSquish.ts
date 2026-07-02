@@ -12,14 +12,24 @@
  *
  * Keyboard support mirrors pointer support: Space/Enter `keydown` presses
  * (ignoring OS key-repeat via `event.repeat`), matching `keyup` releases,
- * so keyboard users get the same feedback as pointer users.
+ * so keyboard users get the same feedback as pointer users. `onBlur` also
+ * releases, so a press can't get stuck when focus leaves mid-hold (Enter
+ * opening a modal, Alt-Tab while holding Space) — the keyboard counterpart
+ * to pointer cancel/leave.
  *
- * Under `prefers-reduced-motion`, every handler is a no-op: `pressed` never
- * flips and the scales stay pinned at 1, same calm-by-default posture as
- * `useRipple`.
+ * Under `prefers-reduced-motion`, pressing is inert: `pressed` never flips
+ * and the scales stay pinned at 1, same calm-by-default posture as
+ * `useRipple`. Release is never guarded — if the preference flips on
+ * mid-press, release still snaps the scales back to 1 instead of leaving
+ * the element frozen squished.
  */
 
-import { useState, type KeyboardEvent, type PointerEvent } from "react";
+import {
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 import type { MotionValue } from "motion/react";
 import { usePrefersReducedMotion } from "../utils";
 import { useMotionSprings, type SpringConfig } from "../liquid/useMotionSprings";
@@ -36,7 +46,8 @@ const DEFAULT_SPRING: SpringConfig = { stiffness: 500, damping: 20 };
 const ACTIVATION_KEYS = new Set([" ", "Enter"]);
 
 export interface UseSquishOptions {
-  /** Fractional squash at full press. Defaults to `0.12`. */
+  /** Fractional squash at full press. Defaults to `0.12`. Changes apply from
+   * the next press (per-render closures), while `spring` is applied per-call. */
   intensity?: number;
   /** Overrides the default press/release spring. */
   spring?: SpringConfig;
@@ -51,6 +62,8 @@ export interface UseSquishHandlers {
   /** Presses on Space/Enter, ignoring OS key-repeat. */
   onKeyDown: (e: KeyboardEvent) => void;
   onKeyUp: (e: KeyboardEvent) => void;
+  /** Releases on focus loss so a keyboard press can't get stuck mid-hold. */
+  onBlur: (e: FocusEvent) => void;
 }
 
 export interface UseSquishStyle {
@@ -80,13 +93,20 @@ export function useSquish({
   function press() {
     if (prefersReducedMotion) return;
     setPressed(true);
-    scales.setTargets([1 + intensity, 1 / (1 + intensity)]);
+    // `spring` rides along per-call (useMotionSprings memoizes its initial
+    // config on slot count, so the override is what keeps it live).
+    scales.setTargets([1 + intensity, 1 / (1 + intensity)], spring);
   }
 
   function release() {
-    if (prefersReducedMotion) return;
+    // Never guarded: if reduced motion flips on mid-press, the element must
+    // still return to 1 rather than stay frozen squished.
     setPressed(false);
-    scales.setTargets([1, 1]);
+    if (prefersReducedMotion) {
+      scales.snapTo([1, 1]);
+    } else {
+      scales.setTargets([1, 1], spring);
+    }
   }
 
   function onKeyDown(e: KeyboardEvent) {
@@ -107,6 +127,7 @@ export function useSquish({
       onPointerLeave: release,
       onKeyDown,
       onKeyUp,
+      onBlur: release,
     },
     style: { scaleX: scales.values[0], scaleY: scales.values[1] },
     pressed,
