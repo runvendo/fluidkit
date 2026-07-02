@@ -27,3 +27,5 @@ export { LiquidDrag } from "./LiquidDrag";
 export type { LiquidDragProps } from "./LiquidDrag";
 export { DripFuse } from "./DripFuse";
 export type { DripFuseProps } from "./DripFuse";
+export { MeshGradient } from "./MeshGradient";
+export type { MeshGradientProps } from "./MeshGradient";
