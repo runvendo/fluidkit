@@ -1,0 +1,152 @@
+/* Showcase stylesheet — the whole site's CSS lives here (imported from
+   playground/main.tsx). Light mode, same visual language as the original
+   one-page playground: #f2f3f7 canvas, #4a6cf7 accent, soft shadows. */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  min-height: 100vh; background: #f2f3f7; color: #1c1d23;
+  font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.01em;
+}
+.sub { color: #5c5d66; font-size: 14px; margin: 0 0 18px; max-width: 58ch; line-height: 1.65; }
+
+/* ------------------------- shell: sidebar + main ------------------------- */
+.sc-sidebar {
+  position: fixed; top: 0; bottom: 0; left: 0; width: 236px; z-index: 20;
+  display: flex; flex-direction: column; gap: 14px; padding: 22px 16px 16px;
+  background: #fff; border-right: 1px solid #e2e3ea; overflow-y: auto;
+}
+.sc-wordmark { font-size: 21px; font-weight: 700; letter-spacing: -0.025em; color: #1c1d23; text-decoration: none; padding: 0 10px; }
+.sc-nav { display: flex; flex-direction: column; gap: 2px; }
+.sc-nav a {
+  font-size: 13px; font-weight: 600; color: #3a3b44; text-decoration: none;
+  padding: 6px 10px; border-radius: 8px; white-space: nowrap;
+}
+.sc-nav a:hover { background: #f4f5f9; }
+.sc-nav a.on { background: #eef0f5; color: #1c1d23; }
+.sc-nav-label {
+  margin-top: 12px; padding: 0 10px 3px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #9a9ba6;
+}
+.sc-side-foot { margin-top: auto; padding: 10px 10px 0; font-size: 11px; color: #6b6c75; line-height: 1.6; }
+.sc-side-foot a { color: inherit; }
+
+.sc-main { margin-left: 236px; min-height: 100vh; padding: 30px 36px 56px; }
+
+/* sidebar install one-liner: the shared Snippet, shrunk to fit the rail */
+.sc-install .snippet { margin-top: 0; }
+.sc-install .snippet pre { padding: 8px 42px 8px 10px; overflow-x: hidden; }
+.sc-install .snippet code { font-size: 10px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+.sc-install .snippet .copy { top: 5px; right: 5px; font-size: 9.5px; padding: 2px 7px; }
+
+/* ------------------------- component page layout ------------------------- */
+.sc-page { max-width: 980px; }
+.sc-page-head h1 { font-size: 34px; margin: 0 0 8px; letter-spacing: -0.025em; }
+.sc-variants h2, .sc-usage h2 { font-size: 20px; margin: 0 0 12px; letter-spacing: -0.02em; }
+.sc-variants { margin: 0 0 32px; }
+
+/* hero card: full-width stage + its controls framed as one surface */
+.sc-hero {
+  margin: 18px 0 32px; background: #fff; border: 1px solid #e2e3ea;
+  border-radius: 18px; overflow: hidden; box-shadow: 0 1px 3px rgba(24,25,36,.05);
+}
+
+/* stage sizing lives on the modifiers, not on .stage itself:
+   hero is the page centerpiece, mini is a variant-grid cell */
+.sc-stage-hero { height: 420px; }
+.sc-stage-mini {
+  height: 200px; border: 1px solid #e2e3ea; border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(24,25,36,.05);
+}
+
+/* variants grid */
+.sc-variant-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+.sc-variant-cell { display: flex; flex-direction: column; min-width: 0; }
+.sc-variant-caption { margin-top: 8px; font-size: 12px; font-weight: 600; color: #3a3b44; }
+
+/* ------------------------- demo stage surface ------------------------- */
+.stage {
+  position: relative; display: grid; place-items: center; overflow: hidden;
+  background: linear-gradient(160deg, #eef0f5, #e3e5ec);
+}
+/* bright wallpaper the glass refracts — orbs are radial gradients, never
+   blurred divs (CSS blur's clipped filter region shows as a straight seam
+   through backdrop saturation) */
+.stage.wall { background: linear-gradient(160deg, #dbe4ff 0%, #f3e3ff 45%, #ffe9f2 100%); }
+.orb { position: absolute; border-radius: 50%; opacity: .8; pointer-events: none; }
+.orb.o1 { width: 300px; height: 300px; top: -100px; left: -90px;
+  background: radial-gradient(circle closest-side, #7c9bff 0%, rgba(124,155,255,.55) 45%, rgba(124,155,255,0) 100%);
+  animation: drift1 14s ease-in-out infinite alternate; }
+.orb.o2 { width: 260px; height: 260px; bottom: -100px; right: -80px;
+  background: radial-gradient(circle closest-side, #ff8ccb 0%, rgba(255,140,203,.5) 45%, rgba(255,140,203,0) 100%);
+  animation: drift2 18s ease-in-out infinite alternate; }
+.orb.o3 { width: 210px; height: 210px; bottom: -30px; left: -10px;
+  background: radial-gradient(circle closest-side, #63dcb9 0%, rgba(99,220,185,.45) 45%, rgba(99,220,185,0) 100%);
+  animation: drift1 22s ease-in-out infinite alternate-reverse; }
+@keyframes drift1 { to { transform: translate(50px, 28px); } }
+@keyframes drift2 { to { transform: translate(-44px, -30px); } }
+@media (prefers-reduced-motion: reduce) { .orb { animation: none; } }
+
+.hint {
+  position: absolute; top: 12px; left: 0; right: 0; text-align: center;
+  font-size: 11px; color: rgba(28,29,35,.4); letter-spacing: 0.04em; text-transform: uppercase;
+  z-index: 8; pointer-events: none;
+}
+
+/* ------------------------- copy-paste snippet ------------------------- */
+.snippet { position: relative; margin-top: 10px; background: #191a20; border-radius: 11px; overflow: hidden; }
+.snippet pre { margin: 0; padding: 11px 76px 11px 14px; overflow-x: auto; }
+.snippet code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; line-height: 1.55; color: #d7d9e2; white-space: pre; }
+.snippet .copy { position: absolute; top: 7px; right: 7px; font: inherit; font-size: 10.5px; font-weight: 600; letter-spacing: .03em; color: #d7d9e2; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.14); border-radius: 7px; padding: 3px 9px; cursor: pointer; }
+.snippet .copy:hover { background: rgba(255,255,255,.16); }
+
+/* ------------------------- interactive controls ------------------------- */
+.controls { display: flex; flex-wrap: wrap; gap: 16px 18px; padding: 13px 15px; border-top: 1px solid #ecedf2; background: #fafafd; }
+.field { display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #6b6c75; }
+.field label { font-weight: 600; letter-spacing: .02em; display: flex; gap: 6px; align-items: baseline; }
+.field .val { color: #1c1d23; font-variant-numeric: tabular-nums; }
+.field input[type=range] { width: 128px; accent-color: #4a6cf7; }
+.field input[type=color] { width: 40px; height: 24px; padding: 0; border: 1px solid #d8d9e0; border-radius: 6px; background: none; cursor: pointer; }
+.seg { display: inline-flex; gap: 2px; background: #eef0f5; border: 1px solid #d8d9e0; border-radius: 8px; padding: 2px; }
+.seg button { font: inherit; font-size: 11px; color: #6b6c75; background: none; border: 0; border-radius: 6px; padding: 4px 9px; cursor: pointer; }
+.seg button.on { background: #fff; color: #1c1d23; box-shadow: 0 1px 2px rgba(24,25,36,.12); }
+.btn { font: inherit; font-size: 11.5px; background: #fff; color: #1c1d23; border: 1px solid #d8d9e0; border-radius: 8px; padding: 5px 11px; cursor: pointer; }
+.btn:hover { background: #eef0f5; }
+
+/* ------------------------- demo content styling ------------------------- */
+/* morph faces (content only ever fades — never scales) */
+.pill-label { display: flex; align-items: center; gap: 8px; color: #23242c; font-weight: 650; font-size: 13px; white-space: nowrap; }
+.pill-label .dot { width: 8px; height: 8px; border-radius: 50%; background: #4a6cf7; }
+.panel-body { width: 100%; height: 100%; padding: 15px; color: #23242c; }
+.panel-body .ph { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 12.5px; }
+.panel-body .ph .dot { width: 7px; height: 7px; border-radius: 50%; background: #4a6cf7; }
+.panel-body .row { margin-top: 8px; background: rgba(255,255,255,.6); border-radius: 11px; padding: 8px 11px; font-size: 11.5px; line-height: 1.45; }
+.panel-body .row.me { background: #23242c; color: #f2f3f7; margin-left: auto; width: 72%; border-radius: 11px 11px 4px 11px; }
+
+/* LiquidTabs consumer styling */
+[data-fluidkit="liquid-tab"] {
+  position: relative; background: transparent; border: 0; font: inherit; font-size: 13px; font-weight: 600;
+  color: #3a3b44; padding: 8px 16px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  transition: color .16s ease .32s; /* losing tab stays legible until its pill drains */
+}
+[data-fluidkit="liquid-tab"][aria-selected="true"] { color: #fff; transition-delay: .12s; }
+
+/* ------------------------- demos page: phone frames ------------------------- */
+.phones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 18px; justify-items: center; margin-top: 18px; }
+@media (max-width: 700px) { .phones { grid-template-columns: 1fr; } }
+.demo-card { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 360px; }
+.phone-shell {
+  border-radius: 47px; padding: 9px; background: #111217;
+  box-shadow: 0 2px 4px rgba(24,25,36,.2), 0 20px 48px rgba(24,25,36,.24), inset 0 1px 0 rgba(255,255,255,.09);
+}
+.phone-screen {
+  position: relative; width: 300px; height: 600px; border-radius: 38px; overflow: hidden;
+  background: linear-gradient(160deg, #eef0f5, #e3e5ec);
+}
+.demo-meta { width: 100%; padding: 12px 8px 0; }
+.demo-meta h3 { font-size: 13.5px; margin: 0 0 3px; }
+.demo-meta p { font-size: 12px; color: #6b6c75; margin: 0; line-height: 1.55; }
+details.src { margin-top: 8px; }
+details.src summary { font-size: 11.5px; font-weight: 600; color: #3a3b44; cursor: pointer; user-select: none; }
+details.src .snippet { max-height: 320px; overflow: auto; }
