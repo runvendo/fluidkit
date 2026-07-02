@@ -34,16 +34,20 @@ import type { MotionValue } from "motion/react";
 import { usePrefersReducedMotion } from "../utils";
 import { useMotionSprings, type SpringConfig } from "../liquid/useMotionSprings";
 
-/** Fractional squash: press scales X by `1 + intensity`, Y by its inverse. */
-const DEFAULT_INTENSITY = 0.12;
+/** Fractional squash: press scales X by `1 + intensity`, Y by its inverse.
+ * Exported so other press-squash primitives (e.g. `JellyButton`, which
+ * squashes geometry instead of a CSS transform) share the same default
+ * instead of redeclaring it. */
+export const DEFAULT_INTENSITY = 0.12;
 
 /** Snappy but soft enough to overshoot slightly on release — that overshoot
  * is the entire "jiggle", so it's tuned deliberately rather than left at a
- * generic default. */
-const DEFAULT_SPRING: SpringConfig = { stiffness: 500, damping: 20 };
+ * generic default. Exported for the same reason as `DEFAULT_INTENSITY`. */
+export const DEFAULT_SPRING: SpringConfig = { stiffness: 500, damping: 20 };
 
-/** The only keys that count as "activate" for a press-and-hold gesture. */
-const ACTIVATION_KEYS = new Set([" ", "Enter"]);
+/** The only keys that count as "activate" for a press-and-hold gesture.
+ * Exported for the same reason as `DEFAULT_INTENSITY`. */
+export const ACTIVATION_KEYS = new Set([" ", "Enter"]);
 
 export interface UseSquishOptions {
   /** Fractional squash at full press. Defaults to `0.12`. Changes apply from

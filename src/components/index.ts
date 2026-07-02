@@ -11,3 +11,5 @@ export { LiquidTabs } from "./LiquidTabs";
 export type { LiquidTabsProps, LiquidTabsItem } from "./LiquidTabs";
 export { Ripple } from "./Ripple";
 export type { RippleProps } from "./Ripple";
+export { JellyButton } from "./JellyButton";
+export type { JellyButtonProps } from "./JellyButton";
