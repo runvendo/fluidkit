@@ -169,6 +169,104 @@ describe("JellyButton", () => {
     expect(onRender.mock.calls.length).toBe(commitsAfterPress);
   });
 
+  it("paints on a bleed canvas so widened press geometry isn't sliced at the button box", async () => {
+    const JellyButton = await loadJellyButton(true);
+    const { getByRole, container } = render(
+      <JellyButton width={160} height={48} intensity={0.12}>
+        B
+      </JellyButton>
+    );
+    // The button's layout box stays at the requested size...
+    const button = getByRole("button", { name: "B" });
+    expect(button.style.width).toBe("160px");
+    expect(button.style.height).toBe("48px");
+    // ...while the paint canvas extends `bleed` px past every edge, so the
+    // widened press geometry (plus spring overshoot) has room to paint.
+    // bleed = ceil(160 * 0.12) = 20.
+    const canvas = container.querySelector(
+      '[data-fluidkit="jelly-canvas"]'
+    ) as HTMLElement;
+    expect(canvas).not.toBeNull();
+    expect(canvas.style.top).toBe("-20px");
+    expect(canvas.style.left).toBe("-20px");
+    expect(canvas.style.right).toBe("-20px");
+    expect(canvas.style.bottom).toBe("-20px");
+    // The resting body is centered in the bleed canvas: its subpath starts
+    // past the bleed margin, not at 0 (geometry coords are canvas coords,
+    // so a widened body can reach into the margin instead of being cut).
+    const clip = container.querySelector(
+      '[data-fluidkit="liquid-clip"]'
+    ) as HTMLElement;
+    const firstX = parseFloat(
+      (clip.style.clipPath.match(/M (-?[\d.]+)/) ?? [])[1] ?? "NaN"
+    );
+    expect(firstX).toBeGreaterThanOrEqual(20);
+  });
+
+  it("composes consumer pointer/keyboard handlers (they still fire)", async () => {
+    const JellyButton = await loadJellyButton(false);
+    const onPointerDown = vi.fn();
+    const onPointerUp = vi.fn();
+    const onKeyDown = vi.fn();
+    const onKeyUp = vi.fn();
+    const { getByRole } = render(
+      <JellyButton
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onKeyDown={onKeyDown}
+        onKeyUp={onKeyUp}
+      >
+        Compose
+      </JellyButton>
+    );
+    const button = getByRole("button", { name: "Compose" });
+
+    fireEvent.pointerDown(button);
+    expect(onPointerDown).toHaveBeenCalledTimes(1);
+    fireEvent.pointerUp(button);
+    expect(onPointerUp).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(button, { key: " " });
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    fireEvent.keyUp(button, { key: " " });
+    expect(onKeyUp).toHaveBeenCalledTimes(1);
+
+    // Non-activation keys don't press, but the consumer still hears them.
+    fireEvent.keyDown(button, { key: "a" });
+    expect(onKeyDown).toHaveBeenCalledTimes(2);
+    expect(button.getAttribute("data-pressed")).toBe("false");
+  });
+
+  it("force-releases when disabled flips true mid-press and geometry returns home", async () => {
+    const JellyButton = await loadJellyButton(false);
+    const { getByRole, container, rerender } = render(
+      <JellyButton>Hold</JellyButton>
+    );
+    const button = getByRole("button", { name: "Hold" });
+    const clip = container.querySelector(
+      '[data-fluidkit="liquid-clip"]'
+    ) as HTMLElement;
+    const restingClip = clip.style.clipPath;
+
+    fireEvent.pointerDown(button);
+    expect(button.getAttribute("data-pressed")).toBe("true");
+    await vi.waitFor(() => {
+      expect(clip.style.clipPath).not.toBe(restingClip);
+    });
+
+    rerender(<JellyButton disabled>Hold</JellyButton>);
+    expect(button.getAttribute("data-pressed")).toBe("false");
+
+    // The spring retargets home; once it settles the clip is exactly the
+    // resting path again (and the resync effect re-writes it regardless).
+    await vi.waitFor(
+      () => {
+        expect(clip.style.clipPath).toBe(restingClip);
+      },
+      { timeout: 3000, interval: 20 }
+    );
+  });
+
   it("paints a specular highlight for glass but not for mercury", async () => {
     const JellyButton = await loadJellyButton(true);
     const glass = render(<JellyButton material="glass">G</JellyButton>);

@@ -15,6 +15,14 @@
  * static-scene `useMemo` covers every other frame, and a resync effect
  * keeps the two in sync.
  *
+ * The surface paints on a BLEED CANVAS: an absolutely-positioned wrapper
+ * inset by `-bleed` px hosts the renderer, so the widened press geometry
+ * (plus spring overshoot) extends past the button's border box without
+ * getting sliced — background/backdrop-filter can only paint inside their
+ * element's box, and clip-path can only subtract. The button's layout box
+ * stays exactly `width × height`; the bleed is symmetric, so the label
+ * (centered in the canvas) stays centered on the button.
+ *
  * Press state (`data-pressed`) always tracks pointer/keyboard interaction,
  * even under reduced motion — but the GEOMETRY only deforms when animating
  * (not reduced motion, in view). Under reduced motion the button still
@@ -42,7 +50,7 @@ export interface JellyButtonProps
   material?: LiquidMaterial;
   tint?: string;
   color?: string;
-  /** Scene light; null disables speculars. */
+  /** Scene light in button coordinates; null disables speculars. */
   light?: Vec | null;
   /** Paint specular reflections on glass. Defaults to `true`. */
   reflection?: boolean;
@@ -123,20 +131,33 @@ export function JellyButton({
   // body never leaves its resting size.
   const geometryPressed = pressed && animating;
 
-  const cx = width / 2;
-  const cy = height / 2;
+  // Bleed canvas: at full press the body widens by width·intensity (so
+  // width·intensity/2 per side); ceil(width·intensity) gives 2x headroom
+  // for the spring's release overshoot.
+  const bleed = Math.ceil(width * intensity);
+  const canvasW = width + bleed * 2;
+  const canvasH = height + bleed * 2;
+  const cx = canvasW / 2;
+  const cy = canvasH / 2;
 
   const { url: refractionUrl, defs: refractionDefs } = useRefraction(
     refraction && material === "glass",
-    width,
-    height
+    canvasW,
+    canvasH
   );
   const resolved = useMemo(
     () => resolveMaterial(material, { tint, color, refractionUrl }),
     [material, tint, color, refractionUrl]
   );
-  const sceneLight =
-    !reflection || light === null ? null : light ?? defaultLight(width, height);
+  // Consumer light arrives in button coordinates; the scene renders in
+  // canvas coordinates, offset by the bleed. Memoized so the derived
+  // object doesn't invalidate the static scene every render.
+  const sceneLight = useMemo(() => {
+    if (!reflection || light === null) return null;
+    return light
+      ? { x: light.x + bleed, y: light.y + bleed }
+      : defaultLight(canvasW, canvasH);
+  }, [reflection, light, bleed, canvasW, canvasH]);
 
   const springs = useMotionSprings(
     2,
@@ -180,6 +201,14 @@ export function JellyButton({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geometryPressed, animating]);
 
+  // If `animating` flips off mid-settle (reduced motion turning on,
+  // scrolling off-screen), the effect above cleans up the timer — so clear
+  // `settling` here too, or it would stick true and hold `data-animating`
+  // hostage when animation resumes.
+  useEffect(() => {
+    if (!animating) setSettling(false);
+  }, [animating]);
+
   // The settle loop mutates the DOM behind React's back; whenever it isn't
   // running (settled, reduced motion, off-screen) resync the declarative
   // static scene so prop/state changes always win.
@@ -204,10 +233,18 @@ export function JellyButton({
     if (disabled) return;
     setPressed(true);
   }
+  // Release is never guarded: pointerup/cancel/leave, keyup, and blur must
+  // always let go, even if `disabled` flipped on mid-hold — otherwise the
+  // button freezes squished.
   function release() {
-    if (disabled) return;
     setPressed(false);
   }
+
+  // `disabled` flipping true mid-press fires no pointer/keyboard event, so
+  // force the release here.
+  useEffect(() => {
+    if (disabled) setPressed(false);
+  }, [disabled]);
 
   const buttonStyle: CSSProperties = {
     position: "relative",
@@ -271,19 +308,38 @@ export function JellyButton({
       }}
       {...rest}
     >
-      {refractionDefs}
-      <LiquidRenderer
-        ref={renderer}
-        path={staticScene.path}
-        material={resolved}
-        speculars={staticScene.speculars}
-        specularSlots={resolved.specular && sceneLight ? 1 : 0}
-        shadow
+      {/*
+       * Bleed canvas: extends `bleed` px past every button edge so the
+       * widened press geometry has room to paint. pointer-events: none so
+       * the overhang never widens the button's hit area — events land on
+       * the button itself.
+       */}
+      <span
+        data-fluidkit="jelly-canvas"
+        style={{
+          position: "absolute",
+          top: -bleed,
+          right: -bleed,
+          bottom: -bleed,
+          left: -bleed,
+          display: "block",
+          pointerEvents: "none",
+        }}
       >
-        <span data-fluidkit="jelly-label" style={labelStyle}>
-          {children}
-        </span>
-      </LiquidRenderer>
+        {refractionDefs}
+        <LiquidRenderer
+          ref={renderer}
+          path={staticScene.path}
+          material={resolved}
+          speculars={staticScene.speculars}
+          specularSlots={resolved.specular && sceneLight ? 1 : 0}
+          shadow
+        >
+          <span data-fluidkit="jelly-label" style={labelStyle}>
+            {children}
+          </span>
+        </LiquidRenderer>
+      </span>
     </button>
   );
 }
