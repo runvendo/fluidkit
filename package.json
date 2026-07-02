@@ -45,6 +45,7 @@
     "build": "tsup",
     "build:site": "vite build playground",
     "check:gpu-leak": "node scripts/check-no-gpu-deps.mjs",
+    "check:pack": "node scripts/check-pack.mjs",
     "dev": "vite playground",
     "size": "npm run build && size-limit",
     "test": "vitest run",
