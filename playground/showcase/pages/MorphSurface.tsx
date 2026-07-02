@@ -93,8 +93,8 @@ export default function MorphSurfacePage() {
         <Snippet code={`<MorphSurface
   open={open}
   material="${material}"${refraction ? "\n  refraction" : ""}
-  closedContent={<PillLabel />}
-  openContent={<Panel />}
+  closedContent={<PillFace />}
+  openContent={<PanelFace />}
 />`} />
       }
     />

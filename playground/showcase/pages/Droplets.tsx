@@ -32,7 +32,7 @@ export default function DropletsPage() {
 
   const usage = `import { Droplets } from "fluidkit";
 
-<Droplets interactive material="${material}"${refraction ? " refraction" : ""} />`;
+<Droplets${interactive ? " interactive" : " followPointer"} material="${material}"${refraction ? " refraction" : ""} />`;
 
   return (
     <PageLayout
@@ -42,6 +42,7 @@ export default function DropletsPage() {
         <>
           <Stage wall hint="drag a drop — tear it off">
             <Droplets
+              // when drag is off, follow the pointer instead so the stage stays alive
               followPointer={!interactive}
               interactive={interactive}
               count={count}

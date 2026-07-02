@@ -7,6 +7,9 @@ import { PageLayout, Stage, Controls, Slider, Seg, Snippet, VariantGrid, Variant
 type LiquidMaterial = NonNullable<ThinkingProps["material"]>;
 const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
 
+/** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */
+const FLAT_COLOR = "#8d94a1";
+
 export default function ThinkingPage() {
   const [size, setSize] = useState(18);
   const [speed, setSpeed] = useState(1.2);
@@ -22,7 +25,7 @@ export default function ThinkingPage() {
               size={size}
               speed={speed}
               material={material}
-              color={material === "flat" ? "#8d94a1" : undefined}
+              color={material === "flat" ? FLAT_COLOR : undefined}
             />
           </Stage>
           <Controls>
@@ -41,7 +44,7 @@ export default function ThinkingPage() {
             <Thinking material="mercury" />
           </VariantCell>
           <VariantCell label="flat" wall>
-            <Thinking material="flat" color="#8d94a1" />
+            <Thinking material="flat" color={FLAT_COLOR} />
           </VariantCell>
         </VariantGrid>
       }

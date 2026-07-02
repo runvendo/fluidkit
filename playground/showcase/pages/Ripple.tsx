@@ -38,7 +38,7 @@ function Surface({
 }
 
 export default function RipplePage() {
-  const [duration, setDuration] = useState(650);
+  const [duration, setDuration] = useState(600);
   const [material, setMaterial] = useState<"flat" | "glass">("glass");
 
   return (
@@ -61,8 +61,8 @@ export default function RipplePage() {
           <VariantCell label="quick · 250ms" wall hint="tap">
             <Surface material="glass" duration={250} />
           </VariantCell>
-          <VariantCell label="default · 650ms" wall hint="tap">
-            <Surface material="glass" duration={650} />
+          <VariantCell label="default · 600ms" wall hint="tap">
+            <Surface material="glass" duration={600} />
           </VariantCell>
           <VariantCell label="slow · 1400ms" wall hint="tap">
             <Surface material="glass" duration={1400} />

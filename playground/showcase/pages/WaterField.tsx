@@ -15,10 +15,10 @@ import {
 
 type WaterFieldPreset = "lagoon" | "sunset" | "ember";
 
-const PRESET_KEYS: WaterFieldPreset[] = ["lagoon", "sunset", "ember"];
+const WATER_FIELD_PRESET_KEYS: WaterFieldPreset[] = ["lagoon", "sunset", "ember"];
 
 /** two-color splat palettes; "lagoon" mirrors the wrapper's own default colors. */
-const PRESETS: Record<WaterFieldPreset, string[]> = {
+const WATER_FIELD_PRESETS: Record<WaterFieldPreset, string[]> = {
   lagoon: ["#a8dadc", "#1d3557"],
   sunset: ["#ffb37a", "#6a0572"],
   ember: ["#ffcf7a", "#7a1f1f"],
@@ -28,15 +28,19 @@ export default function WaterFieldPage() {
   const [preset, setPreset] = useState<WaterFieldPreset>("lagoon");
   const [intensity, setIntensity] = useState(0.6);
   const [interactive, setInteractive] = useState(true);
-  const colors = PRESETS[preset];
+  const colors = WATER_FIELD_PRESETS[preset];
 
-  const usage = `import { WaterField } from "fluidkit/water-field";
+  const usage = `// optional peer: npm i webgl-fluid-enhanced
+import { WaterField } from "fluidkit/water-field";
 
-<WaterField
-  colors={${JSON.stringify(colors)}}
-  intensity={${intensity}}
-  interactive={${interactive}}
-/>`;
+<div style={{ position: "relative" }}>
+  <WaterField
+    colors={${JSON.stringify(colors)}}
+    intensity={${intensity}}
+    interactive={${interactive}}
+  />
+  <YourContent />
+</div>`;
 
   return (
     <PageLayout
@@ -50,7 +54,7 @@ export default function WaterFieldPage() {
             </MountOnView>
           </Stage>
           <Controls>
-            <Seg label="colors" value={preset} set={setPreset} options={PRESET_KEYS} />
+            <Seg label="colors" value={preset} set={setPreset} options={WATER_FIELD_PRESET_KEYS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0.1} max={1} step={0.05} />
             <Toggle label="interactive" value={interactive} set={setInteractive} />
           </Controls>
@@ -58,10 +62,10 @@ export default function WaterFieldPage() {
       }
       variants={
         <VariantGrid>
-          {PRESET_KEYS.map((key) => (
+          {WATER_FIELD_PRESET_KEYS.map((key) => (
             <VariantCell key={key} label={key} hint="move your pointer">
               <MountOnView>
-                <WaterField colors={PRESETS[key]} interactive />
+                <WaterField colors={WATER_FIELD_PRESETS[key]} interactive />
               </MountOnView>
             </VariantCell>
           ))}

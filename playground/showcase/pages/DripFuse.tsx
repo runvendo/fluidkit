@@ -33,9 +33,9 @@ export default function DripFusePage() {
   const usage = `import { DripFuse } from "fluidkit";
 
 const [fire, setFire] = useState(0);
-const [completed, setCompleted] = useState(0);
+const [completions, setCompletions] = useState(0);
 
-<DripFuse fire={fire} material="${material}" onComplete={() => setCompleted((c) => c + 1)} />`;
+<DripFuse fire={fire} material="${material}" onComplete={() => setCompletions((c) => c + 1)} />`;
 
   return (
     <PageLayout

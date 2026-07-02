@@ -30,6 +30,8 @@ function useTaskList() {
 function TaskList({ items, stagger, width = 260 }: { items: string[]; stagger: number; width?: number }) {
   return (
     <FlowStagger
+      // stagger only orchestrates on the container's mount entrance, so changing
+      // it must remount to be visible — dragging the slider replays the entrance.
       key={stagger}
       stagger={stagger}
       style={{ display: "flex", flexDirection: "column", gap: 8, width }}

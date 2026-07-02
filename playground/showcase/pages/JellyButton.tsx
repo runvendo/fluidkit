@@ -7,7 +7,10 @@ type LiquidMaterial = NonNullable<JellyButtonProps["material"]>;
 
 const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
 
-/** One pill for the variants grid, with the flat-material color/text fallbacks. */
+/** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */
+const FLAT_COLOR = "#8d94a1";
+
+/** One pill — hero and variant cells alike — with the flat-material color/text fallbacks. */
 function JellyVariant({ material, intensity }: {
   material: LiquidMaterial;
   intensity: number;
@@ -16,7 +19,7 @@ function JellyVariant({ material, intensity }: {
     <JellyButton
       material={material}
       intensity={intensity}
-      color={material === "flat" ? "#8d94a1" : undefined}
+      color={material === "flat" ? FLAT_COLOR : undefined}
       style={{ color: material === "flat" ? "#fff" : "#23242c", fontSize: 14, fontWeight: 650 }}
     >
       Press me
@@ -35,14 +38,7 @@ export default function JellyButtonPage() {
       hero={
         <>
           <Stage wall hint="press and hold">
-            <JellyButton
-              material={material}
-              intensity={intensity}
-              color={material === "flat" ? "#8d94a1" : undefined}
-              style={{ color: material === "flat" ? "#fff" : "#23242c", fontSize: 14, fontWeight: 650 }}
-            >
-              Press me
-            </JellyButton>
+            <JellyVariant material={material} intensity={intensity} />
           </Stage>
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
