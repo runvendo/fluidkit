@@ -87,11 +87,11 @@
  * state would drift out of sync with `useInView`, so a ref tracks our own
  * paused intent and only calls `togglePause()` when it needs to flip. Real
  * behavior worth documenting honestly: `togglePause()` does NOT cancel the
- * simulation's `requestAnimationFrame` loop — per the installed source,
- * `render()` early-returns when paused (`if (this.paused &&
- * !this.drawWhilePaused) return`), so GPU draw calls and physics stepping
- * stop, but the rAF loop itself keeps ticking every frame doing lighter
- * bookkeeping (color/input updates) until `.stop()` is called. This is a
+ * simulation's `requestAnimationFrame` loop — per the installed source, the
+ * loop runs `this.paused || this.step(t), this.render(null), rAF(...)`, so
+ * physics stepping and pointer splats stop while paused (the paused guard
+ * quoted in `splatPointer()`), but `render(null)` still executes its draw
+ * calls every tick, re-blitting the static frame, until `.stop()` is called. This is a
  * deliberate library trade-off (`togglePause` is cheap enough to call on
  * every scroll-driven `inView` flip; `.start()`/`.stop()` are not — `.stop()`
  * removes event listeners and `.start()` re-adds them and reinitializes
