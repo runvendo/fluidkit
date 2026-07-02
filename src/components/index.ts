@@ -17,3 +17,5 @@ export { Magnetic } from "./Magnetic";
 export type { MagneticProps } from "./Magnetic";
 export { LiquidDrag } from "./LiquidDrag";
 export type { LiquidDragProps } from "./LiquidDrag";
+export { DripFuse } from "./DripFuse";
+export type { DripFuseProps } from "./DripFuse";
