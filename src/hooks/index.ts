@@ -13,3 +13,10 @@ export type {
   UseRippleHandlers,
   RippleData,
 } from "./useRipple";
+export { useSquish } from "./useSquish";
+export type {
+  UseSquishOptions,
+  UseSquishResult,
+  UseSquishHandlers,
+  UseSquishStyle,
+} from "./useSquish";
