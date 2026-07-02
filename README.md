@@ -53,7 +53,7 @@ function App() {
 }
 ```
 
-## Primitives (v0.3)
+## Primitives
 
 | Primitive | What it does | Degrades to |
 |---|---|---|
@@ -89,11 +89,9 @@ function App() {
 - **Graceful degradation**: feature detection picks the best available path; never hard-fails.
 - **Performance**: animation loops pause off-screen (IntersectionObserver) and under reduced motion.
 
-## Roadmap
+## 1.0
 
-- **v0.2**: the liquid engine + `Droplets`, `Thinking`, `MorphSurface` in glass/mercury/flat.
-- **v0.3 (this release)**: `LiquidTabs` on the engine, grab/tear/re-merge pointer interactions, opt-in refraction, per-frame DOM writes (no React commits in animation loops), docs site.
-- **v1.0**: stable API, a11y pass, npm publish.
+fluidkit 1.0 is stable: the full 14-primitive catalog (12 core engine primitives plus the optional GPU tier), a reviewed public API, an accessibility pass, and SSR verified against the built package. See [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
 ## Docs site
 
@@ -111,9 +109,11 @@ The playground doubles as the public docs site: hero, live demos, controls, and 
 
 - `npm test`: run tests
 - `npm run typecheck`: type check the library
+- `npm run typecheck:site`: type check the playground/docs site
 - `npm run size`: check bundle size (14.9 kB brotli budget on the core entry via size-limit)
 - `npm run check:gpu-leak`: guard against GPU dependencies
 - `npm run check:pack`: verify npm pack contents
+- `npm run check:ssr`: verify every primitive server-renders against the built `dist` package
 
 All guards run in CI (Node 20 and 24).
 

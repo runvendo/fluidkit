@@ -1,8 +1,15 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 - 2026-07-02
 
-- **Breaking.** `supportsViewTransition` is removed from the `fluidkit` entry. It gated no fluidkit feature (no primitive ever consumed it) and freezing an unused generic detector at 1.0 would mean supporting it forever. `supportsBackdropFilter` and `supportsRefraction` remain public.
+fluidkit 1.0 ships the full 14-primitive catalog: 12 core engine primitives plus an optional GPU tier (`LiquidMetal`, `WaterField`) behind their own subpath exports. The public API is now stable and reviewed end to end, accessibility and SSR have both been hardened and verified against the built package, and the core bundle is budget-enforced in CI.
+
+### Breaking
+
+- `supportsViewTransition` is removed from the `fluidkit` entry. It gated no fluidkit feature (no primitive ever consumed it) and freezing an unused generic detector at 1.0 would mean supporting it forever. `supportsBackdropFilter` and `supportsRefraction` remain public.
+
+### Everything else
+
 - **Stable API pass (1.0).** Every public export reviewed and recorded in `docs/superpowers/notes/2026-07-02-api-review.md`. `LiquidMaterial`, `Vec`, and `SpringConfig` — types already referenced by component props — are now importable from the core entry; every public export carries attached JSDoc; `Droplets` clamps `speed` with the shared `MIN_SPEED` floor like the other `speed` carriers (`0`/negative now reads "as slow as possible" instead of silently wedging the cycle); `supportsWebGL` consolidated into `featureDetect.ts` (internal, unchanged contract).
 - **LiquidMetal.** Optional GPU tier: a real WebGL liquid-metal shader wrapping `@paper-design/shaders-react` (pinned exact `0.0.76`, since the package ships breaking changes across `0.0.x` releases), behind the `fluidkit/liquid-metal` subpath export. `color`/`backgroundColor`/`speed`/`intensity` map to the shader's `colorTint`/`colorBack`/`speed`/`distortion`; a `shaderProps` escape hatch forwards raw shader props, except the off-screen pause gate always wins over `shaderProps.speed`. No WebGL or reduced motion falls back to a static metallic-gradient frame, the shader never mounts; off-screen the shader stays mounted but its speed is forced to `0`, which stops its render loop entirely.
 - **WaterField.** Optional GPU tier: a real WebGL fluid simulation wrapping `webgl-fluid-enhanced@^0.8.0`, behind the `fluidkit/water-field` subpath export. `colors`/`intensity`/`interactive` map to `colorPalette`/`splatRadius`+`splatForce`/`hover`; a `config` escape hatch forwards raw sim options and cannot defeat gating by construction. Interactive by default: pointer events are enabled on the canvas (not the wrapper) so splats respond to touch. No WebGL or reduced motion falls back to a static water-gradient frame, the sim is never constructed; off-screen the sim pauses and resumes rather than tearing down; teardown on unmount stops the render loop and removes listeners.
