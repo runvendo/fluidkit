@@ -19,10 +19,12 @@ import {
   TensionField,
   circlePath,
   defaultLight,
+  dist,
   resolveMaterial,
   specularPlacement,
   useRefraction,
 } from "../liquid";
+import { CONNECT_STRETCH, SNAP_STRETCH } from "../liquid/tension";
 import type {
   LiquidBody,
   LiquidMaterial,
@@ -40,6 +42,11 @@ export interface DropletsProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
   /** Px extent the cluster spreads across. */
   spread?: number;
+  /**
+   * Extra canvas padding in px on every side of the cluster — room to drag
+   * drops and chase the pointer beyond the cluster's own footprint.
+   */
+  bleed?: number;
   /** Merge/split cycle speed multiplier. */
   speed?: number;
   /** Rendered material. */
@@ -85,11 +92,18 @@ const DEFAULT_SPREAD = 100;
 const CYCLE_MS = 1500;
 const SQUEEZE = 0.36;
 const DROP_SPRING = { stiffness: 170, damping: 15 };
+/** Parting is reluctant — slow enough that the neck visibly thins first. */
+const PART_SPRING = { stiffness: 55, damping: 17 };
 const POINTER_SPRING = { stiffness: 120, damping: 13 };
 /** Tight lag while a drop is held — liquid, but clearly in hand. */
 const GRAB_SPRING = { stiffness: 550, damping: 38 };
 /** Hit-test slack so drops are grabbable without pixel precision. */
 const GRAB_SLOP = 1.25;
+/** Satellite droplet left at a torn neck: size vs the smaller drop, and
+ * lifetime (scaled by `speed` like the rest of the choreography). */
+const SAT_R_FACTOR = 0.22;
+const SAT_LIFE_MS = 420;
+const MAX_SATELLITES = 8;
 /** Radius variation so the cluster reads organic, not gridded. */
 const R_SCALE = [0.95, 1.2, 0.8];
 
@@ -124,6 +138,7 @@ export function Droplets({
   count = DEFAULT_COUNT,
   size = DEFAULT_SIZE,
   spread = DEFAULT_SPREAD,
+  bleed = 0,
   speed = 1,
   material = "glass",
   tint,
@@ -145,7 +160,7 @@ export function Droplets({
   const { ref, inView } = useInView<HTMLDivElement>();
   const animating = !prefersReducedMotion && inView;
 
-  const side = size + spread;
+  const side = size + spread + bleed * 2;
   const center = side / 2;
   const homes = useMemo(
     () => layoutHomes(count, size, spread, seed),
@@ -181,6 +196,12 @@ export function Droplets({
   const phase = useRef(0);
   const cycleT = useRef(0);
   const renderer = useRef<LiquidSceneHandle>(null);
+  // Component-side mirror of the engine's pair hysteresis, so we can catch
+  // the exact frame a neck tears and leave a satellite droplet behind.
+  const bonds = useRef(new Set<string>());
+  const satellites = useRef<
+    { x: number; y: number; r0: number; age: number }[]
+  >([]);
 
   const staticScene = useMemo(
     () =>
@@ -208,10 +229,13 @@ export function Droplets({
       cycleT.current = 0;
       phase.current = 1 - phase.current;
       const squeeze = phase.current === 1 ? SQUEEZE : 1;
+      // Coalescing is fast, parting is reluctant — the slow spring keeps the
+      // stretching neck on screen instead of zipping past the snap point.
+      const spring = phase.current === 1 ? DROP_SPRING : PART_SPRING;
       homes.forEach((h, i) => {
         if (grab.current?.index === i) return; // held drop stays on the pointer
-        springs.setTarget(i * 2, center + h.x * squeeze);
-        springs.setTarget(i * 2 + 1, center + h.y * squeeze);
+        springs.setTarget(i * 2, center + h.x * squeeze, spring);
+        springs.setTarget(i * 2 + 1, center + h.y * squeeze, spring);
       });
     }
     const bodies: LiquidBody[] = homes.map((h, i) => ({
@@ -228,8 +252,50 @@ export function Droplets({
         r: size * 0.38,
       });
     }
+    // Mirror the engine's hysteresis pair-by-pair; a bond that breaks this
+    // frame is a torn neck — leave a shrinking satellite droplet at the
+    // pinch-off point so the split reads as liquid, not a pop.
+    for (let i = 0; i < bodies.length; i++) {
+      for (let j = i + 1; j < bodies.length; j++) {
+        const a = bodies[i];
+        const b = bodies[j];
+        const key = `${a.id}|${b.id}`;
+        const d = dist(a, b);
+        const stretch = d / (a.r + b.r);
+        const was = bonds.current.has(key);
+        if (was ? stretch < SNAP_STRETCH : stretch < CONNECT_STRETCH) {
+          bonds.current.add(key);
+        } else {
+          if (was && satellites.current.length < MAX_SATELLITES) {
+            const t = (a.r + (d - a.r - b.r) / 2) / d;
+            satellites.current.push({
+              x: a.x + (b.x - a.x) * t,
+              y: a.y + (b.y - a.y) * t,
+              r0: Math.min(a.r, b.r) * SAT_R_FACTOR,
+              age: 0,
+            });
+          }
+          bonds.current.delete(key);
+        }
+      }
+    }
+    let satPath = "";
+    satellites.current = satellites.current.filter((s) => {
+      s.age += delta * speed;
+      const life = 1 - s.age / SAT_LIFE_MS;
+      if (life <= 0) return false;
+      satPath += circlePath(s, s.r0 * life ** 1.4);
+      return true;
+    });
     renderer.current?.setScene(
-      buildScene(bodies, tension.current, resolved.specular, sceneLight, true)
+      buildScene(
+        bodies,
+        tension.current,
+        resolved.specular,
+        sceneLight,
+        true,
+        satPath
+      )
     );
     // Tear detection: buildScene just updated the tension hysteresis, so a
     // held drop that lost its last bridge this frame has torn off.
@@ -266,6 +332,7 @@ export function Droplets({
       // Hide the chase drop while a drop is in hand.
       pointerActive.current = false;
       tension.current.clear((key) => key.includes("you"));
+      forgetYouBonds(bonds.current);
       try {
         e.currentTarget.setPointerCapture?.(e.pointerId);
       } catch {
@@ -340,6 +407,7 @@ export function Droplets({
           ? () => {
               pointerActive.current = false;
               tension.current.clear((key) => key.includes("you"));
+              forgetYouBonds(bonds.current);
             }
           : undefined
       }
@@ -358,6 +426,14 @@ export function Droplets({
   );
 }
 
+/** Drop the chase-drop's mirrored bonds (matches `tension.clear` above —
+ * a returning chase drop must not resume in the connected hysteresis state). */
+function forgetYouBonds(bonds: Set<string>): void {
+  for (const key of bonds) {
+    if (key.includes("you")) bonds.delete(key);
+  }
+}
+
 function bodyAt(home: Home, center: number, index: number): LiquidBody {
   return { id: `d${index}`, x: center + home.x, y: center + home.y, r: home.r };
 }
@@ -372,10 +448,12 @@ function buildScene(
   tension: TensionField | null,
   wantSpecular: boolean,
   light: Vec | null,
-  bridged: boolean
+  bridged: boolean,
+  extraPath = ""
 ): Scene {
   let path = bodies.map((b) => circlePath(b, b.r)).join("");
   if (bridged && tension) path += tension.bridges(bodies);
+  path += extraPath;
   const speculars =
     wantSpecular && light ? bodies.map((b) => specularPlacement(b, light)) : [];
   return { path, speculars };
