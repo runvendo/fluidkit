@@ -62,8 +62,6 @@ function App() {
 | [`LiquidTabs`](docs/primitives/liquid-tabs.md) | Flagship tab strip: the indicator flows between tabs (slide or stretch), ink or glass material, labels tint by liquid coverage | Plain pill, snaps instantly |
 | [`Ripple`](docs/primitives/ripple.md) | Pointer-origin water ripple on tap/click | No ripple, children render normally |
 | [`JellyButton`](docs/primitives/jelly-button.md) | Engine pill button that squashes on press via geometry; the label never scales | Normal button with an opacity press dip |
-| [`Magnetic`](docs/primitives/magnetic.md) | Pulls its child toward the pointer inside a radius, springs back outside it | No listener, element never moves |
-| [`LiquidDrag`](docs/primitives/liquid-drag.md) | Motion drag with velocity-driven volume-preserving stretch; wobbles back on release | Plain drag, scales pinned at 1 |
 | [`DripFuse`](docs/primitives/drip-fuse.md) | A drop tears off a source body, flies, and fuses into a target; one cycle per `fire` | Static bodies, `onComplete` fires instantly |
 | [`MeshGradient`](docs/primitives/mesh-gradient.md) | Ambient CSS backdrop: large blurred radial-gradient blobs drift slowly behind your content | Static blobs at their home position |
 | [`Silk`](docs/primitives/silk.md) | Ambient CSS backdrop: full-height diagonal gradient sheets flowing like slow fabric | Static sheets at their home position |

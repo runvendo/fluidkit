@@ -3,7 +3,7 @@ import { render } from "@testing-library/react";
 import { Profiler } from "react";
 
 /** Same mocking pattern as the other component tests. The mock reads from a
- * mutable `state` object (the Magnetic test pattern) so tests can flip the
+ * mutable `state` object (a mutable-getter test pattern) so tests can flip the
  * reduced-motion preference mid-test and have the hook re-read it on a
  * plain rerender. */
 async function loadDripFuseMutable(initialReduced: boolean) {

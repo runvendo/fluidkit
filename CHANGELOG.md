@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **BREAKING: removed `Magnetic` and `LiquidDrag`** (components, props types, docs, showcase pages). Cut from the library as part of the v-next refresh; `useSquish` and Motion's own drag remain for anyone needing the underlying behaviors.
 - **LiquidCard.** The base content surface: children live in normal flow (the surface is a backdrop layer BEHIND the content, never a clipped parent of it — text can never scale by construction) and a ResizeObserver rebuilds the engine geometry to follow. Callout `variant` presets (info/success/warning) tint through the glass, no fake gradients. Static — no animation loop, no reduced-motion branch needed.
 - **Shared surface lighting.** New `intensity` scale for the surface family (`0`–`1`, with `"whisper"`/`"present"` presets, `src/components/intensity.ts`) and a shared rim-light module (`src/components/rim.ts`): a crisp 1px gradient ring around the whole border, brightest toward the scene light, plus an inset glow whose blur scales with surface height. CSS mask-ring + inset shadow — safe only on static rounded rects, where the ring and the engine clip path can never disagree.
 - **MeniscusDivider.** A divider rule as a bead of liquid: a thin engine pill spanning its container, lifted by shadow, glinted and rim-lit on glass (`role="separator"`). Mercury/flat stay unlit per the material rules.
