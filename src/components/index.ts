@@ -2,7 +2,7 @@
 export { Droplets } from "./Droplets";
 export type { DropletsProps } from "./Droplets";
 export { Thinking } from "./Thinking";
-export type { ThinkingProps } from "./Thinking";
+export type { ThinkingProps, ThinkingVariant } from "./Thinking";
 export { MorphSurface } from "./MorphSurface";
 export type { MorphSurfaceProps, MorphSize } from "./MorphSurface";
 export { FlowStagger } from "./FlowStagger";

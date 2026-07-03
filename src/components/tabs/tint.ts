@@ -48,6 +48,30 @@ export function tabCoverage(
   return smoothstep(0.35, 0.7, covered / width);
 }
 
+/**
+ * Parse a CSS color into an RGB triple for mixing. Supports `#rgb`,
+ * `#rrggbb`, and `rgb()`/`rgba()` — the formats that can be mixed
+ * numerically without a browser. Anything else (named colors, `var()`,
+ * `oklch()`) returns null so callers fall back to their default.
+ */
+export function parseColor(color?: string): RGB | null {
+  if (!color) return null;
+  const c = color.trim();
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
+  if (hex) {
+    const s =
+      hex[1].length === 3 ? [...hex[1]].map((ch) => ch + ch).join("") : hex[1];
+    return [
+      parseInt(s.slice(0, 2), 16),
+      parseInt(s.slice(2, 4), 16),
+      parseInt(s.slice(4, 6), 16),
+    ];
+  }
+  const rgb = /^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i.exec(c);
+  if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+  return null;
+}
+
 /** Mix `from`→`to` by weight `w` (0..1) into a `rgb(r, g, b)` string. */
 export function mixColor(from: RGB, to: RGB, w: number): string {
   const r = Math.round(from[0] + (to[0] - from[0]) * w);

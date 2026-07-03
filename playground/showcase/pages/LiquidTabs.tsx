@@ -4,11 +4,30 @@ import { PageLayout, Stage, Controls, Toggle, Seg, Snippet, VariantGrid, Variant
 
 const INK = "#23242c";
 
+/** Component defaults, mirrored so untouched pickers stay honest in the snippet. */
+const LABEL_DEFAULT = "#4b4c56";
+const ACTIVE_LABEL_DEFAULTS = { ink: "#ffffff", glass: "#17181c" };
+
+function ColorField({ label, value, set }: {
+  label: string;
+  value: string;
+  set: (v: string) => void;
+}) {
+  return (
+    <div className="field">
+      <label>{label}</label>
+      <input type="color" value={value} onChange={(e) => set(e.target.value)} />
+    </div>
+  );
+}
+
 /** One self-managing tab strip for the variants grid (uncontrolled via `defaultValue`). */
-function TabsVariant({ flow, material, size }: {
+function TabsVariant({ flow, material, size, color = INK, activeLabelColor }: {
   flow: "slide" | "stretch";
   material: "ink" | "glass";
   size: "sm" | "md" | "lg";
+  color?: string;
+  activeLabelColor?: string;
 }) {
   return (
     <LiquidTabs
@@ -16,7 +35,8 @@ function TabsVariant({ flow, material, size }: {
       flow={flow}
       material={material}
       size={size}
-      color={INK}
+      color={color}
+      activeLabelColor={activeLabelColor}
       items={[
         { id: "chat", label: "Chat" },
         { id: "files", label: "Files" },
@@ -32,6 +52,13 @@ export default function LiquidTabsPage() {
   const [material, setMaterial] = useState<"ink" | "glass">("ink");
   const [size, setSize] = useState<"sm" | "md" | "lg">("md");
   const [disableOne, setDisableOne] = useState(false);
+  const [ink, setInk] = useState(INK);
+  // null = untouched: picker shows the component default, snippet omits the prop.
+  const [labelColor, setLabelColor] = useState<string | null>(null);
+  const [activeLabelColor, setActiveLabelColor] = useState<string | null>(null);
+  const [glassTintHue, setGlassTintHue] = useState<string | null>(null);
+  // pickers can't do alpha; keep the tint translucent (0x4d ≈ 30%) like the default
+  const glassTint = glassTintHue ? `${glassTintHue}4d` : undefined;
 
   const items = [
     { id: "chat", label: "Chat" },
@@ -52,7 +79,10 @@ export default function LiquidTabsPage() {
               flow={flow}
               material={material}
               size={size}
-              color={INK}
+              color={ink}
+              glassTint={material === "glass" ? glassTint : undefined}
+              labelColor={labelColor ?? undefined}
+              activeLabelColor={activeLabelColor ?? undefined}
               items={items}
             />
           </Stage>
@@ -60,6 +90,25 @@ export default function LiquidTabsPage() {
             <Seg label="flow" value={flow} set={setFlow} options={["slide", "stretch"]} />
             <Seg label="material" value={material} set={setMaterial} options={["ink", "glass"]} />
             <Seg label="size" value={size} set={setSize} options={["sm", "md", "lg"]} />
+            {material === "ink" ? (
+              <ColorField label="ink" value={ink} set={setInk} />
+            ) : (
+              <ColorField
+                label="tint"
+                value={glassTintHue ?? "#ffffff"}
+                set={setGlassTintHue}
+              />
+            )}
+            <ColorField
+              label="label"
+              value={labelColor ?? LABEL_DEFAULT}
+              set={setLabelColor}
+            />
+            <ColorField
+              label="active label"
+              value={activeLabelColor ?? ACTIVE_LABEL_DEFAULTS[material]}
+              set={setActiveLabelColor}
+            />
             <Toggle label="disable Automations" value={disableOne} set={setDisableOne} />
           </Controls>
         </>
@@ -87,6 +136,9 @@ export default function LiquidTabsPage() {
           <VariantCell label="size lg" wall>
             <TabsVariant flow="slide" material="ink" size="lg" />
           </VariantCell>
+          <VariantCell label="custom color" wall>
+            <TabsVariant flow="slide" material="ink" size="md" color="#4a6cf7" />
+          </VariantCell>
         </VariantGrid>
       }
       usage={
@@ -96,7 +148,7 @@ export default function LiquidTabsPage() {
   defaultValue="chat"
   flow="${flow}"
   material="${material}"
-  size="${size}"
+  size="${size}"${material === "ink" ? `\n  color="${ink}"` : ""}${material === "glass" && glassTint ? `\n  glassTint="${glassTint}"` : ""}${labelColor ? `\n  labelColor="${labelColor}"` : ""}${activeLabelColor ? `\n  activeLabelColor="${activeLabelColor}"` : ""}
 />`}
         />
       }

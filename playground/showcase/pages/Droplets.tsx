@@ -32,7 +32,7 @@ export default function DropletsPage() {
 
   const usage = `import { Droplets } from "fluidkit";
 
-<Droplets${interactive ? " interactive" : " followPointer"} material="${material}"${refraction ? " refraction" : ""} />`;
+<Droplets${interactive ? " interactive" : " followPointer"} bleed={120} material="${material}"${refraction ? " refraction" : ""} />`;
 
   return (
     <PageLayout
@@ -48,6 +48,8 @@ export default function DropletsPage() {
               count={count}
               size={size}
               spread={spread}
+              // room to drag drops around the stage, not just the cluster box
+              bleed={120}
               speed={speed}
               material={material}
               reflection={reflection}
