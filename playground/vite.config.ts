@@ -10,8 +10,8 @@ export default defineConfig({
   plugins: [react()],
   // Demo recipes import from "fluidkit" so their displayed source reads
   // exactly like consumer code; the alias points it at ../src. The GPU
-  // subpaths ("fluidkit/liquid-metal", "fluidkit/water-field") get their own
-  // entries pointing straight at their source files. Array form (not object
+  // subpath ("fluidkit/liquid-metal") gets its own entry pointing straight
+  // at its source file. Array form (not object
   // form) so these are tried IN ORDER: alias resolution (via
   // @rollup/plugin-alias under the hood) matches a string `find` on either
   // an exact specifier or a "<find>/..." prefix, so a bare "fluidkit" entry
@@ -21,7 +21,6 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: "fluidkit/liquid-metal", replacement: fileURLToPath(new URL("../src/liquid-metal/index.tsx", import.meta.url)) },
-      { find: "fluidkit/water-field", replacement: fileURLToPath(new URL("../src/water-field/index.tsx", import.meta.url)) },
       { find: "fluidkit", replacement: fileURLToPath(new URL("../src/index.ts", import.meta.url)) },
     ],
   },

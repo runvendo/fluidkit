@@ -18,19 +18,17 @@ npm install fluidkit react react-dom motion
 
 ### Optional GPU tier
 
-`LiquidMetal` and `WaterField` are real WebGL primitives. They live behind their own subpath exports (`fluidkit/liquid-metal`, `fluidkit/water-field`), not the core `fluidkit` entry, so the core bundle stays GPU-free whether or not you use them. Their GPU libraries are optional peer dependencies: installing fluidkit without them never warns, and importing the core entry never resolves them.
+`LiquidMetal` is a real WebGL primitive. It lives behind its own subpath export (`fluidkit/liquid-metal`), not the core `fluidkit` entry, so the core bundle stays GPU-free whether or not you use it. Its GPU library is an optional peer dependency: installing fluidkit without it never warns, and importing the core entry never resolves it.
 
 ```bash
 npm i @paper-design/shaders-react@0.0.76   # for fluidkit/liquid-metal (pinned exact)
-npm i webgl-fluid-enhanced                 # for fluidkit/water-field
 ```
 
 ```tsx
 import { LiquidMetal } from "fluidkit/liquid-metal";
-import { WaterField } from "fluidkit/water-field";
 ```
 
-See [`docs/primitives/liquid-metal.md`](docs/primitives/liquid-metal.md) and [`docs/primitives/water-field.md`](docs/primitives/water-field.md) for props, fallback behavior, and caveats.
+See [`docs/primitives/liquid-metal.md`](docs/primitives/liquid-metal.md) for props, fallback behavior, and caveats.
 
 ## Quick start
 
@@ -68,9 +66,9 @@ function App() {
 | [`LiquidDrag`](docs/primitives/liquid-drag.md) | Motion drag with velocity-driven volume-preserving stretch; wobbles back on release | Plain drag, scales pinned at 1 |
 | [`DripFuse`](docs/primitives/drip-fuse.md) | A drop tears off a source body, flies, and fuses into a target; one cycle per `fire` | Static bodies, `onComplete` fires instantly |
 | [`MeshGradient`](docs/primitives/mesh-gradient.md) | Ambient CSS backdrop: large blurred radial-gradient blobs drift slowly behind your content | Static blobs at their home position |
-| [`Aurora`](docs/primitives/aurora.md) | Ambient CSS backdrop: blurred horizontal bands drift across the upper portion of the container | Static bands at their home position |
+| [`Silk`](docs/primitives/silk.md) | Ambient CSS backdrop: full-height diagonal gradient sheets flowing like slow fabric | Static sheets at their home position |
+| [`GlassPanes`](docs/primitives/glass-panes.md) | Glass-native backdrop: edge-to-edge frosted panes sliding on a shared diagonal, each at its own blur depth | Layered frosted fills |
 | [`LiquidMetal`](docs/primitives/liquid-metal.md) | Optional GPU tier: a real WebGL liquid-metal shader (`fluidkit/liquid-metal`) | Static metallic-gradient fallback |
-| [`WaterField`](docs/primitives/water-field.md) | Optional GPU tier: a real WebGL fluid simulation, pointer-interactive (`fluidkit/water-field`) | Static water-gradient fallback |
 
 ### Materials
 

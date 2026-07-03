@@ -4,10 +4,10 @@ import { act, render } from "@testing-library/react";
 /**
  * `@paper-design/shaders-react`'s `LiquidMetal` is a real WebGL shader —
  * jsdom has no WebGL, so it's mocked for the whole file. The mock records
- * every call so tests can assert on the exact props the wrapper maps onto
- * it. Declared once (not per-test) since, unlike `usePrefersReducedMotion`
- * and `supportsWebGL` below, its behavior doesn't need to vary between
- * tests — only the props passed to it do.
+ * every call so tests can assert on the exact props the wrapper passes
+ * through to it. Declared once (not per-test) since, unlike
+ * `usePrefersReducedMotion` and `supportsWebGL` below, its behavior doesn't
+ * need to vary between tests — only the props passed to it do.
  */
 const { shaderMock } = vi.hoisted(() => ({ shaderMock: vi.fn() }));
 
@@ -19,7 +19,7 @@ vi.mock("@paper-design/shaders-react", () => ({
 }));
 
 /**
- * Same per-test re-import pattern as Aurora's and refraction's tests:
+ * Same per-test re-import pattern as MeshGradient's and refraction's tests:
  * `LiquidMetal` reads `usePrefersReducedMotion()` (Motion's
  * `useReducedMotion()`) and `supportsWebGL()`, both of which need to vary
  * per test, so each variant is mocked fresh against a freshly re-imported
@@ -86,14 +86,16 @@ afterEach(() => {
 });
 
 describe("LiquidMetal", () => {
-  it("mounts the shader with mapped props when WebGL is supported and motion is allowed", async () => {
+  it("passes shader params straight through when WebGL is supported and motion is allowed", async () => {
     const LiquidMetal = await loadLiquidMetal(false, true);
     render(
       <LiquidMetal
-        color="#123456"
-        backgroundColor="#abcdef"
+        colorTint="#123456"
+        colorBack="#abcdef"
         speed={2}
-        intensity={0.5}
+        distortion={0.5}
+        repetition={4}
+        shape="circle"
       />
     );
 
@@ -103,17 +105,32 @@ describe("LiquidMetal", () => {
     expect(props.colorBack).toBe("#abcdef");
     expect(props.speed).toBe(2);
     expect(props.distortion).toBe(0.5);
+    expect(props.repetition).toBe(4);
+    expect(props.shape).toBe("circle");
   });
 
-  it("defaults color/backgroundColor/intensity to the shader's own defaultPreset values", async () => {
+  it("defaults to the full-canvas Backdrop look, not the floating-diamond defaultPreset", async () => {
     const LiquidMetal = await loadLiquidMetal(false, true);
     render(<LiquidMetal />);
 
     const props = shaderMock.mock.calls[0][0];
+    expect(props.shape).toBe("none");
+    expect(props.scale).toBe(1);
     expect(props.colorTint).toBe("#ffffff");
     expect(props.colorBack).toBe("#AAAAAC");
-    expect(props.distortion).toBe(0.07);
+    expect(props.distortion).toBe(0.1);
+    expect(props.repetition).toBe(1.5);
+    expect(props.softness).toBe(0.05);
     expect(props.speed).toBe(1);
+  });
+
+  it("does not let an explicitly-undefined prop override a backdrop default", async () => {
+    const LiquidMetal = await loadLiquidMetal(false, true);
+    render(<LiquidMetal shape={undefined} repetition={undefined} />);
+
+    const props = shaderMock.mock.calls[0][0];
+    expect(props.shape).toBe("none");
+    expect(props.repetition).toBe(1.5);
   });
 
   it("renders the fallback with data-fallback=true and never mounts the shader when WebGL is unsupported", async () => {
@@ -139,7 +156,7 @@ describe("LiquidMetal", () => {
   it("uses the resolved colors in the fallback gradient", async () => {
     const LiquidMetal = await loadLiquidMetal(false, false);
     const { container } = render(
-      <LiquidMetal color="#123456" backgroundColor="#abcdef" />
+      <LiquidMetal colorTint="#123456" colorBack="#abcdef" />
     );
 
     // jsdom's CSSOM normalizes hex colors to rgb() on read.
@@ -171,6 +188,15 @@ describe("LiquidMetal", () => {
     expect(el.style.position).toBe("absolute");
   });
 
+  it("keeps the shader itself on the fill-parent style", async () => {
+    const LiquidMetal = await loadLiquidMetal(false, true);
+    render(<LiquidMetal />);
+
+    const props = shaderMock.mock.calls[0][0];
+    expect(props.style.width).toBe("100%");
+    expect(props.style.height).toBe("100%");
+  });
+
   it("clamps speed to the shared MIN_SPEED floor instead of passing 0 through", async () => {
     const LiquidMetal = await loadLiquidMetal(false, true);
     render(<LiquidMetal speed={0} />);
@@ -178,32 +204,6 @@ describe("LiquidMetal", () => {
     const props = shaderMock.mock.calls[0][0];
     expect(props.speed).toBeGreaterThan(0);
     expect(props.speed).toBeCloseTo(0.01);
-  });
-
-  it("lets shaderProps override mapped props, applied after color/backgroundColor/speed/intensity", async () => {
-    const LiquidMetal = await loadLiquidMetal(false, true);
-    render(
-      <LiquidMetal
-        color="#123456"
-        speed={2}
-        shaderProps={{ colorTint: "#000000", speed: 9, shape: "circle" }}
-      />
-    );
-
-    const props = shaderMock.mock.calls[0][0];
-    expect(props.colorTint).toBe("#000000");
-    expect(props.speed).toBe(9);
-    expect(props.shape).toBe("circle");
-  });
-
-  it("preserves the fill-parent style default even when shaderProps sets other style keys", async () => {
-    const LiquidMetal = await loadLiquidMetal(false, true);
-    render(<LiquidMetal shaderProps={{ style: { opacity: 0.5 } }} />);
-
-    const props = shaderMock.mock.calls[0][0];
-    expect(props.style.opacity).toBe(0.5);
-    expect(props.style.width).toBe("100%");
-    expect(props.style.height).toBe("100%");
   });
 
   it("pauses the shader (speed forced to 0) while scrolled out of view, without unmounting it", async () => {
@@ -237,51 +237,30 @@ describe("LiquidMetal", () => {
     expect(wrapper(container).getAttribute("data-animating")).toBe("true");
   });
 
-  it("forces speed 0 while out of view even when shaderProps.speed is set (pause gate beats the escape hatch)", async () => {
-    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
-    MockIntersectionObserver.instances = [];
-    const LiquidMetal = await loadLiquidMetal(false, true);
-    render(<LiquidMetal speed={2} shaderProps={{ speed: 9 }} />);
-    const observer = MockIntersectionObserver.instances[0];
-
-    act(() => {
-      observer.callback(
-        [{ isIntersecting: false } as IntersectionObserverEntry],
-        observer
-      );
-    });
-    const pausedProps = shaderMock.mock.calls[shaderMock.mock.calls.length - 1][0];
-    expect(pausedProps.speed).toBe(0);
-
-    act(() => {
-      observer.callback(
-        [{ isIntersecting: true } as IntersectionObserverEntry],
-        observer
-      );
-    });
-    // Back in view, shaderProps.speed wins over the mapped speed again.
-    const resumedProps = shaderMock.mock.calls[shaderMock.mock.calls.length - 1][0];
-    expect(resumedProps.speed).toBe(9);
-  });
-
-  it("keeps the mapped defaults in sync with the real package's defaultPreset (pin-bump canary)", async () => {
+  it("keeps the backdrop defaults in sync with the real package's fullScreenPreset (pin-bump canary)", async () => {
     // Bypass the file-wide mock to read the REAL 0.0.76 runtime presets —
     // safe in jsdom: the package touches no DOM at module import time. If a
-    // future pin bump changes upstream defaults, this fails loudly.
+    // future pin bump changes upstream preset params, this fails loudly.
     const actual = await vi.importActual<
       typeof import("@paper-design/shaders-react")
     >("@paper-design/shaders-react");
-    const defaultPreset = actual.liquidMetalPresets[0];
-    expect(defaultPreset.name).toBe("Default");
+    const backdropPreset = actual.liquidMetalPresets.find(
+      (preset) => preset.name === "Backdrop"
+    );
+    expect(backdropPreset).toBeDefined();
 
     const LiquidMetal = await loadLiquidMetal(false, true);
     render(<LiquidMetal />);
 
     const props = shaderMock.mock.calls[0][0];
-    expect(props.colorTint).toBe(defaultPreset.params.colorTint);
-    expect(props.colorBack).toBe(defaultPreset.params.colorBack);
-    expect(props.distortion).toBe(defaultPreset.params.distortion);
-    expect(props.speed).toBe(defaultPreset.params.speed);
+    expect(props.colorTint).toBe(backdropPreset!.params.colorTint);
+    expect(props.colorBack).toBe(backdropPreset!.params.colorBack);
+    expect(props.distortion).toBe(backdropPreset!.params.distortion);
+    expect(props.repetition).toBe(backdropPreset!.params.repetition);
+    expect(props.softness).toBe(backdropPreset!.params.softness);
+    expect(props.shape).toBe(backdropPreset!.params.shape);
+    expect(props.scale).toBe(backdropPreset!.params.scale);
+    expect(props.speed).toBe(backdropPreset!.params.speed);
   });
 
   it("does not touch document merely by importing the module (SSR-safe)", async () => {

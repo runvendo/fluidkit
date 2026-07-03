@@ -44,14 +44,6 @@
         "types": "./dist/liquid-metal.d.cts",
         "default": "./dist/liquid-metal.cjs"
       }
-    },
-    "./water-field": {
-      "types": "./dist/water-field.d.ts",
-      "import": "./dist/water-field.js",
-      "require": {
-        "types": "./dist/water-field.d.cts",
-        "default": "./dist/water-field.cjs"
-      }
     }
   },
   "files": [
@@ -79,14 +71,10 @@
     "@paper-design/shaders-react": "0.0.76",
     "motion": ">=11",
     "react": ">=18",
-    "react-dom": ">=18",
-    "webgl-fluid-enhanced": "^0.8.0"
+    "react-dom": ">=18"
   },
   "peerDependenciesMeta": {
     "@paper-design/shaders-react": {
-      "optional": true
-    },
-    "webgl-fluid-enhanced": {
       "optional": true
     }
   },
@@ -105,7 +93,6 @@
     "size-limit": "^12.1.0",
     "tsup": "^8.5.1",
     "typescript": "^5.7.0",
-    "vitest": "^4.1.9",
-    "webgl-fluid-enhanced": "^0.8.0"
+    "vitest": "^4.1.9"
   }
 }
