@@ -35,7 +35,7 @@ import type { LiquidSceneHandle } from "../../liquid";
 import { useMotionSprings } from "../../liquid/useMotionSprings";
 import { resolveColor, usePrefersReducedMotion } from "../../utils";
 import { FLOWS, stretchEdgeConfigs, type FlowName, type TabRect } from "./flows";
-import { mixColor, tabCoverage, type RGB } from "./tint";
+import { mixColor, parseColor, tabCoverage, type RGB } from "./tint";
 import { useTabList } from "./useTabList";
 import { useTabsContext } from "./TabsGroup";
 
@@ -66,6 +66,19 @@ export interface LiquidTabsProps
   size?: LiquidTabsSize;
   /** Ink color (ignored by the glass material). Defaults to `currentColor`. */
   color?: string;
+  /**
+   * Glass tint (ignored by the ink material) — any CSS color, normally a
+   * translucent white. Also the fallback fill where `backdrop-filter` is
+   * unsupported. Defaults to the engine's glass tint.
+   */
+  glassTint?: string;
+  /**
+   * Inactive label color. Hex or `rgb()` (label colors are mixed
+   * numerically per frame); defaults per material.
+   */
+  labelColor?: string;
+  /** Label color while the ink covers the tab. Hex or `rgb()`; defaults per material. */
+  activeLabelColor?: string;
 }
 
 interface SizeSpec {
@@ -117,6 +130,9 @@ export function LiquidTabs({
   material = "ink",
   size = "md",
   color,
+  glassTint,
+  labelColor,
+  activeLabelColor,
   className,
   style,
   ...rest
@@ -160,6 +176,7 @@ export function LiquidTabs({
 
   const [rects, setRects] = useState<Map<string, TabRect>>(new Map());
   const [height, setHeight] = useState(0);
+  const [layerWidth, setLayerWidth] = useState(0);
 
   const springs = useMotionSprings(
     flowSpec.springCount,
@@ -174,18 +191,24 @@ export function LiquidTabs({
 
   // Measure tab boxes + container height. Re-runs on items/size/value change
   // and on resize. jsdom reports 0s (degenerate path until real layout).
+  // All geometry lives in indicator-layer space (the container minus its
+  // padding), so the pill rests exactly on the button box and never touches
+  // the container's own rounded edge.
   useLayoutEffect(() => {
+    const pad = sizeSpec.containerPad;
     function measure() {
-      const h = containerRef.current?.offsetHeight ?? 0;
+      const h = Math.max((containerRef.current?.offsetHeight ?? 0) - pad * 2, 0);
+      const w = Math.max((containerRef.current?.offsetWidth ?? 0) - pad * 2, 0);
       const next = new Map<string, TabRect>();
       for (const item of items) {
         const el = tabRefs.current.get(item.id);
-        if (el) next.set(item.id, { left: el.offsetLeft, width: el.offsetWidth });
+        if (el) next.set(item.id, { left: el.offsetLeft - pad, width: el.offsetWidth });
       }
       // Only touch state when a value actually changed — an identity-only
       // `items` change (inline `items={[...]}` re-renders) must not cascade
       // into a new `rects` reference that would interrupt an in-flight flow.
       setHeight((prevH) => (prevH === h ? prevH : h));
+      setLayerWidth((prevW) => (prevW === w ? prevW : w));
       setRects((prevR) => (sameRects(prevR, next) ? prevR : next));
     }
     measure();
@@ -267,11 +290,17 @@ export function LiquidTabs({
       flowSpec.rest(restingRect, height),
       flowSpec.configs.map(() => 0),
       new TensionField(),
-      { height, restWidth: restingRect.width }
+      { height, width: layerWidth, restWidth: restingRect.width }
     );
-  }, [restingRect, height, flowSpec]);
+  }, [restingRect, height, layerWidth, flowSpec]);
 
-  const labelColors = LABEL_COLORS[material];
+  const labelColors = useMemo(() => {
+    const defaults = LABEL_COLORS[material];
+    return {
+      base: parseColor(labelColor) ?? defaults.base,
+      active: parseColor(activeLabelColor) ?? defaults.active,
+    };
+  }, [material, labelColor, activeLabelColor]);
 
   const paintLabels = useCallback(
     (intervals: [number, number][]) => {
@@ -300,6 +329,7 @@ export function LiquidTabs({
     const velocities = springs.values.map((v) => v.getVelocity());
     const scene = flowSpec.scene(values, velocities, tension.current, {
       height,
+      width: layerWidth,
       restWidth: restingRect.width,
     });
     renderer.current?.setScene({ path: scene.path });
@@ -309,7 +339,7 @@ export function LiquidTabs({
   const resolvedColor = resolveColor(color);
   const resolvedMaterial =
     material === "glass"
-      ? resolveMaterial("glass")
+      ? resolveMaterial("glass", { tint: glassTint })
       : resolveMaterial("flat", { color: resolvedColor });
 
   const containerStyle: CSSProperties = {
@@ -346,7 +376,11 @@ export function LiquidTabs({
       <div
         data-fluidkit="liquid-tab-indicator-layer"
         aria-hidden="true"
-        style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+        style={{
+          position: "absolute",
+          inset: sizeSpec.containerPad,
+          pointerEvents: "none",
+        }}
       >
         <div
           data-fluidkit="liquid-tab-indicator"
@@ -386,6 +420,9 @@ export function LiquidTabs({
               font: `500 ${sizeSpec.fontSize}px/1 system-ui, sans-serif`,
               padding: sizeSpec.padding,
               borderRadius: 999,
+              // Label color is written per-frame from ink coverage; any CSS
+              // transition on it would smear those writes into lag.
+              transition: "none",
               cursor: item.disabled ? "default" : "pointer",
               opacity: item.disabled ? 0.4 : 1,
             }}
