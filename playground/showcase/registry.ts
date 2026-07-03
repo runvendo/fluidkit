@@ -20,7 +20,7 @@ export type ShowcasePage = {
  *
  * Final order:
  *   Demos, Droplets, MorphSurface, Thinking, LiquidTabs, FlowStagger,
- *   Ripple, JellyButton, DripFuse, MeshGradient,
+ *   Ripple, JellyButton, MeshGradient,
  *   Silk, GlassPanes, LiquidCard, MeniscusDivider, LiquidPanel,
  *   LiquidTooltip, LiquidText, LiquidDialog, VoiceBall, then the GPU
  *   tier: LiquidMetal.
@@ -38,7 +38,6 @@ export const REGISTRY: ShowcasePage[] = [
   { slug: "flow-stagger", title: "FlowStagger", load: () => import("./pages/FlowStagger") },
   { slug: "ripple", title: "Ripple", load: () => import("./pages/Ripple") },
   { slug: "jelly-button", title: "JellyButton", load: () => import("./pages/JellyButton") },
-  { slug: "drip-fuse", title: "DripFuse", load: () => import("./pages/DripFuse") },
   { slug: "mesh-gradient", title: "MeshGradient", load: () => import("./pages/MeshGradient") },
   { slug: "silk", title: "Silk", load: () => import("./pages/Silk") },
   { slug: "glass-panes", title: "GlassPanes", load: () => import("./pages/GlassPanes") },

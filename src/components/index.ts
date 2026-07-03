@@ -21,8 +21,6 @@ export { Ripple } from "./Ripple";
 export type { RippleProps } from "./Ripple";
 export { JellyButton } from "./JellyButton";
 export type { JellyButtonProps } from "./JellyButton";
-export { DripFuse } from "./DripFuse";
-export type { DripFuseProps } from "./DripFuse";
 export { MeshGradient } from "./MeshGradient";
 export type { MeshGradientProps } from "./MeshGradient";
 export { Silk } from "./Silk";
