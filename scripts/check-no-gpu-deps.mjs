@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const forbiddenStrings = ['@paper-design/shaders', 'webgl-fluid-enhanced'];
+const forbiddenStrings = ['@paper-design/shaders'];
 // Deliberately lists only CORE entry points — future GPU subpath bundles (e.g. dist/liquid-metal.js) must NOT be added.
 const distFiles = ['dist/index.js', 'dist/index.cjs'];
 const rootDir = fileURLToPath(new URL('..', import.meta.url));
@@ -10,7 +10,7 @@ const rootDir = fileURLToPath(new URL('..', import.meta.url));
 // tsup's ESM output splits code shared across entries into `./chunk-*.js`
 // files and imports them by relative specifier — the core entry
 // (dist/index.js) pulls in shared-utility chunks the same way the GPU
-// subpath entries (dist/liquid-metal.js, dist/water-field.js) do. Scanning
+// subpath entry (dist/liquid-metal.js) does. Scanning
 // dist/index.js alone would miss forbidden strings that leaked into a
 // chunk it imports, so any `./chunk-*` specifier reachable from an entry
 // listed in distFiles above is scanned too. One level deep is sufficient:

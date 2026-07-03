@@ -10,7 +10,6 @@
     "baseUrl": ".",
     "paths": {
       "fluidkit/liquid-metal": ["../src/liquid-metal/index.tsx"],
-      "fluidkit/water-field": ["../src/water-field/index.tsx"],
       "fluidkit": ["../src/index.ts"]
     }
   },

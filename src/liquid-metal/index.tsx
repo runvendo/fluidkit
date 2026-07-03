@@ -2,39 +2,34 @@
  * `LiquidMetal` wraps `@paper-design/shaders-react`'s `LiquidMetal` WebGL
  * shader (pinned exact `0.0.76` — the package ships breaking changes across
  * 0.0.x releases) with the fluidkit wrapper contract: capability + motion
- * gating, off-screen pausing, and fluidkit-consistent prop names.
+ * gating, off-screen pausing, and a fill-parent wrapper div.
  *
- * Prop mapping (fluidkit prop -> shader prop, verified against the
- * installed `@paper-design/shaders-react@0.0.76` API):
- * - `color` -> `colorTint` (the metal highlight/overlay color)
- * - `backgroundColor` -> `colorBack` (the base color behind the metal)
- * - `speed` -> `speed` (1:1, clamped with the shared `MIN_SPEED` floor)
- * - `intensity` -> `distortion` (0-1 noise distortion over the stripe
- *   pattern — the closest analog the shader exposes to an overall "how
- *   pronounced is the effect" knob; the upstream API has no prop literally
- *   named `intensity`)
+ * API: a direct passthrough. `LiquidMetalProps` extends the shader's own
+ * param surface (`LiquidMetalParams` from `@paper-design/shaders`, re-exported
+ * by the react package: colors, stripe pattern, dispersion, shape/image mask,
+ * sizing, speed), so every knob the shader exposes is a top-level prop here —
+ * no renamed aliases, no escape hatch object. Two fluidkit touches on top:
+ * - `colorBack`/`colorTint` run through `resolveColor`, so CSS custom
+ *   properties (`"var(--brand)"`) work like they do everywhere else in
+ *   fluidkit.
+ * - `speed` is clamped with the shared `MIN_SPEED` floor and forced to `0`
+ *   while the component is out of view (see below) — the pause gate always
+ *   wins, so no prop combination can keep the shader animating off-screen.
  *
- * Defaults for `color`/`backgroundColor`/`intensity` mirror the shader's
- * own `defaultPreset` (`colorTint: "#ffffff"`, `colorBack: "#AAAAAC"`,
- * `distortion: 0.07`), so fluidkit's defaults render identically to the
- * upstream default look.
- *
- * `shaderProps` is an escape hatch: raw props forwarded directly to the
- * underlying `@paper-design/shaders-react` `LiquidMetal` shader (its own
- * `LiquidMetalProps`), applied AFTER the mapped props above, so any key set
- * there wins (e.g. `shaderProps={{ shape: "circle", repetition: 4 }}`).
- * Two exceptions:
- * - `style` is merged (not replaced) with the fill-parent default so the
- *   shader keeps sizing to its wrapper even if `shaderProps.style` only
- *   sets unrelated properties.
- * - `speed` wins over the mapped `speed` prop only while the component is
- *   in view — the off-screen pause gate (speed forced to `0`) always takes
- *   precedence, so `shaderProps.speed` can never keep the shader animating
- *   while scrolled out of view.
+ * Defaults: the shader's own `defaultPreset` renders a small floating
+ * diamond — an object, not a backdrop. fluidkit instead defaults to the
+ * upstream `fullScreenPreset` ("Backdrop") params, verified against the
+ * installed `0.0.76` bundle: `shape: "none"` with `scale: 1` fills the whole
+ * canvas with the flowing metal pattern. Consumers get a wall of liquid
+ * metal by default and can pass `shape`/`image` to mask it back down to an
+ * object when they want one. Undefined props never override these defaults —
+ * params are pruned of `undefined` before spreading, because the shader
+ * component treats an explicitly-passed `undefined` the same as a set value
+ * when merging against its own preset.
  *
  * Gating: renders a static metallic-gradient fallback (`data-fallback`,
  * shader never mounted) when `supportsWebGL()` is false or the user
- * prefers reduced motion — a WebGL sim never boots in either case.
+ * prefers reduced motion — a WebGL context is never created in either case.
  * `supportsWebGL()` is read once per mount (lazy `useState` initializer),
  * never at module import time or on every render.
  *
@@ -63,46 +58,68 @@ import type { CSSProperties, HTMLAttributes } from "react";
 import { useState } from "react";
 import {
   LiquidMetal as LiquidMetalShader,
-  type LiquidMetalProps as LiquidMetalShaderProps,
+  type LiquidMetalParams,
 } from "@paper-design/shaders-react";
 import { resolveColor, useInView, usePrefersReducedMotion } from "../utils";
 import { MIN_SPEED } from "../utils/constants";
 import { supportsWebGL } from "../utils/supportsWebGL";
 
-export interface LiquidMetalProps extends HTMLAttributes<HTMLDivElement> {
-  /** Metal highlight/overlay color. Maps to the shader's `colorTint`. Defaults to `"#ffffff"` (the shader's own default). */
-  color?: string;
-  /** Base color behind the metal. Maps to the shader's `colorBack`. Defaults to `"#AAAAAC"` (the shader's own default). */
-  backgroundColor?: string;
-  /** Animation speed multiplier, forwarded 1:1 to the shader's `speed`. Defaults to `1`, clamped with the shared `MIN_SPEED` floor. */
-  speed?: number;
-  /** Effect strength, maps to the shader's `distortion` (0-1). Defaults to `0.07` (the shader's own default). */
-  intensity?: number;
-  /**
-   * Escape hatch: raw props forwarded directly to the underlying
-   * `@paper-design/shaders-react` `LiquidMetal` shader, applied AFTER the
-   * mapped props above (so any key here wins over `color`/`backgroundColor`/
-   * `speed`/`intensity` — except that the off-screen pause gate always wins
-   * over `speed`: while out of view the shader runs at speed `0` regardless).
-   * Advanced/unstable — the upstream shader is pinned to `0.0.76` and its
-   * param set may change between versions.
-   */
-  shaderProps?: Partial<LiquidMetalShaderProps>;
+export interface LiquidMetalProps
+  extends HTMLAttributes<HTMLDivElement>,
+    LiquidMetalParams {}
+
+/**
+ * Mirrors the shader's own `fullScreenPreset` ("Backdrop") params, minus the
+ * sizing keys whose upstream defaults already match. `shape: "none"` +
+ * `scale: 1` is what makes the pattern fill the canvas instead of rendering
+ * the default preset's small floating diamond.
+ */
+const BACKDROP_DEFAULTS = {
+  colorBack: "#AAAAAC",
+  colorTint: "#ffffff",
+  softness: 0.05,
+  repetition: 1.5,
+  shiftRed: 0.3,
+  shiftBlue: 0.3,
+  distortion: 0.1,
+  contour: 0.4,
+  angle: 90,
+  shape: "none",
+  scale: 1,
+  worldWidth: 0,
+  worldHeight: 0,
+} satisfies LiquidMetalParams;
+
+/** Shallow copy of `params` with `undefined` entries removed, so an unset prop falls through to `BACKDROP_DEFAULTS` instead of overriding it. */
+function definedParams(params: LiquidMetalParams): LiquidMetalParams {
+  return Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined)
+  ) as LiquidMetalParams;
 }
 
-/** Mirrors the shader's own `defaultPreset.params.colorTint`. */
-const DEFAULT_TINT = "#ffffff";
-/** Mirrors the shader's own `defaultPreset.params.colorBack`. */
-const DEFAULT_BACK = "#AAAAAC";
-/** Mirrors the shader's own `defaultPreset.params.distortion`. */
-const DEFAULT_INTENSITY = 0.07;
-
 export function LiquidMetal({
-  color,
-  backgroundColor,
+  colorBack,
+  colorTint,
+  image,
+  repetition,
+  shiftRed,
+  shiftBlue,
+  contour,
+  softness,
+  distortion,
+  angle,
+  shape,
+  fit,
+  scale,
+  rotation,
+  originX,
+  originY,
+  offsetX,
+  offsetY,
+  worldWidth,
+  worldHeight,
   speed = 1,
-  intensity = DEFAULT_INTENSITY,
-  shaderProps,
+  frame,
   className,
   style,
   ...rest
@@ -118,8 +135,8 @@ export function LiquidMetal({
   const animating = !degraded && inView;
   const clampedSpeed = Math.max(speed, MIN_SPEED);
 
-  const resolvedTint = resolveColor(color, DEFAULT_TINT);
-  const resolvedBack = resolveColor(backgroundColor, DEFAULT_BACK);
+  const resolvedBack = resolveColor(colorBack, BACKDROP_DEFAULTS.colorBack);
+  const resolvedTint = resolveColor(colorTint, BACKDROP_DEFAULTS.colorTint);
 
   const wrapperStyle: CSSProperties = {
     position: "absolute",
@@ -147,25 +164,42 @@ export function LiquidMetal({
           data-fluidkit="liquid-metal-fallback"
           style={{
             ...fillStyle,
-            // Restrained metallic sheen using the same tint/back colors the
-            // live shader would use — silvers/greys consistent with the
-            // library's mercury material aesthetic.
+            // Restrained metallic sheen using the same back/tint colors the
+            // live shader would use — a static stand-in, not a blank div.
             background: `linear-gradient(135deg, ${resolvedBack}, ${resolvedTint}, ${resolvedBack})`,
           }}
         />
       ) : (
         <LiquidMetalShader
-          colorTint={resolvedTint}
-          colorBack={resolvedBack}
-          distortion={intensity}
-          {...shaderProps}
-          // After the spread on purpose: the off-screen pause gate must
-          // always win, or a consumer-supplied shaderProps.speed would
-          // silently keep the shader's rAF loop running while scrolled out
-          // of view. While in view, shaderProps.speed still wins over the
-          // mapped speed prop.
-          speed={inView ? (shaderProps?.speed ?? clampedSpeed) : 0}
-          style={{ ...fillStyle, ...shaderProps?.style }}
+          {...BACKDROP_DEFAULTS}
+          {...definedParams({
+            colorBack: resolvedBack,
+            colorTint: resolvedTint,
+            image,
+            repetition,
+            shiftRed,
+            shiftBlue,
+            contour,
+            softness,
+            distortion,
+            angle,
+            shape,
+            fit,
+            scale,
+            rotation,
+            originX,
+            originY,
+            offsetX,
+            offsetY,
+            worldWidth,
+            worldHeight,
+            frame,
+          })}
+          // After the spreads on purpose: the off-screen pause gate must
+          // always win — no prop can keep the shader's rAF loop running
+          // while scrolled out of view.
+          speed={inView ? clampedSpeed : 0}
+          style={fillStyle}
         />
       )}
     </div>

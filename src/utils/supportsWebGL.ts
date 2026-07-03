@@ -1,8 +1,8 @@
 /**
  * Whether the current environment can create a WebGL rendering context.
  *
- * Used to gate the GPU-tier primitives (`fluidkit/liquid-metal`,
- * `fluidkit/water-field`) so they never boot a shader/simulation on a device
+ * Used to gate the GPU-tier primitives (`fluidkit/liquid-metal`)
+ * so they never boot a shader/simulation on a device
  * or browser that can't run one. A function (never a top-level constant) so
  * nothing runs at module import time, and it swallows errors so it never
  * throws — including in SSR, where `document` may be absent entirely.

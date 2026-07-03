@@ -18,12 +18,6 @@ const requiredFiles = [
   'dist/liquid-metal.cjs.map',
   'dist/liquid-metal.d.ts',
   'dist/liquid-metal.d.cts',
-  'dist/water-field.js',
-  'dist/water-field.js.map',
-  'dist/water-field.cjs',
-  'dist/water-field.cjs.map',
-  'dist/water-field.d.ts',
-  'dist/water-field.d.cts',
 ];
 const allowedRootFiles = requiredFiles.filter((file) => !file.startsWith('dist/'));
 
