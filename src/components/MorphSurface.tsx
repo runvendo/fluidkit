@@ -28,6 +28,7 @@ import type {
   Vec,
 } from "../liquid";
 import { useMotionSprings } from "../liquid/useMotionSprings";
+import type { SpringConfig } from "../liquid/useMotionSprings";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
 export interface MorphSize {
@@ -58,6 +59,21 @@ export interface MorphSurfaceProps
   refraction?: boolean;
   /** Satellite droplets absorbed into the surface on open. */
   satellites?: boolean;
+  /**
+   * Where the panel grows from. `"center"` inflates in place; `"top"` pins
+   * the top edge so the panel pours downward out of the pill.
+   */
+  anchor?: "center" | "top";
+  /**
+   * How satellites merge on open. `"shrink"` collapses each drop in place;
+   * `"pull"` draws it across at full size until the body swallows it
+   * (radius follows travel, so the drop re-emerges on close).
+   */
+  absorption?: "shrink" | "pull";
+  /** Override the body's morph spring. */
+  bodySpring?: SpringConfig;
+  /** Override the satellites' spring. */
+  satelliteSpring?: SpringConfig;
   /** Content shown on the closed pill. */
   closedContent?: ReactNode;
   /** Content shown on the open panel. */
@@ -80,6 +96,19 @@ interface Sat {
   y: number;
   r: number;
   park: number;
+  /** Absorbed position: just inside the open panel's side edge. */
+  target: number;
+}
+
+type Absorption = "shrink" | "pull";
+
+interface MorphGeom {
+  cx: number;
+  cy: number;
+  radius: number;
+  /** Fixed top edge of the open panel (the pour origin when anchored). */
+  openTop: number;
+  anchorTop: boolean;
 }
 
 export function MorphSurface({
@@ -94,6 +123,10 @@ export function MorphSurface({
   reflection = true,
   refraction = false,
   satellites = true,
+  anchor = "center",
+  absorption = "shrink",
+  bodySpring,
+  satelliteSpring,
   closedContent,
   openContent,
   className,
@@ -110,10 +143,33 @@ export function MorphSurface({
 
   const sats = useMemo<Sat[]>(
     () => [
-      { side: -1, y: -4, r: 13, park: -(closedSize.width / 2 + 34) },
-      { side: 1, y: 10, r: 11, park: closedSize.width / 2 + 38 },
+      {
+        side: -1,
+        y: -4,
+        r: 13,
+        park: -(closedSize.width / 2 + 34),
+        target: -(openSize.width / 2 - 20),
+      },
+      {
+        side: 1,
+        y: 10,
+        r: 11,
+        park: closedSize.width / 2 + 38,
+        target: openSize.width / 2 - 20,
+      },
     ],
-    [closedSize.width]
+    [closedSize.width, openSize.width]
+  );
+
+  const geom = useMemo<MorphGeom>(
+    () => ({
+      cx,
+      cy,
+      radius,
+      openTop: cy - openSize.height / 2,
+      anchorTop: anchor === "top",
+    }),
+    [cx, cy, radius, openSize.height, anchor]
   );
 
   const { url: refractionUrl, defs: refractionDefs } = useRefraction(
@@ -130,16 +186,26 @@ export function MorphSurface({
       ? null
       : light ?? defaultLight(width, height);
 
+  // Spring configs live in refs so the resolver (captured once by
+  // useMotionSprings) always reads the latest prop on each retarget.
+  const bodyCfg = useRef(bodySpring ?? BODY_SPRING);
+  bodyCfg.current = bodySpring ?? BODY_SPRING;
+  const satCfg = useRef(satelliteSpring ?? SAT_SPRING);
+  satCfg.current = satelliteSpring ?? SAT_SPRING;
+
   // [w, h, sat0pos, sat0r, sat1pos, sat1r] — body slots on the taut spring,
   // satellite slots on their own softer one.
   const springs = useMotionSprings(
     2 + sats.length * 2,
-    (i) => targetSpringValues(open, closedSize, openSize, sats)[i],
-    (i) => (i < 2 ? BODY_SPRING : SAT_SPRING)
+    (i) => targetSpringValues(open, closedSize, openSize, sats, absorption)[i],
+    (i) => (i < 2 ? bodyCfg.current : satCfg.current)
   );
 
   const tension = useRef(new TensionField());
   const [settling, setSettling] = useState(false);
+  // Mirrors `settling` synchronously so effects in the SAME commit as an
+  // `open` flip (before the state lands) don't paint the target scene.
+  const settlingRef = useRef(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animating = !prefersReducedMotion && inView;
 
@@ -147,13 +213,24 @@ export function MorphSurface({
   const prevOpen = useRef(open);
   useEffect(() => {
     if (prevOpen.current !== open) {
-      const targets = targetSpringValues(open, closedSize, openSize, sats);
+      const targets = targetSpringValues(
+        open,
+        closedSize,
+        openSize,
+        sats,
+        absorption
+      );
       if (animating) {
         springs.setTargets(targets);
+        settlingRef.current = true;
         setSettling(true);
         if (settleTimer.current) clearTimeout(settleTimer.current);
-        settleTimer.current = setTimeout(() => setSettling(false), SETTLE_MS);
+        settleTimer.current = setTimeout(() => {
+          settlingRef.current = false;
+          setSettling(false);
+        }, SETTLE_MS);
       } else {
+        settlingRef.current = false;
         springs.snapTo(targets);
       }
     }
@@ -167,12 +244,11 @@ export function MorphSurface({
   const staticScene = useMemo(
     () =>
       buildMorphScene(
-        targetSpringValues(open, closedSize, openSize, sats),
-        cx,
-        cy,
-        radius,
+        targetSpringValues(open, closedSize, openSize, sats, absorption),
+        geom,
         sats,
         satellites,
+        absorption,
         null,
         resolved.specular ? sceneLight : null
       ),
@@ -181,10 +257,9 @@ export function MorphSurface({
       closedSize,
       openSize,
       sats,
-      cx,
-      cy,
-      radius,
+      geom,
       satellites,
+      absorption,
       resolved.specular,
       sceneLight,
     ]
@@ -193,9 +268,13 @@ export function MorphSurface({
 
   // The settle loop mutates the DOM behind React's back; whenever it isn't
   // running (settled, reduced motion, off-screen) resync the declarative
-  // static scene so prop changes always win.
+  // static scene so prop changes always win. Guarded by the ref, not the
+  // state: on the flip commit `settling` is still false and the state guard
+  // alone would flash the target scene for a frame.
   useEffect(() => {
-    if (!(animating && settling)) renderer.current?.setScene(staticScene);
+    if (!(animating && settlingRef.current)) {
+      renderer.current?.setScene(staticScene);
+    }
   }, [animating, settling, staticScene]);
 
   useAnimationFrame(() => {
@@ -203,16 +282,32 @@ export function MorphSurface({
     renderer.current?.setScene(
       buildMorphScene(
         springs.values.map((v) => v.get()),
-        cx,
-        cy,
-        radius,
+        geom,
         sats,
         satellites,
+        absorption,
         tension.current,
         resolved.specular ? sceneLight : null
       )
     );
   });
+
+  // Declarative props for LiquidRenderer. Mid-morph (including the flip
+  // commit itself, where `settling` hasn't landed yet) they must reflect the
+  // CURRENT spring frame — if they jumped to the target scene, React would
+  // paint the final shape for a frame before the loop takes over.
+  const midMorph = animating && (settling || prevOpen.current !== open);
+  const renderScene = midMorph
+    ? buildMorphScene(
+        springs.values.map((v) => v.get()),
+        geom,
+        sats,
+        satellites,
+        absorption,
+        tension.current,
+        resolved.specular ? sceneLight : null
+      )
+    : staticScene;
 
   // Faces are revealed FROM WITHIN the surface: the content overlay is
   // clipped to the liquid shape, and the entering face waits a beat, then
@@ -221,7 +316,9 @@ export function MorphSurface({
   const faceStyle = (visible: boolean, size: MorphSize): CSSProperties => ({
     position: "absolute",
     left: "50%",
-    top: "50%",
+    // Anchored surfaces keep their top edge fixed, so each face centers on
+    // where its body state actually sits rather than on the container.
+    top: geom.anchorTop ? geom.openTop + size.height / 2 : height / 2,
     width: size.width,
     height: size.height,
     display: "grid",
@@ -249,9 +346,9 @@ export function MorphSurface({
       {refractionDefs}
       <LiquidRenderer
         ref={renderer}
-        path={staticScene.path}
+        path={renderScene.path}
         material={resolved}
-        speculars={staticScene.speculars}
+        speculars={renderScene.speculars}
         specularSlots={
           resolved.specular && sceneLight ? sats.length + 1 : 0
         }
@@ -282,15 +379,27 @@ function targetSpringValues(
   open: boolean,
   closedSize: MorphSize,
   openSize: MorphSize,
-  sats: Sat[]
+  sats: Sat[],
+  absorption: Absorption
 ): number[] {
   const size = open ? openSize : closedSize;
   const values = [size.width, size.height];
   for (const sat of sats) {
-    values.push(open ? sat.side * (openSize.width / 2 - 20) : sat.park);
-    values.push(open ? 0 : sat.r);
+    values.push(open ? sat.target : sat.park);
+    // In pull mode radius is derived from travel, not its own spring.
+    values.push(absorption === "pull" ? sat.r : open ? 0 : sat.r);
   }
   return values;
+}
+
+/** 0 at the parked position, 1 fully absorbed. */
+function travelProgress(pos: number, sat: Sat): number {
+  return (pos - sat.park) / (sat.target - sat.park);
+}
+
+function smoothstep(a: number, b: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
 }
 
 interface Scene {
@@ -300,28 +409,36 @@ interface Scene {
 
 function buildMorphScene(
   springValues: number[],
-  cx: number,
-  cy: number,
-  radius: number,
+  geom: MorphGeom,
   sats: Sat[],
   satellites: boolean,
+  absorption: Absorption,
   tension: TensionField | null,
   light: Vec | null
 ): Scene {
   const [w, h, ...satValues] = springValues;
-  const rad = Math.min(radius, h / 2);
-  let path = roundRectPath({ x: cx, y: cy }, w, h, rad);
+  const { cx } = geom;
+  // Anchored: the top edge stays pinned and the body pours downward.
+  const by = geom.anchorTop ? geom.openTop + h / 2 : geom.cy;
+  const rad = Math.min(geom.radius, h / 2);
+  let path = roundRectPath({ x: cx, y: by }, w, h, rad);
   const speculars: SpecularSpot[] = [];
 
   if (satellites) {
     sats.forEach((sat, i) => {
       const pos = satValues[i * 2];
-      const r = Math.max(satValues[i * 2 + 1], 0);
+      // Pull mode: the drop keeps its size while it travels and only gets
+      // swallowed over the last stretch, so absorption reads as suction
+      // (and the drop re-emerges from the edge on close).
+      const r =
+        absorption === "pull"
+          ? sat.r * (1 - smoothstep(0.55, 1, travelProgress(pos, sat)))
+          : Math.max(satValues[i * 2 + 1], 0);
       if (r <= 0.5) return;
       const drop: LiquidBody = {
         id: `sat${sat.side}`,
         x: cx + pos,
-        y: cy + sat.y,
+        y: by + sat.y,
         r,
       };
       path += circlePath(drop, drop.r);
@@ -329,7 +446,7 @@ function buildMorphScene(
         const phantom: LiquidBody = {
           id: `edge${sat.side}`,
           x: cx + sat.side * (w / 2 - 16),
-          y: cy + sat.y * 0.4,
+          y: by + sat.y * 0.4,
           r: 15,
         };
         path += tension.bridges([drop, phantom]);
@@ -341,7 +458,7 @@ function buildMorphScene(
   if (light) {
     // one quiet sheen on the body itself, lit by the same source
     speculars.push(
-      specularPlacement({ x: cx, y: cy, r: Math.min(w, h) * 0.48 }, light, 0.28)
+      specularPlacement({ x: cx, y: by, r: Math.min(w, h) * 0.48 }, light, 0.28)
     );
   }
   return { path, speculars };
