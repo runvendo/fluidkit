@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tabCoverage, mixColor, smoothstep, type Interval } from "../../../src/components/tabs/tint";
+import { tabCoverage, mixColor, parseColor, smoothstep, type Interval } from "../../../src/components/tabs/tint";
 
 describe("smoothstep", () => {
   it("clamps below a and above b", () => {
@@ -46,5 +46,26 @@ describe("mixColor", () => {
   });
   it("rounds channel values at the midpoint", () => {
     expect(mixColor([0, 0, 0], [255, 255, 255], 0.5)).toBe("rgb(128, 128, 128)");
+  });
+});
+
+describe("parseColor", () => {
+  it("parses 6-digit hex", () => {
+    expect(parseColor("#4a6cf7")).toEqual([74, 108, 247]);
+  });
+  it("parses 3-digit hex by doubling digits", () => {
+    expect(parseColor("#fff")).toEqual([255, 255, 255]);
+    expect(parseColor("#a1c")).toEqual([170, 17, 204]);
+  });
+  it("parses rgb() and rgba(), comma or space separated", () => {
+    expect(parseColor("rgb(75, 76, 86)")).toEqual([75, 76, 86]);
+    expect(parseColor("rgba(75 76 86 / 0.5)")).toEqual([75, 76, 86]);
+  });
+  it("returns null for unmixable values so callers fall back", () => {
+    expect(parseColor(undefined)).toBeNull();
+    expect(parseColor("")).toBeNull();
+    expect(parseColor("currentColor")).toBeNull();
+    expect(parseColor("var(--brand)")).toBeNull();
+    expect(parseColor("oklch(0.7 0.1 250)")).toBeNull();
   });
 });

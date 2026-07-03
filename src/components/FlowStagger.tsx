@@ -1,12 +1,16 @@
 /**
  * `<FlowStagger>` — a list of children rise + un-blur + settle in a
- * staggered sequence, matching the prototype's message-list entrance
- * (`@keyframes rise` in prototypes/05-integrated-flowlet.html). Because
- * every item wrapper carries Motion's `layout`, siblings glide (FLIP,
- * handled by Motion — never hand-rolled) to their new positions whenever the
- * list is added to, removed from, or reordered.
+ * staggered viscous cascade (evolved from `@keyframes rise` in
+ * prototypes/05-integrated-flowlet.html). Because every item wrapper carries
+ * Motion's `layout`, siblings glide (FLIP, handled by Motion — never
+ * hand-rolled) to their new positions whenever the list is added to, removed
+ * from, or reordered — and the glides ripple outward from the change point:
+ * this component diffs the child keys against the previously committed list
+ * to find the disturbance index, then hands each item its distance so
+ * `useFlow` can delay farther glides slightly.
  *
- * Removals animate out via `AnimatePresence`; each wrapper keeps the child's
+ * Removals animate out via `AnimatePresence` using the submerge `exit`
+ * variant (sink + blur-out + slight shrink); each wrapper keeps the child's
  * own key so React (and Motion's FLIP) can track identity across reorders.
  *
  * Under `prefers-reduced-motion` this collapses to a simple, simultaneous
@@ -14,8 +18,13 @@
  */
 
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
-import { Children } from "react";
-import { AnimatePresence, motion, type Transition } from "motion/react";
+import { Children, useEffect, useRef } from "react";
+import {
+  AnimatePresence,
+  LayoutGroup,
+  motion,
+  type Transition,
+} from "motion/react";
 import { useFlow } from "../hooks";
 
 // Motion's `motion.div` redefines a handful of DOM event handlers (drag,
@@ -34,7 +43,7 @@ type ConflictingDomHandlers =
 
 export interface FlowStaggerProps
   extends Omit<HTMLAttributes<HTMLDivElement>, ConflictingDomHandlers> {
-  /** Seconds between children, default 0.06. */
+  /** Base seconds between children on entrance, default 0.02. */
   stagger?: number;
   /** Motion transition override for each item's rise/settle tween. */
   transition?: Transition;
@@ -51,43 +60,86 @@ export function FlowStagger({
   style,
   ...rest
 }: FlowStaggerProps) {
-  const { containerProps, itemProps, prefersReducedMotion } = useFlow({
+  const { containerProps, getItemProps, prefersReducedMotion } = useFlow({
     stagger,
     transition,
   });
 
-  return (
-    <motion.div
-      data-fluidkit="flow-stagger"
-      data-motion={prefersReducedMotion ? "fade" : "flow"}
-      className={className}
-      style={style}
-      {...containerProps}
-      {...rest}
-    >
-      <AnimatePresence initial={false}>
-        {Children.toArray(children).map((child) => {
-          // `Children.toArray` already assigns a key to every element (the
-          // child's own key when present, otherwise a stable positional
-          // one), so keying the wrapper on `child.key` preserves identity
-          // across add/remove/reorder — the whole point of the FLIP glide.
-          const key =
-            typeof child === "object" && child !== null && "key" in child
-              ? (child.key as string | null)
-              : null;
+  // `Children.toArray` already assigns a key to every element (the child's
+  // own key when present, otherwise a stable positional one), so keying the
+  // wrapper on it preserves identity across add/remove/reorder — the whole
+  // point of the FLIP glide.
+  const childArray = Children.toArray(children);
+  const keys = childArray.map((child, i) =>
+    typeof child === "object" && child !== null && "key" in child && child.key != null
+      ? String(child.key)
+      : String(i)
+  );
 
-          return (
-            <motion.div
-              key={key ?? undefined}
-              data-fluidkit="flow-item"
-              exit={{ opacity: 0 }}
-              {...itemProps}
-            >
-              {child}
-            </motion.div>
-          );
-        })}
-      </AnimatePresence>
-    </motion.div>
+  // Keys as of the last commit. Updated in an effect (not during render) so
+  // StrictMode double-renders diff against the same committed snapshot.
+  const prevKeysRef = useRef<string[] | null>(null);
+  useEffect(() => {
+    prevKeysRef.current = keys;
+  });
+
+  const prevKeys = prevKeysRef.current;
+  const prevSet = prevKeys ? new Set(prevKeys) : null;
+
+  // Disturbance = first index where the key sequence diverges from the
+  // committed one. Sibling glide delays grow with distance from it, so an
+  // add/remove/reorder ripples outward instead of moving everything at once.
+  let disturbance = -1;
+  if (prevKeys) {
+    const len = Math.max(prevKeys.length, keys.length);
+    for (let i = 0; i < len; i++) {
+      if (prevKeys[i] !== keys[i]) {
+        disturbance = i;
+        break;
+      }
+    }
+  }
+
+  let enterRank = 0;
+
+  return (
+    // LayoutGroup ties the container's layout animation to re-renders inside
+    // AnimatePresence (exit unmounts), which the container can't otherwise
+    // see — without it, any background the container carries snaps at the
+    // end of an exit instead of gliding.
+    <LayoutGroup>
+      <motion.div
+        data-fluidkit="flow-stagger"
+        data-motion={prefersReducedMotion ? "fade" : "flow"}
+        className={className}
+        style={style}
+        {...containerProps}
+        {...rest}
+      >
+        <AnimatePresence initial={false}>
+          {childArray.map((child, i) => {
+            // Items absent from the committed list are entering: they cascade
+            // among themselves (rank order). Persisting items ripple — their
+            // glide waits in proportion to distance from the disturbance.
+            const entering = !prevSet || !prevSet.has(keys[i]);
+            const itemProps = getItemProps({
+              entranceRank: entering ? enterRank++ : 0,
+              glideDistance:
+                !entering && disturbance >= 0 ? Math.abs(i - disturbance) : 0,
+            });
+
+            return (
+              <motion.div
+                key={keys[i]}
+                data-fluidkit="flow-item"
+                {...itemProps}
+              >
+                {child}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </motion.div>
+    </LayoutGroup>
   );
 }

@@ -26,6 +26,12 @@ export interface FlowContext {
   height: number;
   /** Resting width of the destination tab, for volume conservation. */
   restWidth: number;
+  /**
+   * Paintable layer width in px. When set, scenes press their geometry
+   * inside [0, width] — spring overshoot at the first/last tab otherwise
+   * pokes past the layer and renders as a flat chopped edge.
+   */
+  width?: number;
 }
 
 export interface FlowScene {
@@ -70,9 +76,9 @@ export const slideFlow: Flow = {
     return [cx, rect.width, cx];
   },
   scene(values, velocities, tension, ctx) {
-    const cx = values[0];
+    let cx = values[0];
     const w = values[1];
-    const tailX = values[2];
+    let tailX = values[2];
     const vx = velocities[0] ?? 0;
     const h = ctx.height;
     const cy = h / 2;
@@ -82,11 +88,19 @@ export const slideFlow: Flow = {
     const bw = w * stretch;
     const bh = h / Math.sqrt(stretch);
 
+    const gap = Math.abs(cx - tailX);
+    const tailR = gap < 1 ? 0 : Math.min(gap * 0.3 + 5, h * 0.36);
+
+    // Press against the tray walls: overshoot stops at the border instead of
+    // being chopped flat by the paint layer.
+    if (ctx.width && ctx.width > 0) {
+      cx = clamp(cx, bw / 2, Math.max(ctx.width - bw / 2, bw / 2));
+      tailX = clamp(tailX, tailR, Math.max(ctx.width - tailR, tailR));
+    }
+
     let path = roundRectPath({ x: cx, y: cy }, bw, bh, bh / 2);
     const inkIntervals: Interval[] = [[cx - bw / 2, cx + bw / 2]];
 
-    const gap = Math.abs(cx - tailX);
-    const tailR = gap < 1 ? 0 : Math.min(gap * 0.3 + 5, h * 0.36);
     if (tailR > 0.5) {
       path += circlePath({ x: tailX, y: cy }, tailR);
       path += tension.bridges([
@@ -114,8 +128,14 @@ export const stretchFlow: Flow = {
     return [rect.left, rect.left + rect.width];
   },
   scene(values, _velocities, _tension, ctx) {
-    const L = values[0];
-    const R = values[1];
+    let L = values[0];
+    let R = values[1];
+    // Press against the tray walls (see slideFlow): the eager edge overshoots
+    // its target, and at the first/last tab the target IS the border.
+    if (ctx.width && ctx.width > 0) {
+      L = clamp(L, 0, ctx.width);
+      R = clamp(R, 0, ctx.width);
+    }
     const w = Math.max(R - L, 8);
     const h = ctx.height * clamp(ctx.restWidth / w, 0.72, 1.04);
     const cx = (L + R) / 2;

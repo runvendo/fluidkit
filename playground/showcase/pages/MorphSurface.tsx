@@ -4,8 +4,21 @@ import type { MorphSurfaceProps } from "fluidkit";
 import { PageLayout, Stage, Controls, Toggle, Seg, Snippet, VariantGrid, VariantCell } from "../kit";
 
 type LiquidMaterial = NonNullable<MorphSurfaceProps["material"]>;
+type Anchor = NonNullable<MorphSurfaceProps["anchor"]>;
+type Absorption = NonNullable<MorphSurfaceProps["absorption"]>;
 
 const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const ANCHORS: Anchor[] = ["center", "top"];
+const ABSORPTIONS: Absorption[] = ["shrink", "pull"];
+
+const SPRING_PRESETS = {
+  standard: { stiffness: 240, damping: 24 },
+  taut: { stiffness: 280, damping: 32 },
+  calm: { stiffness: 190, damping: 26 },
+  wobbly: { stiffness: 170, damping: 15 },
+};
+type SpringPreset = keyof typeof SPRING_PRESETS;
+const SPRING_NAMES = Object.keys(SPRING_PRESETS) as SpringPreset[];
 
 function PillFace() {
   return (
@@ -56,6 +69,9 @@ export default function MorphSurfacePage() {
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [reflection, setReflection] = useState(true);
   const [refraction, setRefraction] = useState(false);
+  const [anchor, setAnchor] = useState<Anchor>("center");
+  const [absorption, setAbsorption] = useState<Absorption>("shrink");
+  const [spring, setSpring] = useState<SpringPreset>("standard");
 
   return (
     <PageLayout
@@ -70,12 +86,18 @@ export default function MorphSurfacePage() {
               reflection={reflection}
               refraction={refraction}
               satellites={satellites}
+              anchor={anchor}
+              absorption={absorption}
+              bodySpring={SPRING_PRESETS[spring]}
               closedContent={<PillFace />}
               openContent={<PanelFace />}
             />
           </Stage>
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
+            <Seg label="anchor" value={anchor} set={setAnchor} options={ANCHORS} />
+            <Seg label="absorption" value={absorption} set={setAbsorption} options={ABSORPTIONS} />
+            <Seg label="spring" value={spring} set={setSpring} options={SPRING_NAMES} />
             <Toggle label="reflection" value={reflection} set={setReflection} />
             <Toggle label="refraction" value={refraction} set={setRefraction} />
             <Toggle label="satellites" value={satellites} set={setSatellites} />
@@ -92,7 +114,7 @@ export default function MorphSurfacePage() {
       usage={
         <Snippet code={`<MorphSurface
   open={open}
-  material="${material}"${refraction ? "\n  refraction" : ""}
+  material="${material}"${anchor !== "center" ? `\n  anchor="${anchor}"` : ""}${absorption !== "shrink" ? `\n  absorption="${absorption}"` : ""}${spring !== "standard" ? `\n  bodySpring={{ stiffness: ${SPRING_PRESETS[spring].stiffness}, damping: ${SPRING_PRESETS[spring].damping} }}` : ""}${refraction ? "\n  refraction" : ""}
   closedContent={<PillFace />}
   openContent={<PanelFace />}
 />`} />

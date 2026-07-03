@@ -40,6 +40,39 @@ describe("LiquidTabs (bar)", () => {
     expect(tabs[1].textContent).toContain("Two");
   });
 
+  it("paints labels with a custom labelColor (zero coverage in jsdom → base)", async () => {
+    const LiquidTabs = await loadTabs(false);
+    const { container } = render(
+      <LiquidTabs
+        items={ITEMS}
+        value="one"
+        onChange={() => {}}
+        labelColor="#4a6cf7"
+      />
+    );
+    const tab = container.querySelector(
+      '[data-fluidkit="liquid-tab"]'
+    ) as HTMLElement;
+    expect(tab.style.color).toBe("rgb(74, 108, 247)");
+  });
+
+  it("fills glass with a custom glassTint (fallback path — jsdom lacks backdrop-filter)", async () => {
+    const LiquidTabs = await loadTabs(false);
+    const { container } = render(
+      <LiquidTabs
+        items={ITEMS}
+        value="one"
+        onChange={() => {}}
+        material="glass"
+        glassTint="rgba(200, 220, 255, 0.4)"
+      />
+    );
+    const fill = container.querySelector(
+      '[data-fluidkit="liquid-fill"]'
+    ) as HTMLElement;
+    expect(fill.style.background).toBe("rgba(200, 220, 255, 0.4)");
+  });
+
   it("marks the active tab via aria-selected", async () => {
     const LiquidTabs = await loadTabs(false);
     const { container } = render(
