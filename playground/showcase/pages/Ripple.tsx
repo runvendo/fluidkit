@@ -24,14 +24,16 @@ const SURFACE_STYLE: CSSProperties = {
 function Surface({
   material,
   duration,
+  intensity = 0.35,
   children = "Tap me",
 }: {
   material: "flat" | "glass";
   duration: number;
+  intensity?: number;
   children?: ReactNode;
 }) {
   return (
-    <Ripple material={material} duration={duration} style={SURFACE_STYLE}>
+    <Ripple material={material} duration={duration} intensity={intensity} style={SURFACE_STYLE}>
       {children}
     </Ripple>
   );
@@ -40,6 +42,7 @@ function Surface({
 export default function RipplePage() {
   const [duration, setDuration] = useState(600);
   const [material, setMaterial] = useState<"flat" | "glass">("glass");
+  const [intensity, setIntensity] = useState(0.35);
 
   return (
     <PageLayout
@@ -48,11 +51,12 @@ export default function RipplePage() {
       hero={
         <>
           <Stage wall hint="tap the surface">
-            <Surface material={material} duration={duration} />
+            <Surface material={material} duration={duration} intensity={intensity} />
           </Stage>
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={["flat", "glass"]} />
             <Slider label="duration" value={duration} set={setDuration} min={200} max={2000} step={50} suffix="ms" />
+            <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
           </Controls>
         </>
       }
@@ -71,7 +75,7 @@ export default function RipplePage() {
       }
       usage={
         <Snippet
-          code={`<Ripple material="${material}" duration={${duration}} className="btn">
+          code={`<Ripple material="${material}" duration={${duration}}${intensity !== 0.35 ? ` intensity={${intensity}}` : ""} className="btn">
   Tap me
 </Ripple>`}
         />
