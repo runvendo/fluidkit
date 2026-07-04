@@ -110,6 +110,17 @@ describe("LiquidSlider", () => {
     ).not.toBeNull();
   });
 
+  it("saturates the fill while the pointer is held (data-active)", async () => {
+    const LiquidSlider = await loadSlider(true);
+    render(<LiquidSlider aria-label="Volume" defaultValue={30} />);
+    const root = document.querySelector('[data-fluidkit="liquid-slider"]')!;
+    expect(root.getAttribute("data-active")).toBe("false");
+    fireEvent.pointerDown(root);
+    expect(root.getAttribute("data-active")).toBe("true");
+    fireEvent.pointerUp(window);
+    expect(root.getAttribute("data-active")).toBe("false");
+  });
+
   it("reduced motion renders statically at the current value", async () => {
     const LiquidSlider = await loadSlider(true);
     render(<LiquidSlider aria-label="Volume" defaultValue={80} />);

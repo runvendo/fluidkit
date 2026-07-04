@@ -160,7 +160,10 @@ or dismissing drains the menu back into the trigger.
 - Placement: `side`/`align` props with flip-to-fit when there's no room.
 - Reduced motion: open/close is an opacity fade, poured geometry only.
 
-### LiquidBadge
+### LiquidBadge — CUT in live review (2026-07-04)
+
+Built, reviewed live, and removed: the wave ships seven components, not
+eight. Kept here for the record of what was tried.
 
 Wraps a count (or renders standalone). When `count` increments, a small droplet
 appears beside the badge and merges into its body through a metaball bridge; the

@@ -60,8 +60,6 @@ export { LiquidProgress } from "./LiquidProgress";
 export type { LiquidProgressProps } from "./LiquidProgress";
 export { LiquidField } from "./LiquidField";
 export type { LiquidFieldProps } from "./LiquidField";
-export { LiquidBadge } from "./LiquidBadge";
-export type { LiquidBadgeProps } from "./LiquidBadge";
 export { LiquidMenu } from "./LiquidMenu";
 export type {
   LiquidMenuProps,

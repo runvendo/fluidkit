@@ -72,7 +72,6 @@ function App() {
 | [`LiquidProgress`](docs/primitives/liquid-progress.md) | Determinate progress as a vessel filling; the meniscus wobbles only while the value moves | Fill width tracks the value |
 | [`LiquidToast`](docs/primitives/liquid-toast.md) | `toast()` notifications that condense at the screen corner and evaporate on dismiss | Opacity-only in/out |
 | [`LiquidMenu`](docs/primitives/liquid-menu.md) | Dropdown that pours from its trigger; full ARIA menu keyboard pattern | Opacity fade over poured geometry |
-| [`LiquidBadge`](docs/primitives/liquid-badge.md) | Notification count that absorbs increments through a metaball bridge; the number only cross-fades | Count cross-fades |
 | [`LiquidMetal`](docs/primitives/liquid-metal.md) | Optional GPU tier: a real WebGL liquid-metal shader (`fluidkit/liquid-metal`) | Static metallic-gradient fallback |
 
 ### Materials

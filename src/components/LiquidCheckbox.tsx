@@ -1,8 +1,8 @@
 /**
- * A checkbox whose check is LIQUID, not a tick: on check a droplet falls
- * into the box's well and the pool rises to fill it (settling with a
- * wobble); on uncheck the liquid drains back out. `indeterminate` — a
- * real capability of the native checkbox — reads as a half-filled well
+ * A checkbox whose check is LIQUID, not a tick: on check the pool rises to
+ * fill the box's well, settling with a wobble; on uncheck it drains back
+ * out. (Review round: no falling droplet — just the pour.) `indeterminate`
+ * — a real capability of the native checkbox — reads as a half-filled well
  * with a flat meniscus.
  *
  * A real (visually hidden) `<input type="checkbox">` powers it: keyboard,
@@ -10,7 +10,7 @@
  * browser's job. Controlled and uncontrolled both work. Keyboard focus
  * shows the shared focus meniscus.
  *
- * Reduced motion: fill level snaps between states; no droplet, no wobble.
+ * Reduced motion: fill level snaps between states; no wobble.
  */
 
 import type { CSSProperties, InputHTMLAttributes, ReactNode } from "react";
@@ -18,7 +18,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAnimationFrame } from "motion/react";
 import {
   LiquidRenderer,
-  circlePath,
   defaultLight,
   resolveMaterial,
   roundRectPath,
@@ -60,11 +59,7 @@ export interface LiquidCheckboxProps
 }
 
 const FILL_SPRING = { stiffness: 170, damping: 14 };
-const DROP_SPRING = { stiffness: 300, damping: 20 };
 const SETTLE_MS = 900;
-/** Falling-droplet radius vs the well, and its post-landing drain. */
-const DROP_R_FACTOR = 0.28;
-const DRAIN_TAU_MS = 90;
 
 interface Scene {
   path: string;
@@ -127,13 +122,8 @@ export function LiquidCheckbox({
   /* ------------------------------- motion -------------------------------- */
 
   const fillTarget = indeterminate ? 0.5 : state.checked ? 1 : 0;
-  // Slot 0: fill fraction. Slot 1: falling droplet y (canvas coords).
-  const springs = useMotionSprings(
-    2,
-    (i) => (i === 0 ? fillTarget : bleed - size * 0.6),
-    (i) => (i === 0 ? FILL_SPRING : DROP_SPRING)
-  );
-  const dropR = useRef(0);
+  // One spring slot: the fill fraction.
+  const springs = useMotionSprings(1, () => fillTarget, FILL_SPRING);
   const [settling, setSettling] = useState(false);
   const settlingRef = useRef(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -142,16 +132,7 @@ export function LiquidCheckbox({
   useEffect(() => {
     if (prevTarget.current !== fillTarget) {
       if (animating) {
-        springs.setTarget(0, fillTarget, FILL_SPRING);
-        if (fillTarget === 1 && prevTarget.current < 1) {
-          // The check arrives as a droplet: fall from above the well and
-          // merge into the rising pool.
-          dropR.current = inner * DROP_R_FACTOR;
-          springs.values[1].set(bleed - size * 0.6);
-          springs.setTarget(1, bleed + size / 2, DROP_SPRING);
-        } else {
-          dropR.current = 0;
-        }
+        springs.setTargets([fillTarget]);
         settlingRef.current = true;
         setSettling(true);
         if (settleTimer.current) clearTimeout(settleTimer.current);
@@ -160,8 +141,7 @@ export function LiquidCheckbox({
           setSettling(false);
         }, SETTLE_MS);
       } else {
-        dropR.current = 0;
-        springs.snapTo([fillTarget, bleed - size * 0.6]);
+        springs.snapTo([fillTarget]);
       }
     }
     prevTarget.current = fillTarget;
@@ -178,7 +158,7 @@ export function LiquidCheckbox({
     }
   }, [animating]);
 
-  const buildScene = (f: number, dropY: number, dropRadius: number): Scene => {
+  const buildScene = (f: number): Scene => {
     let path = "";
     const speculars: SpecularSpot[] = [];
     const poolH = Math.max(0, Math.min(1, f)) * inner;
@@ -200,23 +180,11 @@ export function LiquidCheckbox({
         );
       }
     }
-    if (dropRadius > 0.5) {
-      path += circlePath({ x: cx, y: dropY }, dropRadius);
-      if (resolved.specular && sceneLight) {
-        speculars.push(
-          specularPlacement(
-            { x: cx, y: dropY, r: dropRadius },
-            sceneLight,
-            volume
-          )
-        );
-      }
-    }
     return { path, speculars };
   };
 
   const staticScene = useMemo(
-    () => buildScene(fillTarget, 0, 0),
+    () => buildScene(fillTarget),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [fillTarget, size, resolved.specular, sceneLight, volume]
   );
@@ -227,16 +195,9 @@ export function LiquidCheckbox({
       renderer.current?.setScene(staticScene);
   }, [animating, settling, staticScene]);
 
-  useAnimationFrame((_, delta) => {
+  useAnimationFrame(() => {
     if (!animating || !settling) return;
-    const f = springs.values[0].get();
-    const dropY = springs.values[1].get();
-    // Landed (or nearly): the droplet drains into the pool.
-    if (dropR.current > 0 && dropY > boxBottom - inner * f - 2) {
-      dropR.current *= Math.exp(-delta / DRAIN_TAU_MS);
-      if (dropR.current < 0.3) dropR.current = 0;
-    }
-    renderer.current?.setScene(buildScene(f, dropY, dropR.current));
+    renderer.current?.setScene(buildScene(springs.values[0].get()));
   });
 
   /* ------------------------------- render -------------------------------- */
@@ -282,7 +243,7 @@ export function LiquidCheckbox({
             path={staticScene.path}
             material={resolved}
             speculars={staticScene.speculars}
-            specularSlots={resolved.specular && sceneLight ? 2 : 0}
+            specularSlots={resolved.specular && sceneLight ? 1 : 0}
             shadow={false}
           />
         </span>

@@ -105,6 +105,13 @@ export type LiquidToastPosition =
   | "top-left";
 
 export interface LiquidToastProviderProps extends SurfaceStyleProps {
+  /**
+   * Glass tint. Defaults to a NEAR-SOLID white (`rgba(255,255,255,0.82)`) —
+   * a documented divergence from the pack's translucent default: a
+   * notification sits over unknown content and must stay readable. Lower
+   * the alpha for more see-through toasts.
+   */
+  tint?: string;
   /** Screen corner the toasts condense in. Defaults to `"bottom-right"`. */
   position?: LiquidToastPosition;
   /** Default auto-dismiss delay in ms (`0` = sticky). Defaults to `5000`. */
@@ -138,7 +145,7 @@ export function LiquidToastProvider({
   duration = 5000,
   dismissible = true,
   material = "glass",
-  tint,
+  tint = "rgba(255, 255, 255, 0.82)",
   color,
   intensity = "present",
   light,

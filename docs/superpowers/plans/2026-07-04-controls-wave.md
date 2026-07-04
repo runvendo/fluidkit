@@ -110,24 +110,31 @@ Pure refactor, zero visual change.
 
 ## Phase 5 — Independents: Progress, Field, Badge
 
-- [ ] **LiquidProgress**: tests first (`role="progressbar"` + `aria-valuenow`,
+- [x] **LiquidProgress**: tests first (`role="progressbar"` + `aria-valuenow`,
   value/max clamping, wobble only while value changes — no idle loop,
   reduced-motion branch). Approved Phase-1 meniscus values. Docs, showcase,
-  changelog. Commit.
-- [ ] **LiquidField**: tests first (visible native input/textarea, `multiline`
+  changelog. Commit. (Done: 4 tests.)
+- [x] **LiquidField**: tests first (visible native input/textarea, `multiline`
   switch, label association, focus meniscus appears on focus-visible, native
   props forwarded, reduced-motion keeps focus visibility). Docs, showcase,
-  changelog. Commit.
-- [ ] **LiquidBadge**: tests first (count text, `max` overflow (`99+`),
+  changelog. Commit. (Done: 5 tests.)
+- [x] **LiquidBadge**: tests first (count text, `max` overflow (`99+`),
   `showZero`, increment triggers droplet only when motion allowed, text
-  cross-fades). Docs, showcase, changelog. Commit.
+  cross-fades). Docs, showcase, changelog. Commit. (Done: 6 tests; badge is
+  aria-hidden by contract — the real count belongs on the anchor.)
 
 ## Phase 6 — Wave close-out
 
 - [ ] Shared focus-meniscus audit: identical treatment across the four form
   controls; WCAG focus-visibility check (contrast of the focus indication).
-- [ ] Delete or park the Phase-1 lab pages; clean the registry.
-- [ ] README primitives table + materials note updated with the eight entries.
+- [x] Delete or park the Phase-1 lab pages; clean the registry. (Deleted
+  2026-07-04 per live review; values live in this plan, code in git history.)
+- [x] README primitives table + materials note updated. (Seven entries —
+  **LiquidBadge was CUT in live review**, all its files removed.)
+- [x] Live-review round on the production components (2026-07-04): badge cut;
+  toast default tint now near-solid 0.82 white + opacity knob on its page;
+  checkbox is a pure pour (no falling droplet); slider saturates into the
+  fill tint while being slid.
 - [ ] `CHANGELOG.md` release section; size budget re-pinned with rationale.
   (Provisionally bumped 27.3 → 33 kB mid-wave when Switch crossed the old
   budget by 130 B; the close-out re-pin replaces this with measured +20%.)

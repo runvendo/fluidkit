@@ -1,9 +1,9 @@
 # LiquidCheckbox
 
-The check is **liquid, not a tick**: on check a droplet falls into the box's
-well and the pool rises to fill it, settling with a wobble; on uncheck the
-liquid drains out. `indeterminate` — a real capability of the native
-checkbox — reads as a half-filled well with a flat meniscus.
+The check is **liquid, not a tick**: on check the pool rises to fill the
+box's well, settling with a wobble; on uncheck the liquid drains out.
+`indeterminate` — a real capability of the native checkbox — reads as a
+half-filled well with a flat meniscus.
 
 A real (visually hidden) `<input type="checkbox">` powers it: keyboard,
 screen readers, form submission, and label association are the browser's.
@@ -43,5 +43,5 @@ defaults `"present"`, the pool carries Droplets' specular brightness —
 
 ## Degrades to
 
-- **Reduced motion:** fill level snaps between states; no droplet, no wobble.
+- **Reduced motion:** fill level snaps between states; no wobble.
 - **No backdrop-filter:** glass falls back to the flat fill (engine-wide rule).

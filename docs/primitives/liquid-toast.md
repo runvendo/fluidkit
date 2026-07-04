@@ -50,6 +50,10 @@ Plus the surface style pack: `material`, `tint`, `color`, `intensity` (defaults
 to `"present"`, matching the approved prototype's glint), `light`, `reflection`,
 `shadow`. `refraction` is accepted but not wired on toasts yet.
 
+`tint` defaults to a **near-solid white** (`rgba(255,255,255,0.82)`) — a
+notification sits over unknown content and must stay readable. Lower the
+tint's alpha for more see-through toasts, raise it for fully solid ones.
+
 ## `toast(message, options?)`
 
 | Option | Type | What it does |

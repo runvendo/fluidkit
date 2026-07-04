@@ -11,7 +11,12 @@
  * (`defaultValue`) both work. Keyboard focus shows the shared focus
  * meniscus.
  *
- * Reduced motion: thumb and fill track the value with no spring lag.
+ * While the user is actively sliding (pointer held, or keyboard-stepping),
+ * the channel liquid SATURATES into the full fill tint, relaxing back to
+ * the quiet read on release — the liquid responds to being touched.
+ *
+ * Reduced motion: thumb and fill track the value with no spring lag; the
+ * active saturation still applies (state, not motion).
  */
 
 import type { CSSProperties, InputHTMLAttributes, ReactNode } from "react";
@@ -79,6 +84,12 @@ const FOLLOW_SPRING = { stiffness: 400, damping: 30 };
 const SETTLE_MS = 700;
 const DEFAULT_FILL_TINT = "rgba(96, 156, 220, 0.45)";
 
+/** The active (being-slid) tint: the fill tint at near-full strength. */
+function saturate(tint: string): string {
+  const vivid = tint.replace(/[\d.]+\)$/, "0.85)");
+  return vivid === tint ? tint : vivid;
+}
+
 interface Scene {
   path: string;
   speculars: SpecularSpot[];
@@ -118,6 +129,21 @@ export function LiquidSlider({
 
   const focus = useFocusVisible();
 
+  // "Being slid": pointer held on the control, or keyboard-stepping with
+  // focus. The channel liquid saturates into the fill tint while true.
+  const [pointerHeld, setPointerHeld] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  useEffect(() => {
+    if (!pointerHeld) return;
+    const release = () => setPointerHeld(false);
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
+    return () => {
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+    };
+  }, [pointerHeld]);
+
   /* ------------------------------ geometry ------------------------------ */
 
   const thumbR = size / 2;
@@ -143,6 +169,10 @@ export function LiquidSlider({
   );
   const fillMaterial = useMemo(
     () => resolveMaterial(material, { tint: fillTint, color }),
+    [material, fillTint, color]
+  );
+  const vividMaterial = useMemo(
+    () => resolveMaterial(material, { tint: saturate(fillTint), color }),
     [material, fillTint, color]
   );
   const trackMaterial = useMemo(
@@ -228,20 +258,26 @@ export function LiquidSlider({
 
   const thumbRenderer = useRef<LiquidSceneHandle>(null);
   const fillRenderer = useRef<LiquidSceneHandle>(null);
+  const vividRenderer = useRef<LiquidSceneHandle>(null);
 
   useEffect(() => {
     if (!(animating && settlingRef.current)) {
       thumbRenderer.current?.setScene(staticThumb);
       fillRenderer.current?.setScene(staticFill);
+      vividRenderer.current?.setScene(staticFill);
     }
   }, [animating, settling, staticThumb, staticFill]);
 
   useAnimationFrame(() => {
     if (!animating || !settling) return;
     const tx = x.values[0].get();
+    const fillScene = buildFillScene(tx);
     thumbRenderer.current?.setScene(buildThumbScene(tx));
-    fillRenderer.current?.setScene(buildFillScene(tx));
+    fillRenderer.current?.setScene(fillScene);
+    vividRenderer.current?.setScene(fillScene);
   });
+
+  const active = pointerHeld || (inputFocused && settling);
 
   /* ------------------------------- render -------------------------------- */
 
@@ -264,9 +300,13 @@ export function LiquidSlider({
     <label
       data-fluidkit="liquid-slider"
       data-value={current}
+      data-active={active}
       data-animating={animating && settling}
       className={className}
-      onPointerDown={focus.onPointerDown}
+      onPointerDown={() => {
+        focus.onPointerDown();
+        if (!disabled) setPointerHeld(true);
+      }}
       style={rootStyle}
     >
       {label != null && <span>{label}</span>}
@@ -283,6 +323,20 @@ export function LiquidSlider({
         </span>
         <span aria-hidden style={{ position: "absolute", inset: -bleed }}>
           <LiquidRenderer ref={fillRenderer} path={staticFill.path} material={fillMaterial} />
+        </span>
+        {/* The saturated fill, fading in while the user is sliding. */}
+        <span
+          aria-hidden
+          data-fluidkit="liquid-slider-active-fill"
+          style={{
+            position: "absolute",
+            inset: -bleed,
+            opacity: active ? 1 : 0,
+            transition: "opacity 180ms ease",
+            pointerEvents: "none",
+          }}
+        >
+          <LiquidRenderer ref={vividRenderer} path={staticFill.path} material={vividMaterial} />
         </span>
         <span aria-hidden style={{ position: "absolute", inset: -bleed }}>
           <LiquidRenderer
@@ -315,8 +369,14 @@ export function LiquidSlider({
             if (!isControlled) setInternal(next);
             onValueChange?.(next);
           }}
-          onFocus={focus.onFocus}
-          onBlur={focus.onBlur}
+          onFocus={(e) => {
+            setInputFocused(true);
+            focus.onFocus(e);
+          }}
+          onBlur={() => {
+            setInputFocused(false);
+            focus.onBlur();
+          }}
           {...inputRest}
         />
       </span>
