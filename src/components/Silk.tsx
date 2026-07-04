@@ -10,7 +10,7 @@
  * sheets hang (cycling through `colors`), so density and palette scale
  * independently.
  *
- * Materials: `material="color"` (default) renders each sheet as a blurred
+ * Materials: `material="flat"` (default) renders each sheet as a blurred
  * gradient of its own color. `material="glass"` renders frosted sheets —
  * a white-mixed tint of each color plus `backdrop-filter` blur/saturation
  * (same recipe as the liquid engine's glass material, via
@@ -53,8 +53,8 @@ export interface SilkProps extends HTMLAttributes<HTMLDivElement> {
   colors?: string[];
   /** Number of sheets, `1`-`12`. Defaults to `colors.length` — one sheet per color. */
   count?: number;
-  /** Sheet look: `"color"` (blurred color gradients) or `"glass"` (frosted, backdrop-blurring white-tinted sheets). Defaults to `"color"`. */
-  material?: "color" | "glass";
+  /** Sheet look: `"flat"` (blurred color gradients) or `"glass"` (frosted, backdrop-blurring white-tinted sheets). Defaults to `"flat"`. */
+  material?: "flat" | "glass";
   /** Sheet opacity scale, `0`-`1`. Defaults to `0.55`. */
   intensity?: number;
   /** Flow speed multiplier — higher divides the keyframe period down (faster). Defaults to `1`. */
@@ -69,7 +69,7 @@ const FLOW_KEYFRAMES_NAME = "fluidkit-silk-flow";
 
 const MAX_COUNT = 12;
 
-/** Sheet softening blur, px (color material only — glass sheets rely on
+/** Sheet softening blur, px (flat material only — glass sheets rely on
  * their gradient feather + backdrop blur instead, since stacking a self
  * blur on top of backdrop-filter doubles the cost for no visible gain). */
 const SHEET_BLUR_PX = 32;
@@ -145,7 +145,7 @@ function glassTint(color: string): string {
 export function Silk({
   colors = DEFAULT_COLORS,
   count,
-  material = "color",
+  material = "flat",
   intensity = 0.55,
   speed = 1,
   className,
