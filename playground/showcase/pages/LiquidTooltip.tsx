@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { LiquidTooltip } from "fluidkit";
 import type { LiquidTooltipProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Slider, Seg, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Slider, Seg, Toggle, Snippet, VariantGrid, VariantCell } from "../kit";
 
 type LiquidMaterial = NonNullable<LiquidTooltipProps["material"]>;
 type Placement = NonNullable<LiquidTooltipProps["placement"]>;
@@ -24,11 +24,12 @@ const triggerStyle: React.CSSProperties = {
   cursor: "default",
 };
 
-function TooltipVariant({ placement, material, intensity, speed, label }: {
+function TooltipVariant({ placement, material, intensity, speed, refraction, label }: {
   placement: Placement;
   material: LiquidMaterial;
   intensity: number;
   speed?: number;
+  refraction?: boolean;
   label?: string;
 }) {
   return (
@@ -38,6 +39,7 @@ function TooltipVariant({ placement, material, intensity, speed, label }: {
       material={material}
       intensity={intensity}
       speed={speed}
+      refraction={refraction}
       color={material !== "glass" ? FLAT_COLOR : undefined}
     >
       <span tabIndex={0} style={triggerStyle}>{label ?? "Hover me"}</span>
@@ -50,6 +52,7 @@ export default function LiquidTooltipPage() {
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.35);
   const [speed, setSpeed] = useState(1);
+  const [refraction, setRefraction] = useState(false);
 
   return (
     <PageLayout
@@ -58,13 +61,14 @@ export default function LiquidTooltipPage() {
       hero={
         <>
           <Stage wall hint="hover or focus the trigger">
-            <TooltipVariant placement={placement} material={material} intensity={intensity} speed={speed} />
+            <TooltipVariant placement={placement} material={material} intensity={intensity} speed={speed} refraction={refraction} />
           </Stage>
           <Controls>
             <Seg label="placement" value={placement} set={setPlacement} options={PLACEMENTS} />
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
             <Slider label="speed" value={speed} set={setSpeed} min={0.25} max={2.5} step={0.25} suffix="×" />
+            <Toggle label="refraction" value={refraction} set={setRefraction} />
           </Controls>
         </>
       }
@@ -82,7 +86,7 @@ export default function LiquidTooltipPage() {
         </VariantGrid>
       }
       usage={
-        <Snippet code={`<LiquidTooltip content="Saved to drafts" placement="${placement}" material="${material}" intensity={${intensity}}${speed !== 1 ? ` speed={${speed}}` : ""}>
+        <Snippet code={`<LiquidTooltip content="Saved to drafts" placement="${placement}" material="${material}" intensity={${intensity}}${speed !== 1 ? ` speed={${speed}}` : ""}${refraction ? "\n  refraction" : ""}>
   <button>Save</button>
 </LiquidTooltip>`} />
       }

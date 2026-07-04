@@ -38,6 +38,7 @@ import {
   resolveMaterial,
   roundRectPath,
   specularPlacement,
+  useRefraction,
 } from "../liquid";
 import type {
   LiquidBody,
@@ -72,6 +73,12 @@ export interface LiquidTooltipProps
   light?: Vec | null;
   /** Paint specular reflections on glass. Defaults to `true`. */
   reflection?: boolean;
+  /**
+   * Edge lensing on glass via an SVG displacement filter inside
+   * `backdrop-filter` (Chromium-only; silently degrades to plain glass
+   * blur elsewhere). Defaults to `false`.
+   */
+  refraction?: boolean;
   /** Drop shadow under the droplet. Defaults to `true`. */
   shadow?: boolean;
   /** Gap between trigger and droplet in px. Defaults to `6`. */
@@ -201,6 +208,7 @@ export function LiquidTooltip({
   intensity = "whisper",
   light,
   reflection = true,
+  refraction = false,
   shadow = true,
   gap = 6,
   delay = 100,
@@ -257,9 +265,14 @@ export function LiquidTooltip({
     return () => ro.disconnect();
   }, []);
 
+  const { url: refractionUrl, defs: refractionDefs } = useRefraction(
+    refraction && material === "glass",
+    size ? size.w + BLEED * 2 : 0,
+    size ? size.h + BLEED * 2 : 0
+  );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, refractionUrl }),
+    [material, tint, color, refractionUrl]
   );
   const volume = resolveIntensity(intensity);
 
@@ -407,6 +420,7 @@ export function LiquidTooltip({
             display: "block",
           }}
         >
+          {refractionDefs}
           {staticScene && (
             <LiquidRenderer
               ref={renderer}
