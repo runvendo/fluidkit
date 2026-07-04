@@ -25,6 +25,33 @@ export function Seg<T extends string>({ label, value, set, options }: { label: s
   );
 }
 
+/**
+ * Native color picker with an "unset" state: pass `value={null}` while the
+ * user hasn't picked one yet — shows a neutral swatch and lets pages omit
+ * the prop entirely (component default renders). Once `set` fires, callers
+ * typically hold a real string from then on.
+ */
+export function ColorField({ label, value, set }: { label: string; value: string | null; set: (v: string) => void }) {
+  return (
+    <div className="field">
+      <label>
+        {label} <span className="val">{value ?? "auto"}</span>
+      </label>
+      <input type="color" value={value ?? "#888888"} onChange={(e) => set(e.target.value)} />
+    </div>
+  );
+}
+
+/** Native `<input type="color">` only emits opaque hex; glass tints must stay translucent, so pages route picked values through this before handing them to a `tint` prop. */
+export function glassTintFromHex(hex: string): string {
+  const clean = hex.replace("#", "");
+  const full = clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, 0.35)`;
+}
+
 /** Row of controls under a stage — same `.controls` treatment as the old cards. */
 export function Controls({ children }: { children: ReactNode }) {
   return <div className="controls">{children}</div>;

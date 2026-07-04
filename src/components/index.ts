@@ -51,3 +51,4 @@ export type { LiquidDialogProps } from "./LiquidDialog";
 export { VoiceBall } from "./VoiceBall";
 export type { VoiceBallProps, VoiceBallMode } from "./VoiceBall";
 export type { LiquidIntensity } from "./intensity";
+export type { SurfaceStyleProps } from "./surface";

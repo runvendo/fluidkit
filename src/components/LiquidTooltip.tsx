@@ -38,10 +38,10 @@ import {
   resolveMaterial,
   roundRectPath,
   specularPlacement,
+  useRefraction,
 } from "../liquid";
 import type {
   LiquidBody,
-  LiquidMaterial,
   LiquidSceneHandle,
   SpecularSpot,
   Vec,
@@ -49,31 +49,18 @@ import type {
 import { useMotionSprings } from "../liquid/useMotionSprings";
 import { useInView, usePrefersReducedMotion } from "../utils";
 import { resolveIntensity } from "./intensity";
-import type { LiquidIntensity } from "./intensity";
 import { rimGlowStyle, rimStyle } from "./rim";
+import type { SurfaceStyleProps } from "./surface";
 
 export type LiquidTooltipPlacement = "top" | "bottom" | "left" | "right";
 
 export interface LiquidTooltipProps
-  extends Omit<HTMLAttributes<HTMLSpanElement>, "content"> {
+  extends SurfaceStyleProps,
+    Omit<HTMLAttributes<HTMLSpanElement>, "content"> {
   /** Tooltip label. */
   content: ReactNode;
   /** Which side of the trigger the droplet condenses on. Default `"top"`. */
   placement?: LiquidTooltipPlacement;
-  material?: LiquidMaterial;
-  tint?: string;
-  color?: string;
-  /**
-   * How loudly the material reads: 0–1, or the presets `"whisper"`
-   * (0.35) / `"present"` (0.7). Defaults to `"whisper"`.
-   */
-  intensity?: LiquidIntensity;
-  /** Scene light in label coordinates; null disables speculars. */
-  light?: Vec | null;
-  /** Paint specular reflections on glass. Defaults to `true`. */
-  reflection?: boolean;
-  /** Drop shadow under the droplet. Defaults to `true`. */
-  shadow?: boolean;
   /** Gap between trigger and droplet in px. Defaults to `6`. */
   gap?: number;
   /** Hover delay before the droplet condenses, ms. Defaults to `100`. */
@@ -201,6 +188,7 @@ export function LiquidTooltip({
   intensity = "whisper",
   light,
   reflection = true,
+  refraction = false,
   shadow = true,
   gap = 6,
   delay = 100,
@@ -257,9 +245,14 @@ export function LiquidTooltip({
     return () => ro.disconnect();
   }, []);
 
+  const { url: refractionUrl, defs: refractionDefs } = useRefraction(
+    refraction && material === "glass",
+    size ? size.w + BLEED * 2 : 0,
+    size ? size.h + BLEED * 2 : 0
+  );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, refractionUrl }),
+    [material, tint, color, refractionUrl]
   );
   const volume = resolveIntensity(intensity);
 
@@ -407,6 +400,7 @@ export function LiquidTooltip({
             display: "block",
           }}
         >
+          {refractionDefs}
           {staticScene && (
             <LiquidRenderer
               ref={renderer}

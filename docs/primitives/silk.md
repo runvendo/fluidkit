@@ -16,7 +16,7 @@ Sheet placement, fold, and phase are derived deterministically from each sheet's
 |---|---|---|---|
 | `colors` | `string[]` | soft lilac/rose/sky | Sheet colors, cycled across sheets. |
 | `count` | `number` | `colors.length` | Number of sheets, clamped to `1`-`12` — density scales independently of the palette. |
-| `material` | `"color" \| "glass"` | `"color"` | `"color"` renders blurred color-gradient sheets; `"glass"` renders frosted, backdrop-blurring white-tinted sheets (degrades to the plain tint without `backdrop-filter` support). |
+| `material` | `"flat" \| "glass"` | `"flat"` | `"flat"` renders blurred color-gradient sheets; `"glass"` renders frosted, backdrop-blurring white-tinted sheets (degrades to the plain tint without `backdrop-filter` support). |
 | `intensity` | `number` | `0.55` | Sheet opacity scale, `0`-`1`. |
 | `speed` | `number` | `1` | Flow speed multiplier, higher divides the keyframe period down (faster). Clamped above `0`. |
 | `className` | `string` | `undefined` | Applied to the wrapper. |

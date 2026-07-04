@@ -31,19 +31,31 @@ import {
   defaultLight,
   resolveMaterial,
   specularPlacement,
+  useRefraction,
 } from "../liquid";
 import type {
   LiquidBody,
-  LiquidMaterial,
   LiquidSceneHandle,
   SpecularSpot,
   Vec,
 } from "../liquid";
+import { resolveIntensity } from "./intensity";
+import type { LiquidIntensity } from "./intensity";
+import type { SurfaceStyleProps } from "./surface";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
 export type ThinkingVariant = "gather" | "orbit" | "wave";
 
-export interface ThinkingProps extends HTMLAttributes<HTMLDivElement> {
+export interface ThinkingProps
+  extends SurfaceStyleProps,
+    HTMLAttributes<HTMLDivElement> {
+  /**
+   * How loudly the material reads: 0–1, or the presets `"whisper"` (0.35) /
+   * `"present"` (0.7). Defaults to `"present"` — a documented divergence
+   * from the pack's usual `"whisper"`: 0.7 reproduces the drops' pre-pack
+   * specular brightness exactly.
+   */
+  intensity?: LiquidIntensity;
   /** Choreography. */
   variant?: ThinkingVariant;
   /** Accessible label announced to screen readers. */
@@ -52,19 +64,6 @@ export interface ThinkingProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
   /** Cycle speed multiplier. */
   speed?: number;
-  /** Rendered material. */
-  material?: LiquidMaterial;
-  /** Glass tint (translucent white by default). */
-  tint?: string;
-  /** Flat-material fill color. */
-  color?: string;
-  /**
-   * Scene light position in px (container coordinates). `null` disables
-   * specular highlights. Defaults to above the stage, 30% from the left.
-   */
-  light?: Vec | null;
-  /** Paint specular reflections on glass. Defaults to `true`. */
-  reflection?: boolean;
   /** Varies `orbit`'s wobble between instances (same seed, same motion). */
   seed?: number;
 }
@@ -250,13 +249,16 @@ function buildScene(
   bodies: LiquidBody[],
   tension: TensionField | null,
   wantSpecular: boolean,
-  light: Vec | null
+  light: Vec | null,
+  opacity: number
 ): Scene {
   let path = bodies.map((b) => circlePath(b, b.r)).join("");
   if (tension) path += tension.bridges(bodies);
   const speculars =
     wantSpecular && light
-      ? bodies.filter((b) => b.r > 0.5).map((b) => specularPlacement(b, light))
+      ? bodies
+          .filter((b) => b.r > 0.5)
+          .map((b) => specularPlacement(b, light, opacity))
       : [];
   return { path, speculars };
 }
@@ -271,6 +273,14 @@ export function Thinking({
   color,
   light,
   reflection = true,
+  refraction = false,
+  // Thinking's pre-pack specular opacity was `specularPlacement`'s own
+  // default (0.7) — nobody ever overrode it — which already equals the
+  // "present" preset exactly, so intensity maps straight through (no 0.4x
+  // scaling like JellyButton/MorphSurface): default "present" reproduces
+  // today's 0.7 pixel-identically.
+  intensity = "present",
+  shadow = true,
   seed = 0,
   className,
   style,
@@ -282,12 +292,18 @@ export function Thinking({
 
   const def = VARIANTS[variant];
   const side = Math.round(size * CANVAS_SCALE);
+  const { url: refractionUrl, defs: refractionDefs } = useRefraction(
+    refraction && material === "glass",
+    side,
+    side
+  );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, refractionUrl }),
+    [material, tint, color, refractionUrl]
   );
   const sceneLight =
     !reflection || light === null ? null : light ?? defaultLight(side, side);
+  const specularOpacity = resolveIntensity(intensity);
 
   const tension = useRef(new TensionField());
   const clock = useRef(0);
@@ -295,8 +311,14 @@ export function Thinking({
 
   const staticScene = useMemo(
     () =>
-      buildScene(def.rest(size, side, seed), null, resolved.specular, sceneLight),
-    [def, size, side, seed, resolved.specular, sceneLight]
+      buildScene(
+        def.rest(size, side, seed),
+        null,
+        resolved.specular,
+        sceneLight,
+        specularOpacity
+      ),
+    [def, size, side, seed, resolved.specular, sceneLight, specularOpacity]
   );
 
   // Start each variant's choreography from the top of its cycle with no
@@ -324,7 +346,8 @@ export function Thinking({
         def.bodies(clock.current, size, side, seed),
         tension.current,
         resolved.specular,
-        sceneLight
+        sceneLight,
+        specularOpacity
       )
     );
   });
@@ -348,13 +371,14 @@ export function Thinking({
       data-animating={animating}
       {...rest}
     >
+      {refractionDefs}
       <LiquidRenderer
         ref={renderer}
         path={staticScene.path}
         material={resolved}
         speculars={staticScene.speculars}
         specularSlots={resolved.specular && sceneLight ? def.bodyCount : 0}
-        shadow
+        shadow={shadow}
       />
     </div>
   );

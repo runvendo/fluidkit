@@ -22,13 +22,15 @@ import {
 } from "../liquid";
 import type {
   LiquidBody,
-  LiquidMaterial,
   LiquidSceneHandle,
   SpecularSpot,
   Vec,
 } from "../liquid";
 import { useMotionSprings } from "../liquid/useMotionSprings";
 import type { SpringConfig } from "../liquid/useMotionSprings";
+import { resolveIntensity } from "./intensity";
+import type { LiquidIntensity } from "./intensity";
+import type { SurfaceStyleProps } from "./surface";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
 export interface MorphSize {
@@ -37,26 +39,21 @@ export interface MorphSize {
 }
 
 export interface MorphSurfaceProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
+  extends SurfaceStyleProps,
+    Omit<HTMLAttributes<HTMLDivElement>, "children"> {
+  /**
+   * How loudly the material reads: 0–1, or the presets `"whisper"` (0.35) /
+   * `"present"` (0.7). Defaults to `"present"` — a documented divergence
+   * from the pack's usual `"whisper"`: 0.7 reproduces the surface's
+   * pre-pack specular brightness exactly.
+   */
+  intensity?: LiquidIntensity;
   /** Controlled state: false = pill, true = panel. */
   open: boolean;
   closedSize?: MorphSize;
   openSize?: MorphSize;
   /** Corner radius of the open panel (the pill is always fully rounded). */
   radius?: number;
-  material?: LiquidMaterial;
-  tint?: string;
-  color?: string;
-  /** Scene light; null disables speculars. */
-  light?: Vec | null;
-  /** Paint specular reflections on glass. Defaults to `true`. */
-  reflection?: boolean;
-  /**
-   * Edge lensing on glass via an SVG displacement filter inside
-   * `backdrop-filter` (Chromium-only; silently degrades to plain glass
-   * blur elsewhere). Defaults to `false`.
-   */
-  refraction?: boolean;
   /** Satellite droplets absorbed into the surface on open. */
   satellites?: boolean;
   /**
@@ -122,6 +119,13 @@ export function MorphSurface({
   light,
   reflection = true,
   refraction = false,
+  // Material volume defaults "present" (0.7), because the two hand-rolled
+  // specular sites below were tuned at different pre-pack constants:
+  // 0.4 · 0.7 reproduces the body's hardcoded 0.28 exactly (JellyButton's
+  // mapping), and 0.7 reproduces the satellites' bare `specularPlacement`
+  // default identically (Droplets/Thinking's mapping) — see buildMorphScene.
+  intensity = "present",
+  shadow = true,
   satellites = true,
   anchor = "center",
   absorption = "shrink",
@@ -185,6 +189,7 @@ export function MorphSurface({
     !reflection || light === null
       ? null
       : light ?? defaultLight(width, height);
+  const volume = resolveIntensity(intensity);
 
   // Spring configs live in refs so the resolver (captured once by
   // useMotionSprings) always reads the latest prop on each retarget.
@@ -250,7 +255,8 @@ export function MorphSurface({
         satellites,
         absorption,
         null,
-        resolved.specular ? sceneLight : null
+        resolved.specular ? sceneLight : null,
+        volume
       ),
     [
       open,
@@ -262,6 +268,7 @@ export function MorphSurface({
       absorption,
       resolved.specular,
       sceneLight,
+      volume,
     ]
   );
   const renderer = useRef<LiquidSceneHandle>(null);
@@ -287,7 +294,8 @@ export function MorphSurface({
         satellites,
         absorption,
         tension.current,
-        resolved.specular ? sceneLight : null
+        resolved.specular ? sceneLight : null,
+        volume
       )
     );
   });
@@ -305,7 +313,8 @@ export function MorphSurface({
         satellites,
         absorption,
         tension.current,
-        resolved.specular ? sceneLight : null
+        resolved.specular ? sceneLight : null,
+        volume
       )
     : staticScene;
 
@@ -352,7 +361,7 @@ export function MorphSurface({
         specularSlots={
           resolved.specular && sceneLight ? sats.length + 1 : 0
         }
-        shadow
+        shadow={shadow}
         clipContent
       >
         <div
@@ -414,7 +423,8 @@ function buildMorphScene(
   satellites: boolean,
   absorption: Absorption,
   tension: TensionField | null,
-  light: Vec | null
+  light: Vec | null,
+  volume: number
 ): Scene {
   const [w, h, ...satValues] = springValues;
   const { cx } = geom;
@@ -451,14 +461,23 @@ function buildMorphScene(
         };
         path += tension.bridges([drop, phantom]);
       }
-      if (light) speculars.push(specularPlacement(drop, light));
+      // Satellites' pre-pack opacity was `specularPlacement`'s own bare
+      // default (0.7) — nobody ever overrode it — so `volume` maps straight
+      // through, identity, like Droplets/Thinking (not the 0.4x below).
+      if (light) speculars.push(specularPlacement(drop, light, volume));
     });
   }
 
   if (light) {
-    // one quiet sheen on the body itself, lit by the same source
+    // One quiet sheen on the body itself, lit by the same source. Pre-pack
+    // this was a hardcoded 0.28; `0.4 · volume` reproduces it exactly at
+    // the shared default "present" (0.7), like JellyButton's glint.
     speculars.push(
-      specularPlacement({ x: cx, y: by, r: Math.min(w, h) * 0.48 }, light, 0.28)
+      specularPlacement(
+        { x: cx, y: by, r: Math.min(w, h) * 0.48 },
+        light,
+        0.4 * volume
+      )
     );
   }
   return { path, speculars };

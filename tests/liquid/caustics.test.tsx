@@ -120,6 +120,15 @@ describe("CausticsLayer GL lifecycle (fake context)", () => {
     vi.doMock("../../src/utils/supportsWebGL", () => ({
       supportsWebGL: () => true,
     }));
+    // Pin reduced motion ON so the layer draws its still frame
+    // synchronously — the animating path defers to rAF, which never fires
+    // before assertions in jsdom. (Motion reports `false` in jsdom because
+    // `window.matchMedia` is missing, so without this mock the loop path
+    // would be taken.)
+    vi.doMock("motion/react", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("motion/react")>();
+      return { ...actual, useReducedMotion: () => true };
+    });
     const original = HTMLCanvasElement.prototype.getContext;
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
       function (this: HTMLCanvasElement, kind: string, ...rest: unknown[]) {
@@ -138,6 +147,7 @@ describe("CausticsLayer GL lifecycle (fake context)", () => {
 
   afterEach(() => {
     vi.doUnmock("../../src/utils/supportsWebGL");
+    vi.doUnmock("motion/react");
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     vi.resetModules();

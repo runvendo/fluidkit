@@ -50,8 +50,11 @@ export function useInView<T extends Element = Element>(
       return;
     }
 
-    // Not yet observed by this instance's observer.
-    setInView(false);
+    // Stay at the safe "in view" default until the observer's first
+    // callback lands — it's asynchronous, and reporting false for that
+    // window makes consumers treat a visible element as off-screen (an
+    // `open` flip during it snaps instead of animating). Worst case we
+    // animate one flip off-screen; the observer corrects within a frame.
 
     const observer = new IntersectionObserver(([entry]) => {
       if (entry) {

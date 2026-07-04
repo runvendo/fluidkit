@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { Profiler } from "react";
+import type { JellyButtonProps } from "../../src/components/JellyButton";
+import {
+  expectIntensityScalesSpeculars,
+  expectShadowToggles,
+} from "./surfacePack";
 
 /** Same mocking pattern as the other component tests. */
 async function loadJellyButton(reduced: boolean) {
@@ -172,7 +177,7 @@ describe("JellyButton", () => {
   it("paints on a bleed canvas so widened press geometry isn't sliced at the button box", async () => {
     const JellyButton = await loadJellyButton(true);
     const { getByRole, container } = render(
-      <JellyButton width={160} height={48} intensity={0.12}>
+      <JellyButton width={160} height={48} squash={0.12}>
         B
       </JellyButton>
     );
@@ -267,14 +272,14 @@ describe("JellyButton", () => {
     );
   });
 
-  it("paints a specular highlight for glass but not for mercury", async () => {
+  it("paints a specular highlight for glass but not for flat", async () => {
     const JellyButton = await loadJellyButton(true);
     const glass = render(<JellyButton material="glass">G</JellyButton>);
     expect(
       glass.container.querySelectorAll("ellipse").length
     ).toBeGreaterThan(0);
-    const mercury = render(<JellyButton material="mercury">M</JellyButton>);
-    expect(mercury.container.querySelectorAll("ellipse")).toHaveLength(0);
+    const flat = render(<JellyButton material="flat">F</JellyButton>);
+    expect(flat.container.querySelectorAll("ellipse")).toHaveLength(0);
   });
 
   it("pressColor paints the pressed fill and reverts on release", async () => {
@@ -344,5 +349,75 @@ describe("JellyButton", () => {
       </JellyButton>
     );
     expect(container.querySelectorAll("ellipse")).toHaveLength(0);
+  });
+
+  it("squash sets the press depth; intensity (material volume) never touches geometry", async () => {
+    const JellyButton = await loadJellyButton(false);
+    // Snappier spring than the default so the settle window closes fast.
+    const spring = { stiffness: 550, damping: 60 };
+
+    /** Press via keyboard (symmetric), wait for the settle window to close,
+     * and read the resynced pressed clip — exactly the spring target. */
+    async function settledPressClip(props: Partial<JellyButtonProps>) {
+      const utils = render(
+        <JellyButton
+          deformPress={false}
+          pressGlint={false}
+          spring={spring}
+          {...props}
+        >
+          P
+        </JellyButton>
+      );
+      const button = utils.getByRole("button", { name: "P" });
+      const clip = utils.container.querySelector(
+        '[data-fluidkit="liquid-clip"]'
+      ) as HTMLElement;
+      fireEvent.keyDown(button, { key: " " });
+      await vi.waitFor(() => {
+        expect(button.getAttribute("data-animating")).toBe("true");
+      });
+      await vi.waitFor(
+        () => {
+          expect(button.getAttribute("data-animating")).toBe("false");
+        },
+        { timeout: 2000, interval: 20 }
+      );
+      const path = clip.style.clipPath;
+      utils.unmount();
+      return path;
+    }
+
+    const base = await settledPressClip({});
+    // A deeper squash presses deeper...
+    expect(await settledPressClip({ squash: 0.25 })).not.toBe(base);
+    // ...while intensity — even as a number — is material volume, so the
+    // pressed geometry is identical to the default press.
+    expect(await settledPressClip({ intensity: 0.9 })).toBe(base);
+  });
+
+  it("scales specular brightness with `intensity`", async () => {
+    const JellyButton = await loadJellyButton(true);
+    expectIntensityScalesSpeculars((props) =>
+      render(<JellyButton {...props}>I</JellyButton>)
+    );
+  });
+
+  it("renders the shadow layer by default and drops it on `shadow={false}`", async () => {
+    const JellyButton = await loadJellyButton(true);
+    expectShadowToggles((props) =>
+      render(<JellyButton {...props}>S</JellyButton>)
+    );
+  });
+
+  it("default speculars keep the pre-pack 0.28 opacity (intensity defaults to 'present')", async () => {
+    const JellyButton = await loadJellyButton(true);
+    const { container } = render(<JellyButton>D</JellyButton>);
+    const opacities = Array.from(container.querySelectorAll("ellipse"))
+      .map((el) => Number(el.getAttribute("opacity") ?? 0))
+      .filter((opacity) => opacity > 0);
+    // One lit body spot; 0.4 × "present" (0.7) = the old hardcoded 0.28.
+    expect(opacities).toHaveLength(1);
+    expect(opacities[0]).toBeCloseTo(0.28, 12);
   });
 });

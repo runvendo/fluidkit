@@ -22,8 +22,19 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useRipple } from "../hooks";
+import { resolveMaterial } from "../liquid/materials";
+import { INTENSITY_PRESETS, resolveIntensity } from "./intensity";
+import type { SurfaceStyleProps } from "./surface";
 
-export interface RippleProps extends HTMLAttributes<HTMLDivElement> {
+// Ripple takes no `light`/`reflection`/`refraction`/`shadow` from the surface
+// style pack: a momentary expanding wave has no resting surface for the scene
+// light to play on and casts no shadow.
+export interface RippleProps
+  extends Omit<
+      SurfaceStyleProps,
+      "light" | "reflection" | "refraction" | "shadow"
+    >,
+    HTMLAttributes<HTMLDivElement> {
   /** Ripple color (flat material). Defaults to `currentColor`. */
   color?: string;
   /** Ripple lifetime in ms. Defaults to `600`. */
@@ -37,24 +48,33 @@ export interface RippleProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
 }
 
-/** Peak opacity of a ripple — this (not the background itself) is what makes
- * it read as a translucent wash of `currentColor` rather than a solid disc.
- * The opacity holds near this while the ripple expands, then fades at the end,
- * so the growing ring stays legible instead of dissolving as soon as it grows. */
+/** Peak opacity of a ripple at the default intensity — this (not the
+ * background itself) is what makes it read as a translucent wash of
+ * `currentColor` rather than a solid disc. The opacity holds near this while
+ * the ripple expands, then fades at the end, so the growing ring stays legible
+ * instead of dissolving as soon as it grows. `intensity` scales this peak,
+ * normalized so the default (`"whisper"` = 0.35) keeps 0.4 exactly. */
 const RIPPLE_PEAK_OPACITY = 0.4;
 
-/** The glass ripple's material: frosted lens instead of a color wash. */
-const GLASS_RIPPLE_STYLE: CSSProperties = {
-  background: "rgba(255,255,255,0.28)",
-  backdropFilter: "blur(5px) saturate(1.6)",
-  WebkitBackdropFilter: "blur(5px) saturate(1.6)",
-  boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.45)",
-};
+/**
+ * Blur override for the shared glass recipe: the shared 16px frost is a
+ * panel's — on a momentary expanding lens it smears the backdrop into fog
+ * before the ripple can read as water. 5px keeps the lens light and crisp,
+ * so only the blur radius diverges from the resolver (like LiquidText's
+ * GLYPH_BLUR_PX).
+ */
+const RIPPLE_BLUR_PX = 5;
+
+/** Thin rim on the glass lens, Ripple's own on top of the resolved fill —
+ * the meniscus edge that makes it read as liquid, not just a blur region. */
+const GLASS_RIM = "inset 0 0 0 1px rgba(255,255,255,0.45)";
 
 export function Ripple({
   color,
+  tint,
   duration,
   material = "flat",
+  intensity = "whisper",
   className,
   style,
   children,
@@ -68,6 +88,31 @@ export function Ripple({
     color: resolvedColor,
     duration: resolvedDuration,
   } = useRipple({ color, duration });
+
+  // Loudness: `intensity` scales the peak opacity the ripple holds while it
+  // expands. Normalized against the default volume so `"whisper"` (0.35)
+  // renders today's 0.4 peak pixel-identically and higher volumes read louder.
+  // This deliberately diverges from the surface family's shared `0.4 × volume`
+  // specular rule (LiquidCard, JellyButton, LiquidTabs, ...): a ripple's wash
+  // opacity is the whole read, not a glint layered on a lit surface, so it
+  // stays pinned to the pre-pack 0.4 instead of scaling straight off volume.
+  // Do not "harmonize" this to `0.4 * volume` — that would halve the default.
+  const volume = resolveIntensity(intensity);
+  const peakOpacity = Math.min(
+    1,
+    RIPPLE_PEAK_OPACITY * (volume / INTENSITY_PRESETS.whisper)
+  );
+
+  // Glass routes through the shared material resolver (tint + saturation +
+  // degraded fallback), keeping only Ripple's light 5px frost and rim.
+  const fillStyle: CSSProperties =
+    material === "glass"
+      ? {
+          ...resolveMaterial("glass", { tint, blurPx: RIPPLE_BLUR_PX })
+            .fillStyle,
+          boxShadow: GLASS_RIM,
+        }
+      : { background: resolvedColor };
 
   const wrapperStyle: CSSProperties = {
     position: "relative",
@@ -112,14 +157,12 @@ export function Ripple({
                 borderRadius: "50%",
                 translateX: "-50%",
                 translateY: "-50%",
-                ...(material === "glass"
-                  ? GLASS_RIPPLE_STYLE
-                  : { background: resolvedColor }),
+                ...fillStyle,
               }}
-              initial={{ scale: 0, opacity: RIPPLE_PEAK_OPACITY }}
+              initial={{ scale: 0, opacity: peakOpacity }}
               animate={{
                 scale: 1,
-                opacity: [RIPPLE_PEAK_OPACITY, RIPPLE_PEAK_OPACITY, 0],
+                opacity: [peakOpacity, peakOpacity, 0],
               }}
               transition={{
                 // Both the top-level duration and the per-property `opacity`

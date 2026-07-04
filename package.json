@@ -1,7 +1,7 @@
 {
   "name": "fluidkit",
-  "version": "0.3.0",
-  "description": "Liquid UI animations for React — one metaball engine, swappable glass/mercury/flat materials, built on Motion.",
+  "version": "0.4.0",
+  "description": "Liquid UI animations for React — one metaball engine, swappable glass/flat materials, built on Motion.",
   "keywords": [
     "react",
     "animation",
@@ -63,7 +63,7 @@
   "size-limit": [
     {
       "path": "dist/index.js",
-      "limit": "26.5 kB",
+      "limit": "27.3 kB",
       "brotli": true
     }
   ],

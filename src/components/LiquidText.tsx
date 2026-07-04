@@ -12,14 +12,17 @@
  * selection and screen-reader semantics — while the masked glass paints
  * the visible glyphs above it. Because SVG-as-mask can only use system
  * fonts, exotic web-font pages may see slightly different letterforms in
- * the mask; `material="ink"` is the safe fallback there (and for
+ * the mask; `material="flat"` is the safe fallback there (and for
  * non-string children, which can't be rendered into a mask).
  *
  * The sheen is the same swept gradient in both materials (zero
  * per-frame JS — a CSS `@keyframes` loop per the ambient-component house
  * pattern). Angle defaults to the house light direction. Reduced motion:
  * the sweep parks on the light-facing third. Off-screen it pauses
- * in-phase. No backdrop-filter support → ink.
+ * in-phase. No backdrop-filter support → flat.
+ *
+ * LiquidText takes no `light`/`reflection`/`refraction`/`shadow` from the
+ * surface style pack: its lighting IS the sheen sweep, not the scene light.
  *
  * Inline by design: wrap the text inside your own heading —
  *   <h1><LiquidText>Liquid type</LiquidText></h1>
@@ -27,31 +30,30 @@
 
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { resolveMaterial } from "../liquid/materials";
 import { supportsBackdropFilter } from "../utils/featureDetect";
 import { useInView, usePrefersReducedMotion } from "../utils";
 import { injectStyleOnce } from "../utils/injectStyleOnce";
 import { resolveIntensity } from "./intensity";
-import type { LiquidIntensity } from "./intensity";
+import type { SurfaceStyleProps } from "./surface";
 
-export type LiquidTextMaterial = "glass" | "ink";
+export type LiquidTextMaterial = "glass" | "flat";
 
-export interface LiquidTextProps extends HTMLAttributes<HTMLSpanElement> {
+export interface LiquidTextProps
+  extends Omit<
+      SurfaceStyleProps,
+      "light" | "reflection" | "refraction" | "shadow"
+    >,
+    HTMLAttributes<HTMLSpanElement> {
   /**
    * `"glass"` (default): the glyphs are translucent glass over the
-   * backdrop. `"ink"`: solid-color glyphs. Both get the sheen sweep.
+   * backdrop. `"flat"`: solid-color glyphs. Both get the sheen sweep.
    */
   material?: LiquidTextMaterial;
-  /** Ink color of the glyphs (`material="ink"`). Defaults to `#23242c`. */
+  /** Solid color of the glyphs (`material="flat"`). Defaults to `#23242c`. */
   color?: string;
-  /** Glass tint (any CSS color, normally translucent white). */
-  tint?: string;
   /** Sheen color. Defaults to white. */
   sheenColor?: string;
-  /**
-   * How bright the sheen reads: 0–1, or the presets `"whisper"` (0.35) /
-   * `"present"` (0.7). Defaults to `"whisper"`.
-   */
-  intensity?: LiquidIntensity;
   /** Sweep speed multiplier — 1 is one pass every ~7s. Defaults to `1`. */
   speed?: number;
   /**
@@ -68,9 +70,13 @@ const SWEEP_KEYFRAMES_NAME = "fluidkit-liquid-text-sweep";
 /** Seconds per sweep cycle at `speed` 1 (includes the dwell between passes). */
 const PERIOD_S = 7;
 
-/** Glass fill defaults (mirrors the engine's glass material). */
-const GLASS_TINT = "rgba(255,255,255,0.38)";
-const GLASS_BACKDROP = "blur(10px) saturate(1.6)";
+/**
+ * Blur override for the shared glass recipe: glyph-masked glass frosts
+ * harder than a panel at the same radius — the shared 16px turns
+ * letterforms to fog. 10px keeps the glyphs legible, so only the blur
+ * radius diverges from the resolver.
+ */
+const GLYPH_BLUR_PX = 10;
 
 /**
  * The sheen layer is 2.5× the text box, so the moving band spends most of
@@ -190,8 +196,8 @@ export function LiquidText({
         }
       : {};
 
-  // Ink: sheen + solid color clipped to the glyphs (single element).
-  const inkStyle = useMemo<CSSProperties>(() => {
+  // Flat: sheen + solid color clipped to the glyphs (single element).
+  const flatStyle = useMemo<CSSProperties>(() => {
     if (!clipSupported) return { color };
     return {
       backgroundImage: `${sheenGradient}, linear-gradient(${color}, ${color})`,
@@ -206,14 +212,20 @@ export function LiquidText({
   }, [clipSupported, color, sheenGradient, JSON.stringify(sweepAnimation)]);
 
   // Glass: the layer carries backdrop blur + tint, masked to the glyphs.
+  // The recipe (tint, saturation, compositor hint) is the shared resolver's;
+  // only the blur radius is overridden to GLYPH_BLUR_PX (see its comment).
+  const glassFill = glass
+    ? resolveMaterial("glass", { tint, blurPx: GLYPH_BLUR_PX }).fillStyle
+    : null;
   const glassLayer: CSSProperties | null =
-    glass && mask
+    glass && mask && glassFill
       ? {
           position: "absolute",
           inset: 0,
-          background: tint ?? GLASS_TINT,
-          backdropFilter: GLASS_BACKDROP,
-          WebkitBackdropFilter: GLASS_BACKDROP,
+          background: glassFill.background,
+          backdropFilter: glassFill.backdropFilter,
+          WebkitBackdropFilter: glassFill.WebkitBackdropFilter,
+          willChange: glassFill.willChange,
           WebkitMaskImage: mask.uri,
           maskImage: mask.uri,
           WebkitMaskSize: `${mask.w}px ${mask.h}px`,
@@ -232,6 +244,9 @@ export function LiquidText({
           background: "transparent",
           backdropFilter: undefined,
           WebkitBackdropFilter: undefined,
+          // Strip the glass fill's transform hint: the sheen animates
+          // background-position only.
+          willChange: undefined,
           backgroundImage: sheenGradient,
           backgroundSize: "250% 100%",
           backgroundPosition: STATIC_POSITION,
@@ -246,11 +261,11 @@ export function LiquidText({
       style={{
         position: "relative",
         display: "inline-block",
-        ...(glass ? { color: "transparent" } : inkStyle),
+        ...(glass ? { color: "transparent" } : flatStyle),
         ...style,
       }}
       data-fluidkit="liquid-text"
-      data-material={glass ? "glass" : "ink"}
+      data-material={glass ? "glass" : "flat"}
       {...rest}
     >
       {children}

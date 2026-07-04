@@ -1,26 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { VoiceBall } from "fluidkit";
 import type { VoiceBallProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Slider, Seg, Toggle, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, VariantGrid, VariantCell, glassTintFromHex } from "../kit";
 
 type LiquidMaterial = NonNullable<VoiceBallProps["material"]>;
 type Mode = NonNullable<VoiceBallProps["mode"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 const MODES: Mode[] = ["idle", "listening", "speaking"];
 
 /** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */
 const FLAT_COLOR = "#cdd3dd";
 
-/** Glass tint presets. */
-const TINTS = {
-  none: undefined,
-  sky: "rgba(125, 170, 255, 0.35)",
-  violet: "rgba(170, 140, 255, 0.35)",
-  mint: "rgba(110, 220, 190, 0.32)",
-} as const;
-type TintName = keyof typeof TINTS;
-const TINT_NAMES = Object.keys(TINTS) as TintName[];
+/** Glass tint used by the "sky" variant-grid example. */
+const SKY_TINT = "rgba(125, 170, 255, 0.35)";
 
 /**
  * Deterministic speech envelope: overlapping sine bursts that read like
@@ -56,9 +49,13 @@ export default function VoiceBallPage() {
   const [manual, setManual] = useState(0.3);
   const [mode, setMode] = useState<Mode>("speaking");
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
-  const [tintName, setTintName] = useState<TintName>("none");
+  // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
+  const [tint, setTint] = useState<string | null>(null);
+  const [color, setColor] = useState(FLAT_COLOR);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
   const [size, setSize] = useState(96);
-  const [intensity, setIntensity] = useState(0.5);
+  const [intensity, setIntensity] = useState(0.35);
+  const [refraction, setRefraction] = useState(false);
   const level = useVoiceLevel(auto, manual);
 
   return (
@@ -73,9 +70,10 @@ export default function VoiceBallPage() {
               mode={mode}
               size={size}
               material={material}
-              tint={TINTS[tintName]}
+              tint={material === "glass" ? glassTint : undefined}
               intensity={intensity}
-              color={material !== "glass" ? FLAT_COLOR : undefined}
+              refraction={refraction}
+              color={material === "flat" ? color : undefined}
             />
           </Stage>
           <Controls>
@@ -83,9 +81,14 @@ export default function VoiceBallPage() {
             <Toggle label="auto voice" value={auto} set={setAuto} />
             <Slider label="level" value={auto ? Math.round(level * 100) / 100 : manual} set={setManual} min={0} max={1} step={0.05} />
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
-            <Seg label="tint" value={tintName} set={setTintName} options={TINT_NAMES} />
+            {material === "glass" ? (
+              <ColorField label="tint" value={tint} set={setTint} />
+            ) : (
+              <ColorField label="color" value={color} set={setColor} />
+            )}
             <Slider label="size" value={size} set={setSize} min={48} max={160} step={8} suffix="px" />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Toggle label="refraction" value={refraction} set={setRefraction} />
           </Controls>
         </>
       }
@@ -95,19 +98,19 @@ export default function VoiceBallPage() {
             <VoiceBall mode="idle" intensity={0.5} />
           </VariantCell>
           <VariantCell label="listening · sky tint" wall>
-            <VoiceBall mode="listening" level={0.5} tint={TINTS.sky} intensity={0.5} />
+            <VoiceBall mode="listening" level={0.5} tint={SKY_TINT} intensity={0.5} />
           </VariantCell>
           <VariantCell label="speaking" wall>
             <VoiceBall mode="speaking" level={0.85} intensity={0.5} />
           </VariantCell>
-          <VariantCell label="speaking · mercury" wall>
-            <VoiceBall mode="speaking" level={0.6} material="mercury" color={FLAT_COLOR} />
+          <VariantCell label="speaking · flat" wall>
+            <VoiceBall mode="speaking" level={0.6} material="flat" color={FLAT_COLOR} />
           </VariantCell>
         </VariantGrid>
       }
       usage={
         <Snippet code={`// level: 0-1 from your audio stack (e.g. an AnalyserNode)
-<VoiceBall mode="${mode}" level={level} size={${size}} material="${material}"${tintName !== "none" ? ` tint="${TINTS[tintName]}"` : ""} intensity={${intensity}} />`} />
+<VoiceBall mode="${mode}" level={level} size={${size}} material="${material}"${material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${material === "flat" ? ` color="${color}"` : ""}${intensity !== 0.35 ? ` intensity={${intensity}}` : ""}${refraction ? "\n  refraction" : ""} />`} />
       }
     />
   );

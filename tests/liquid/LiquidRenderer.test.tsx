@@ -39,11 +39,11 @@ describe("LiquidRenderer", () => {
     expect(svg.querySelectorAll("ellipse")).toHaveLength(1);
   });
 
-  it("paints no specular ellipses when the material says so (mercury)", () => {
+  it("paints no specular ellipses when the material says so (flat)", () => {
     const { container } = render(
       <LiquidRenderer
         path={PATH}
-        material={resolveMaterial("mercury")}
+        material={resolveMaterial("flat")}
         speculars={[{ cx: 5, cy: 5, rx: 4, ry: 2, rotate: 10, opacity: 0.7 }]}
       />
     );

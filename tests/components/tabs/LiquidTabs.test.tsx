@@ -1,18 +1,39 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
+import type { ComponentType } from "react";
+import type {
+  LiquidTabsMaterial,
+  LiquidTabsProps,
+} from "../../../src/components/tabs/LiquidTabs";
+import type { SurfaceRender } from "../surfacePack";
+import {
+  expectColorFillsFlat,
+  expectIntensityScalesSpeculars,
+  expectNullLightPaintsNoSpeculars,
+  expectTintReachesGlassFill,
+} from "../surfacePack";
 
 /**
  * Mock `motion/react` per test so only `useReducedMotion` is overridden, then
  * re-import LiquidTabs fresh against the mock (same pattern as other component
  * tests). jsdom reports 0 for offset* so geometry is degenerate — assert
  * structure, roles, colors, and callbacks, not pixel geometry.
+ *
+ * Glass is gated on `supportsBackdropFilter()`, which jsdom answers false, so
+ * `backdropSupported` mocks featureDetect (same pattern as
+ * tests/liquid/materials.test.ts) when a test needs real glass.
  */
-async function loadTabs(reduced: boolean) {
+async function loadTabs(reduced: boolean, backdropSupported = false) {
   vi.resetModules();
   vi.doMock("motion/react", async (importOriginal) => {
     const actual = await importOriginal<typeof import("motion/react")>();
     return { ...actual, useReducedMotion: () => reduced };
   });
+  vi.doMock("../../../src/utils/featureDetect", () => ({
+    supportsBackdropFilter: () => backdropSupported,
+    supportsRefraction: () => false,
+    supportsViewTransition: () => false,
+  }));
   const mod = await import("../../../src/components/tabs/LiquidTabs");
   return mod.LiquidTabs;
 }
@@ -26,7 +47,25 @@ const ITEMS = [
 describe("LiquidTabs (bar)", () => {
   afterEach(() => {
     vi.doUnmock("motion/react");
+    vi.doUnmock("../../../src/utils/featureDetect");
     vi.resetModules();
+  });
+
+  it('rejects the old "ink" material name at the type level', () => {
+    // @ts-expect-error — "ink" was renamed to "flat" and must be gone
+    const rejected: LiquidTabsMaterial = "ink";
+    const accepted: LiquidTabsMaterial = "flat";
+    expect(rejected).not.toBe(accepted);
+  });
+
+  it("rejects the old glassTint prop name at the type level", () => {
+    const props: LiquidTabsProps = {
+      items: ITEMS,
+      material: "glass",
+      // @ts-expect-error — glassTint was renamed to tint
+      glassTint: "rgba(200, 220, 255, 0.4)",
+    };
+    expect(props.material).toBe("glass");
   });
 
   it("renders one tab per item with role=tab and a role=tablist container", async () => {
@@ -56,7 +95,7 @@ describe("LiquidTabs (bar)", () => {
     expect(tab.style.color).toBe("rgb(74, 108, 247)");
   });
 
-  it("fills glass with a custom glassTint (fallback path — jsdom lacks backdrop-filter)", async () => {
+  it("fills glass with a custom tint (fallback path — no backdrop-filter)", async () => {
     const LiquidTabs = await loadTabs(false);
     const { container } = render(
       <LiquidTabs
@@ -64,13 +103,60 @@ describe("LiquidTabs (bar)", () => {
         value="one"
         onChange={() => {}}
         material="glass"
-        glassTint="rgba(200, 220, 255, 0.4)"
+        tint="rgba(200, 220, 255, 0.4)"
       />
     );
     const fill = container.querySelector(
       '[data-fluidkit="liquid-fill"]'
     ) as HTMLElement;
     expect(fill.style.background).toBe("rgba(200, 220, 255, 0.4)");
+  });
+
+  it("container glass comes from resolveMaterial: shared tint, 10px blur", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} material="glass" />
+    );
+    const stage = container.querySelector(
+      '[data-fluidkit="liquid-tabs"]'
+    ) as HTMLElement;
+    // The shared resolver's default tint (alpha 0.3), not a private recipe.
+    expect(stage.style.background).toBe("rgba(255, 255, 255, 0.3)");
+    // The container keeps its softer 10px blur via the resolver's override.
+    expect(stage.style.backdropFilter).toBe("blur(10px) saturate(1.8)");
+    // No pinned GPU layer: the container is permanent and static, so the
+    // resolver's will-change hint (for glass that appears/disappears) must
+    // not ride along — only the indicator fill keeps it.
+    expect(stage.style.willChange).toBe("");
+  });
+
+  it("a custom tint reaches the glass container", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    const { container } = render(
+      <LiquidTabs
+        items={ITEMS}
+        value="one"
+        onChange={() => {}}
+        material="glass"
+        tint="rgba(200, 220, 255, 0.4)"
+      />
+    );
+    const stage = container.querySelector(
+      '[data-fluidkit="liquid-tabs"]'
+    ) as HTMLElement;
+    expect(stage.style.background).toBe("rgba(200, 220, 255, 0.4)");
+  });
+
+  it("the flat container keeps its solid frosted fill (not the glass recipe)", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} material="flat" />
+    );
+    const stage = container.querySelector(
+      '[data-fluidkit="liquid-tabs"]'
+    ) as HTMLElement;
+    expect(stage.style.background).toBe("rgba(255, 255, 255, 0.62)");
+    expect(stage.style.backdropFilter).toBe("blur(10px)");
   });
 
   it("marks the active tab via aria-selected", async () => {
@@ -113,15 +199,27 @@ describe("LiquidTabs (bar)", () => {
     expect(tabs[1].getAttribute("aria-selected")).toBe("true");
   });
 
-  it("ink material fills the indicator with the resolved color", async () => {
+  it("flat material fills the indicator with the resolved color", async () => {
     const LiquidTabs = await loadTabs(false);
     const { container } = render(
-      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} material="ink" color="#abcdef" />
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} material="flat" color="#abcdef" />
     );
     const fill = container.querySelector(
       '[data-fluidkit="liquid-tab-indicator"] [data-fluidkit="liquid-fill"]'
     ) as HTMLElement;
     expect(fill.style.backgroundColor).toBe("rgb(171, 205, 239)");
+  });
+
+  it('defaults to the flat material and reflects it via data-material', async () => {
+    const LiquidTabs = await loadTabs(false);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} />
+    );
+    expect(
+      container
+        .querySelector('[data-fluidkit="liquid-tabs"]')
+        ?.getAttribute("data-material")
+    ).toBe("flat");
   });
 
   it("draws the indicator as engine geometry (clip-path)", async () => {
@@ -366,5 +464,132 @@ describe("LiquidTabs (bar) — mid-transition re-measure", () => {
     );
 
     expect(snapTo).toHaveBeenCalled();
+  });
+});
+
+describe("LiquidTabs (bar) — indicator surface style pack", () => {
+  // Real-ish geometry: the glint math needs a nonzero pill, and jsdom's
+  // offsets are all 0 (same stubbing pattern as the re-measure suite).
+  const OFFSETS = ["offsetHeight", "offsetWidth", "offsetLeft"] as const;
+  const OFFSET_VALUES: Record<(typeof OFFSETS)[number], number> = {
+    offsetHeight: 40,
+    offsetWidth: 80,
+    offsetLeft: 10,
+  };
+
+  beforeEach(() => {
+    for (const prop of OFFSETS) {
+      Object.defineProperty(HTMLElement.prototype, prop, {
+        configurable: true,
+        value: OFFSET_VALUES[prop],
+      });
+    }
+  });
+
+  afterEach(() => {
+    for (const prop of OFFSETS) {
+      Object.defineProperty(HTMLElement.prototype, prop, {
+        configurable: true,
+        value: 0,
+      });
+    }
+    vi.doUnmock("motion/react");
+    vi.doUnmock("../../../src/utils/featureDetect");
+    vi.resetModules();
+  });
+
+  /**
+   * The conformance helper drives the pack props; `reflection` is baked in
+   * because tabs divergently default it to `false` (the shipped indicator
+   * is unlit), and the helper's specular assertions assume glints CAN paint.
+   * `material` is narrowed by cast: tabs deliberately support only the
+   * flat/glass subset of `LiquidMaterial` (no caustics), and the pack
+   * helpers only ever pass those two.
+   */
+  const surfaceRender = (
+    LiquidTabs: ComponentType<LiquidTabsProps>
+  ): SurfaceRender => ({ material, ...props }) =>
+    render(
+      <LiquidTabs
+        items={ITEMS}
+        defaultValue="one"
+        reflection
+        material={material as LiquidTabsProps["material"]}
+        {...props}
+      />
+    );
+
+  const visibleSpeculars = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll("ellipse")).filter(
+      (el) => Number(el.getAttribute("opacity") ?? 0) > 0
+    );
+
+  it("pins today's defaults: no speculars, no shadow, on either material", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    for (const material of ["flat", "glass"] as const) {
+      const { container } = render(
+        <LiquidTabs items={ITEMS} defaultValue="one" material={material} />
+      );
+      expect(visibleSpeculars(container)).toHaveLength(0);
+      expect(
+        container.querySelector('[data-fluidkit="liquid-shadow"]')
+      ).toBeNull();
+    }
+  });
+
+  it("`reflection` lights the glass indicator from the scene light", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} defaultValue="one" material="glass" reflection />
+    );
+    expect(visibleSpeculars(container).length).toBeGreaterThan(0);
+  });
+
+  it("scales glint brightness with `intensity`", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    expectIntensityScalesSpeculars(surfaceRender(LiquidTabs));
+  });
+
+  it("paints no glints when `light={null}` even with reflection on", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    expectNullLightPaintsNoSpeculars(surfaceRender(LiquidTabs));
+  });
+
+  it("never glints the flat material (house rule), even with reflection on", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} defaultValue="one" material="flat" reflection />
+    );
+    expect(visibleSpeculars(container)).toHaveLength(0);
+  });
+
+  it("`shadow` toggles the indicator shadow layer (defaults off)", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    const off = render(<LiquidTabs items={ITEMS} defaultValue="one" />);
+    expect(
+      off.container.querySelector('[data-fluidkit="liquid-shadow"]')
+    ).toBeNull();
+    const on = render(<LiquidTabs items={ITEMS} defaultValue="one" shadow />);
+    expect(
+      on.container.querySelector('[data-fluidkit="liquid-shadow"]')
+    ).not.toBeNull();
+  });
+
+  it("keeps glints on the resting pill under reduced motion", async () => {
+    const LiquidTabs = await loadTabs(true, true);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} defaultValue="one" material="glass" reflection />
+    );
+    expect(visibleSpeculars(container).length).toBeGreaterThan(0);
+  });
+
+  it("applies `tint` to the glass indicator fill (pack conformance)", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    expectTintReachesGlassFill(surfaceRender(LiquidTabs));
+  });
+
+  it("applies `color` to the flat indicator fill (pack conformance)", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    expectColorFillsFlat(surfaceRender(LiquidTabs));
   });
 });
