@@ -62,10 +62,19 @@ Surfaces (no new props on components):
 <JellyButton material="caustics" />
 ```
 
-Material-level tuning stays minimal: `resolveMaterial` options gain
-`light?: string` (light color, default warm ivory) alongside the existing `color`
-(wall/base). Motion knobs are engine defaults on surfaces — surfaces should look
-right out of the box, not sprout six props.
+Material-level tuning reuses the two color options every surface already forwards —
+no new options, no new component props:
+
+- `color` → wall/base color (default: soft plaster);
+- `tint` → the light's color (default: warm ivory) — consistent with glass, where
+  `tint` already means "the material's optical color".
+
+```tsx
+<LiquidCard material="caustics" tint="#dbeaff" color="#10161a" />  // moonlit dark card
+```
+
+Motion knobs are engine defaults on surfaces — surfaces should look right out of the
+box, not sprout six props.
 
 Backdrop (raw params, backgrounds house rule):
 
