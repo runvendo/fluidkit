@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { VoiceBall } from "fluidkit";
 import type { VoiceBallProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, VariantGrid, VariantCell, glassTintFromHex } from "../kit";
 
 type LiquidMaterial = NonNullable<VoiceBallProps["material"]>;
 type Mode = NonNullable<VoiceBallProps["mode"]>;
@@ -52,6 +52,7 @@ export default function VoiceBallPage() {
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
   const [size, setSize] = useState(96);
   const [intensity, setIntensity] = useState(0.35);
   const [refraction, setRefraction] = useState(false);
@@ -69,7 +70,7 @@ export default function VoiceBallPage() {
               mode={mode}
               size={size}
               material={material}
-              tint={material === "glass" ? tint ?? undefined : undefined}
+              tint={material === "glass" ? glassTint : undefined}
               intensity={intensity}
               refraction={refraction}
               color={material === "flat" ? color : undefined}
@@ -109,7 +110,7 @@ export default function VoiceBallPage() {
       }
       usage={
         <Snippet code={`// level: 0-1 from your audio stack (e.g. an AnalyserNode)
-<VoiceBall mode="${mode}" level={level} size={${size}} material="${material}"${material === "glass" && tint ? ` tint="${tint}"` : ""}${material === "flat" ? ` color="${color}"` : ""}${intensity !== 0.35 ? ` intensity={${intensity}}` : ""}${refraction ? "\n  refraction" : ""} />`} />
+<VoiceBall mode="${mode}" level={level} size={${size}} material="${material}"${material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${material === "flat" ? ` color="${color}"` : ""}${intensity !== 0.35 ? ` intensity={${intensity}}` : ""}${refraction ? "\n  refraction" : ""} />`} />
       }
     />
   );

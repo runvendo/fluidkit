@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { JellyButton } from "fluidkit";
 import type { JellyButtonProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Slider, Seg, ColorField, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Slider, Seg, ColorField, Snippet, VariantGrid, VariantCell, glassTintFromHex } from "../kit";
 
 type LiquidMaterial = NonNullable<JellyButtonProps["material"]>;
 
@@ -55,6 +55,7 @@ export default function JellyButtonPage() {
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
 
   return (
     <PageLayout
@@ -63,7 +64,7 @@ export default function JellyButtonPage() {
       hero={
         <>
           <Stage wall hint="press and hold">
-            <JellyVariant material={material} squash={squash} intensity={intensity} pressColor={pressColor} tint={tint ?? undefined} color={color} />
+            <JellyVariant material={material} squash={squash} intensity={intensity} pressColor={pressColor} tint={glassTint} color={color} />
           </Stage>
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
@@ -112,7 +113,7 @@ export default function JellyButtonPage() {
           squash !== 0.12 ? ` squash={${squash}}` : ""
         }${intensity !== 0.7 ? ` intensity={${intensity}}` : ""}${
           pressColor ? ` pressColor="${pressColor}"` : ""
-        }${material === "glass" && tint ? ` tint="${tint}"` : ""}${
+        }${material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${
           material === "flat" ? ` color="${color}"` : ""
         } onClick={save}>
   Save changes

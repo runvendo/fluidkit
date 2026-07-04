@@ -12,6 +12,7 @@ import {
   Snippet,
   VariantGrid,
   VariantCell,
+  glassTintFromHex,
 } from "../kit";
 
 type LiquidMaterial = NonNullable<DropletsProps["material"]>;
@@ -34,10 +35,11 @@ export default function DropletsPage() {
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
 
   const usage = `import { Droplets } from "fluidkit";
 
-<Droplets${interactive ? " interactive" : " followPointer"} bleed={120} material="${material}"${refraction ? " refraction" : ""}${intensity !== 0.7 ? ` intensity={${intensity}}` : ""}${material === "glass" && tint ? ` tint="${tint}"` : ""}${material === "flat" ? ` color="${color}"` : ""} />`;
+<Droplets${interactive ? " interactive" : " followPointer"} bleed={120} material="${material}"${refraction ? " refraction" : ""}${intensity !== 0.7 ? ` intensity={${intensity}}` : ""}${material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${material === "flat" ? ` color="${color}"` : ""} />`;
 
   return (
     <PageLayout
@@ -60,7 +62,7 @@ export default function DropletsPage() {
               reflection={reflection}
               refraction={refraction}
               intensity={intensity}
-              tint={material === "glass" ? tint ?? undefined : undefined}
+              tint={material === "glass" ? glassTint : undefined}
               color={material === "flat" ? color : undefined}
             />
           </Stage>

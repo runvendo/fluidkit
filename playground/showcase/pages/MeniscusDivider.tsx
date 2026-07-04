@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MeniscusDivider } from "fluidkit";
 import type { MeniscusDividerProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, VariantGrid, VariantCell, glassTintFromHex } from "../kit";
 
 type LiquidMaterial = NonNullable<MeniscusDividerProps["material"]>;
 
@@ -51,6 +51,7 @@ export default function MeniscusDividerPage() {
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
 
   return (
     <PageLayout
@@ -59,7 +60,7 @@ export default function MeniscusDividerPage() {
       hero={
         <>
           <Stage wall>
-            <DividerInContext material={material} thickness={thickness} intensity={intensity} refraction={refraction} tint={tint ?? undefined} color={color} />
+            <DividerInContext material={material} thickness={thickness} intensity={intensity} refraction={refraction} tint={glassTint} color={color} />
           </Stage>
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
@@ -88,7 +89,7 @@ export default function MeniscusDividerPage() {
         </VariantGrid>
       }
       usage={
-        <Snippet code={`<MeniscusDivider material="${material}"${thickness !== 4 ? ` thickness={${thickness}}` : ""} intensity={${intensity}}${material === "glass" && tint ? ` tint="${tint}"` : ""}${material === "flat" ? ` color="${color}"` : ""}${refraction ? "\n  refraction" : ""} />`} />
+        <Snippet code={`<MeniscusDivider material="${material}"${thickness !== 4 ? ` thickness={${thickness}}` : ""} intensity={${intensity}}${material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${material === "flat" ? ` color="${color}"` : ""}${refraction ? "\n  refraction" : ""} />`} />
       }
     />
   );

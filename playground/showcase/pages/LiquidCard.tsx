@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { LiquidCard } from "fluidkit";
 import type { LiquidCardProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Slider, Seg, ColorField, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Slider, Seg, ColorField, Snippet, VariantGrid, VariantCell, glassTintFromHex } from "../kit";
 
 type LiquidMaterial = NonNullable<LiquidCardProps["material"]>;
 type Intensity = NonNullable<LiquidCardProps["intensity"]>;
@@ -59,6 +59,7 @@ export default function LiquidCardPage() {
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
 
   return (
     <PageLayout
@@ -67,7 +68,7 @@ export default function LiquidCardPage() {
       hero={
         <>
           <Stage wall>
-            <CardVariant material={material} intensity={intensity} variant={variant} radius={radius} tint={tint ?? undefined} color={color} />
+            <CardVariant material={material} intensity={intensity} variant={variant} radius={radius} tint={glassTint} color={color} />
           </Stage>
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
@@ -105,7 +106,7 @@ export default function LiquidCardPage() {
         </VariantGrid>
       }
       usage={
-        <Snippet code={`<LiquidCard material="${material}" intensity={${intensity}}${variant !== "default" ? ` variant="${variant}"` : ""}${radius !== 20 ? ` radius={${radius}}` : ""}${variant === "default" && material === "glass" && tint ? ` tint="${tint}"` : ""}${variant === "default" && material === "flat" ? ` color="${color}"` : ""}>
+        <Snippet code={`<LiquidCard material="${material}" intensity={${intensity}}${variant !== "default" ? ` variant="${variant}"` : ""}${radius !== 20 ? ` radius={${radius}}` : ""}${variant === "default" && material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${variant === "default" && material === "flat" ? ` color="${color}"` : ""}>
   <h3>Surface tension</h3>
   <p>Cards size to their content.</p>
 </LiquidCard>`} />

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Thinking } from "fluidkit";
 import type { ThinkingProps, ThinkingVariant } from "fluidkit";
-import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, VariantGrid, VariantCell, glassTintFromHex } from "../kit";
 
 // LiquidMaterial isn't exported from the package root; derive it consumer-style.
 type LiquidMaterial = NonNullable<ThinkingProps["material"]>;
@@ -22,8 +22,9 @@ export default function ThinkingPage() {
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
 
-  const usage = `{isWorking && <Thinking variant="${variant}" label="Generating"${refraction ? " refraction" : ""}${intensity !== 0.7 ? ` intensity={${intensity}}` : ""}${material === "glass" && tint ? ` tint="${tint}"` : ""}${material === "flat" ? ` color="${color}"` : ""} />}`;
+  const usage = `{isWorking && <Thinking variant="${variant}" label="Generating"${refraction ? " refraction" : ""}${intensity !== 0.7 ? ` intensity={${intensity}}` : ""}${material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${material === "flat" ? ` color="${color}"` : ""} />}`;
 
   return (
     <PageLayout
@@ -40,7 +41,7 @@ export default function ThinkingPage() {
               reflection={reflection}
               refraction={refraction}
               intensity={intensity}
-              tint={material === "glass" ? tint ?? undefined : undefined}
+              tint={material === "glass" ? glassTint : undefined}
               color={material === "flat" ? color : undefined}
             />
           </Stage>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { LiquidDialog, JellyButton } from "fluidkit";
 import type { LiquidDialogProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet } from "../kit";
+import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, glassTintFromHex } from "../kit";
 
 type LiquidMaterial = NonNullable<LiquidDialogProps["material"]>;
 
@@ -26,6 +26,7 @@ export default function LiquidDialogPage() {
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
 
   return (
     <PageLayout
@@ -44,7 +45,7 @@ export default function LiquidDialogPage() {
               material={material}
               intensity={intensity}
               refraction={refraction}
-              tint={material === "glass" ? tint ?? undefined : undefined}
+              tint={material === "glass" ? glassTint : undefined}
               color={material === "flat" ? color : undefined}
             >
               <div style={{ maxWidth: 300 }}>
@@ -81,7 +82,7 @@ export default function LiquidDialogPage() {
         </>
       }
       usage={
-        <Snippet code={`<LiquidDialog open={open} onClose={() => setOpen(false)} aria-label="Settings" material="${material}"${intensity !== 0.35 ? ` intensity={${intensity}}` : ""}${material === "glass" && tint ? ` tint="${tint}"` : ""}${material === "flat" ? ` color="${color}"` : ""}${refraction ? "\n  refraction" : ""}>
+        <Snippet code={`<LiquidDialog open={open} onClose={() => setOpen(false)} aria-label="Settings" material="${material}"${intensity !== 0.35 ? ` intensity={${intensity}}` : ""}${material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${material === "flat" ? ` color="${color}"` : ""}${refraction ? "\n  refraction" : ""}>
   <h2>Settings</h2>
   …
 </LiquidDialog>`} />

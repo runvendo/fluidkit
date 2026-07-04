@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { LiquidTabs } from "fluidkit";
-import { PageLayout, Stage, Controls, Toggle, Seg, Slider, ColorField, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Toggle, Seg, Slider, ColorField, Snippet, VariantGrid, VariantCell, glassTintFromHex } from "../kit";
 
 const FLAT_COLOR = "#23242c";
 
@@ -49,8 +49,7 @@ export default function LiquidTabsPage() {
   const [labelColor, setLabelColor] = useState<string | null>(null);
   const [activeLabelColor, setActiveLabelColor] = useState<string | null>(null);
   const [tintHue, setTintHue] = useState<string | null>(null);
-  // pickers can't do alpha; keep the tint translucent (0x4d ≈ 30%) like the default
-  const tint = tintHue ? `${tintHue}4d` : undefined;
+  const tint = tintHue ? glassTintFromHex(tintHue) : undefined;
 
   const items = [
     { id: "chat", label: "Chat" },

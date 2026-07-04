@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { LiquidPanel } from "fluidkit";
 import type { LiquidPanelProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, VariantGrid, VariantCell, glassTintFromHex } from "../kit";
 
 type LiquidMaterial = NonNullable<LiquidPanelProps["material"]>;
 type Side = NonNullable<LiquidPanelProps["side"]>;
@@ -60,6 +60,7 @@ export default function LiquidPanelPage() {
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
 
   return (
     <PageLayout
@@ -68,7 +69,7 @@ export default function LiquidPanelPage() {
       hero={
         <>
           <Stage wall hint="toggle open, watch the pour" onClick={() => setOpen((o) => !o)}>
-            <PanelVariant open={open} side={side} material={material} intensity={intensity} tint={tint ?? undefined} color={color} />
+            <PanelVariant open={open} side={side} material={material} intensity={intensity} tint={glassTint} color={color} />
           </Stage>
           <Controls>
             <Toggle label="open" value={open} set={setOpen} />
@@ -97,7 +98,7 @@ export default function LiquidPanelPage() {
         </VariantGrid>
       }
       usage={
-        <Snippet code={`<LiquidPanel open={open} side="${side}" material="${material}" intensity={${intensity}}${material === "glass" && tint ? ` tint="${tint}"` : ""}${material === "flat" ? ` color="${color}"` : ""}>
+        <Snippet code={`<LiquidPanel open={open} side="${side}" material="${material}" intensity={${intensity}}${material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${material === "flat" ? ` color="${color}"` : ""}>
   <nav>…</nav>
 </LiquidPanel>`} />
       }
