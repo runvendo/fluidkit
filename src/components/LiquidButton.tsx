@@ -1,6 +1,13 @@
 /**
- * A pill-shaped engine button that squashes on press — via GEOMETRY, not a
- * CSS transform, so the label never scales (the library's core principle).
+ * A pill-shaped engine button whose `variant` picks the press feel. The
+ * `"jelly"` default squashes on press — via GEOMETRY, not a CSS transform,
+ * so the label never scales (the library's core principle). `"still"` keeps
+ * the same pill rigid (zero geometry deformation), pressing only through the
+ * non-geometric polish — fill deepening and the press glint — so it reads as
+ * the reduced-motion presentation promoted to a first-class choice (reduced
+ * motion itself still wins over `"jelly"`). The rest of this file describes
+ * the jelly physics; `"still"` simply holds the geometry at rest.
+ *
  * Renders a real `<button>` (focus, Enter/Space, disabled all work
  * natively); the liquid surface is the button's fill, and the label lives
  * on `LiquidRenderer`'s unclipped content overlay, layered on top of the
@@ -61,9 +68,19 @@ import type { LiquidIntensity } from "./intensity";
 import type { SurfaceStyleProps } from "./surface";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
-export interface JellyButtonProps
+export interface LiquidButtonProps
   extends SurfaceStyleProps,
     ButtonHTMLAttributes<HTMLButtonElement> {
+  /**
+   * Press feel. `"jelly"` (default) deforms the geometry on press —
+   * volume-preserving squash, point-aware dent, release jiggle, optional
+   * `releaseWave`. `"still"` keeps the same pill rigid: zero geometry
+   * deformation, pressing only through the non-geometric polish (fill
+   * deepening via `pressFeedback` and the press glint via `pressGlint`).
+   * `squash`, `spring`, `releaseWave`, and `deformPress` are jelly-only and
+   * inert on `"still"`. Reduced motion still wins over `"jelly"`.
+   */
+  variant?: "jelly" | "still";
   /**
    * How loudly the material reads: 0–1, or the presets `"whisper"` (0.35) /
    * `"present"` (0.7). Defaults to `"present"` — a documented divergence
@@ -314,7 +331,8 @@ function buildJellyScene(
   return { path, speculars };
 }
 
-export function JellyButton({
+export function LiquidButton({
+  variant = "jelly",
   material = "glass",
   tint,
   color,
@@ -347,16 +365,24 @@ export function JellyButton({
   onKeyUp,
   onBlur,
   ...rest
-}: JellyButtonProps) {
+}: LiquidButtonProps) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const { ref, inView } = useInView<HTMLButtonElement>();
   const animating = !prefersReducedMotion && inView;
 
+  const still = variant === "still";
+
   const [pressed, setPressed] = useState(false);
-  // Geometry only deforms while animating — under reduced motion (or
-  // off-screen) `pressed` still tracks for `data-pressed`/opacity, but the
-  // body never leaves its resting size.
-  const geometryPressed = pressed && animating;
+  // The press loop runs on any press while animating: it drives the release
+  // settle, the press-anchored glint, and — jelly only — the geometry.
+  const pressActive = pressed && animating;
+  // Geometry only deforms for the jelly variant while animating. Under
+  // reduced motion (or off-screen), or for `variant="still"`, `pressed` still
+  // tracks for `data-pressed`/opacity/fill, but the body never leaves its
+  // resting size. "still" keeps the loop alive for the glint + fill deepening
+  // (unlike reduced motion, which also drops the glint) but adds no opacity
+  // dip — the reduced-motion presentation for geometry, promoted to a choice.
+  const geometryPressed = pressActive && !still;
 
   // Bleed canvas: at full press the body widens by width·squash (so
   // width·squash/2 per side); ceil(width·squash) gives 2x headroom
@@ -445,21 +471,25 @@ export function JellyButton({
   // React to press/release flips: spring (animated) or snap (reduced
   // motion / off-screen — where `targetW`/`targetH` already equal the
   // resting size, so the snap is a no-op).
-  const prevGeometryPressed = useRef(geometryPressed);
+  const prevPressActive = useRef(pressActive);
   useEffect(() => {
-    if (prevGeometryPressed.current !== geometryPressed) {
+    if (prevPressActive.current !== pressActive) {
+      // `targetW`/`targetH` and the dent slot already sit at rest for
+      // `variant="still"` (via `geometryPressed`), so a still press retargets
+      // to the resting size — the loop below then only paints the glint.
       const targets = [targetW, targetH, geometryPressed ? 1 : 0];
       if (animating) {
         springs.setTargets(targets, spring);
         setSettling(true);
         if (settleTimer.current) clearTimeout(settleTimer.current);
         // Press-anchored deformation/glint needs the loop alive for the
-        // whole hold (the dent tracks nothing React re-renders); the
-        // release timer below takes over when the press ends.
-        if (geometryPressed && (deformPress || pressGlint)) {
+        // whole hold (they track nothing React re-renders); the release
+        // timer below takes over when the press ends. The glint keeps the
+        // loop alive for `"still"` too; the jelly dent is jelly-only.
+        if (pressActive && (pressGlint || (!still && deformPress))) {
           settleTimer.current = null;
         } else {
-          const extra = !geometryPressed && releaseWave ? WAVE_MS : 0;
+          const extra = !pressActive && !still && releaseWave ? WAVE_MS : 0;
           settleTimer.current = setTimeout(
             () => setSettling(false),
             settleMs(spring) + extra
@@ -469,12 +499,12 @@ export function JellyButton({
         springs.snapTo(targets);
       }
     }
-    prevGeometryPressed.current = geometryPressed;
+    prevPressActive.current = pressActive;
     return () => {
       if (settleTimer.current) clearTimeout(settleTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geometryPressed, animating]);
+  }, [pressActive, animating]);
 
   // If `animating` flips off mid-settle (reduced motion turning on,
   // scrolling off-screen), the effect above cleans up the timer — so clear
@@ -498,12 +528,14 @@ export function JellyButton({
     let deform: JellyDeform | null = null;
     let glint: SpecularSpot | null = null;
     if (p) {
+      // Geometry deformation (dent + release wave) is jelly-only; `"still"`
+      // leaves `deform` null so the body never moves, keeping only the glint.
       const waveT =
-        releaseWave && releasedAt.current !== null
+        !still && releaseWave && releasedAt.current !== null
           ? (now - releasedAt.current) / 1000
           : null;
       const waveActive = waveT !== null && waveT < WAVE_MS / 1000;
-      const dent = deformPress ? springs.values[2].get() : 0;
+      const dent = !still && deformPress ? springs.values[2].get() : 0;
       if (dent > 0.004 || waveActive) {
         deform = { p, dent, waveT: waveActive ? waveT : null, squash };
       }
@@ -600,7 +632,7 @@ export function JellyButton({
       disabled={disabled}
       className={className}
       style={buttonStyle}
-      data-fluidkit="jelly-button"
+      data-fluidkit="liquid-button"
       data-animating={animating && settling}
       data-pressed={pressed}
       onPointerDown={(e) => {
@@ -640,7 +672,7 @@ export function JellyButton({
        * the button itself.
        */}
       <span
-        data-fluidkit="jelly-canvas"
+        data-fluidkit="liquid-canvas"
         style={{
           position: "absolute",
           top: -bleed,
@@ -662,7 +694,7 @@ export function JellyButton({
           }
           shadow={shadow}
         >
-          <span data-fluidkit="jelly-label" style={labelStyle}>
+          <span data-fluidkit="liquid-label" style={labelStyle}>
             {children}
           </span>
         </LiquidRenderer>

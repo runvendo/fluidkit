@@ -93,7 +93,7 @@ export function Ripple({
   // expands. Normalized against the default volume so `"whisper"` (0.35)
   // renders today's 0.4 peak pixel-identically and higher volumes read louder.
   // This deliberately diverges from the surface family's shared `0.4 × volume`
-  // specular rule (LiquidCard, JellyButton, LiquidTabs, ...): a ripple's wash
+  // specular rule (LiquidCard, LiquidButton, LiquidTabs, ...): a ripple's wash
   // opacity is the whole read, not a glint layered on a lit surface, so it
   // stays pinned to the pre-pack 0.4 instead of scaling straight off volume.
   // Do not "harmonize" this to `0.4 * volume` — that would halve the default.

@@ -277,7 +277,7 @@ export function Thinking({
   // Thinking's pre-pack specular opacity was `specularPlacement`'s own
   // default (0.7) — nobody ever overrode it — which already equals the
   // "present" preset exactly, so intensity maps straight through (no 0.4x
-  // scaling like JellyButton/MorphSurface): default "present" reproduces
+  // scaling like LiquidButton/MorphSurface): default "present" reproduces
   // today's 0.7 pixel-identically.
   intensity = "present",
   shadow = true,

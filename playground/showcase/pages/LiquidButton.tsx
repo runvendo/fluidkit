@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { JellyButton } from "fluidkit";
-import type { JellyButtonProps } from "fluidkit";
+import { LiquidButton } from "fluidkit";
+import type { LiquidButtonProps } from "fluidkit";
 import { PageLayout, Stage, Controls, Slider, Seg, ColorField, Snippet, VariantGrid, VariantCell, glassTintFromHex } from "../kit";
 
-type LiquidMaterial = NonNullable<JellyButtonProps["material"]>;
+type LiquidMaterial = NonNullable<LiquidButtonProps["material"]>;
+type LiquidVariantName = NonNullable<LiquidButtonProps["variant"]>;
 
 const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
+const VARIANTS: LiquidVariantName[] = ["jelly", "still"];
 
 /** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */
 const FLAT_COLOR = "#8d94a1";
@@ -23,7 +25,8 @@ const PRESS_COLORS = {
 type PressColorKey = keyof typeof PRESS_COLORS;
 
 /** One pill — hero and variant cells alike — with the flat-material color/text fallbacks. */
-function JellyVariant({ material, squash, intensity, pressColor, tint, color }: {
+function LiquidVariant({ variant, material, squash, intensity, pressColor, tint, color }: {
+  variant?: LiquidVariantName;
   material: LiquidMaterial;
   squash: number;
   intensity?: number;
@@ -32,7 +35,8 @@ function JellyVariant({ material, squash, intensity, pressColor, tint, color }: 
   color?: string;
 }) {
   return (
-    <JellyButton
+    <LiquidButton
+      variant={variant}
       material={material}
       squash={squash}
       intensity={intensity}
@@ -42,11 +46,12 @@ function JellyVariant({ material, squash, intensity, pressColor, tint, color }: 
       style={{ color: material === "flat" ? "#fff" : "#23242c", fontSize: 14, fontWeight: 650 }}
     >
       Press me
-    </JellyButton>
+    </LiquidButton>
   );
 }
 
-export default function JellyButtonPage() {
+export default function LiquidButtonPage() {
+  const [variant, setVariant] = useState<LiquidVariantName>("jelly");
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [squash, setSquash] = useState(0.12);
   const [intensity, setIntensity] = useState(0.7);
@@ -56,17 +61,19 @@ export default function JellyButtonPage() {
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
   const glassTint = tint ? glassTintFromHex(tint) : undefined;
+  const still = variant === "still";
 
   return (
     <PageLayout
-      title="JellyButton"
-      description="An engine pill that squashes on press via geometry, not a CSS transform, so the label never scales."
+      title="LiquidButton"
+      description="A liquid pill button. The default jelly variant squashes on press via geometry, not a CSS transform, so the label never scales; the still variant holds the geometry rigid and presses through fill and glint only."
       hero={
         <>
           <Stage wall hint="press and hold">
-            <JellyVariant material={material} squash={squash} intensity={intensity} pressColor={pressColor} tint={glassTint} color={color} />
+            <LiquidVariant variant={variant} material={material} squash={squash} intensity={intensity} pressColor={pressColor} tint={glassTint} color={color} />
           </Stage>
           <Controls>
+            <Seg label="variant" value={variant} set={setVariant} options={VARIANTS} />
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="squash" value={squash} set={setSquash} min={0.02} max={0.3} step={0.01} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
@@ -87,37 +94,40 @@ export default function JellyButtonPage() {
       variants={
         <VariantGrid>
           <VariantCell label="glass · soft" wall>
-            <JellyVariant material="glass" squash={0.06} />
+            <LiquidVariant material="glass" squash={0.06} />
           </VariantCell>
           <VariantCell label="glass · strong" wall>
-            <JellyVariant material="glass" squash={0.2} />
+            <LiquidVariant material="glass" squash={0.2} />
+          </VariantCell>
+          <VariantCell label="glass · still" wall>
+            <LiquidVariant variant="still" material="glass" squash={0.12} />
           </VariantCell>
           <VariantCell label="glass · release wave" wall>
-            <JellyButton
+            <LiquidButton
               releaseWave
               style={{ color: "#23242c", fontSize: 14, fontWeight: 650 }}
             >
               Press me
-            </JellyButton>
+            </LiquidButton>
           </VariantCell>
           <VariantCell label="flat · soft" wall>
-            <JellyVariant material="flat" squash={0.06} />
+            <LiquidVariant material="flat" squash={0.06} />
           </VariantCell>
           <VariantCell label="flat · strong" wall>
-            <JellyVariant material="flat" squash={0.2} />
+            <LiquidVariant material="flat" squash={0.2} />
           </VariantCell>
         </VariantGrid>
       }
       usage={
-        <Snippet code={`<JellyButton material="${material}"${
-          squash !== 0.12 ? ` squash={${squash}}` : ""
-        }${intensity !== 0.7 ? ` intensity={${intensity}}` : ""}${
+        <Snippet code={`<LiquidButton material="${material}"${
+          still ? ` variant="still"` : ""
+        }${!still && squash !== 0.12 ? ` squash={${squash}}` : ""}${intensity !== 0.7 ? ` intensity={${intensity}}` : ""}${
           pressColor ? ` pressColor="${pressColor}"` : ""
         }${material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${
           material === "flat" ? ` color="${color}"` : ""
         } onClick={save}>
   Save changes
-</JellyButton>`} />
+</LiquidButton>`} />
       }
     />
   );

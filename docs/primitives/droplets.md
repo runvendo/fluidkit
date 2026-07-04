@@ -18,7 +18,7 @@ The material is a prop, not a separate component: the same shapes render as clea
 | `material` | `"glass" \| "flat"` | `"glass"` | Rendered material. |
 | `tint` | `string` | translucent white | Glass tint. |
 | `color` | `string` | `currentColor` | Flat-material fill. |
-| `intensity` | `number \| "whisper" \| "present"` | `"present"` | Material volume (0-1): scales the specular's brightness. Defaults to `"present"` (0.7), not the surface family's `"whisper"` — Droplets' pre-pack speculars already rendered at `specularPlacement`'s own 0.7 default (nobody overrode it), and `intensity` maps straight through (unlike JellyButton/MorphSurface's `0.4 x volume`), so `"present"` reproduces it exactly. |
+| `intensity` | `number \| "whisper" \| "present"` | `"present"` | Material volume (0-1): scales the specular's brightness. Defaults to `"present"` (0.7), not the surface family's `"whisper"` — Droplets' pre-pack speculars already rendered at `specularPlacement`'s own 0.7 default (nobody overrode it), and `intensity` maps straight through (unlike LiquidButton/MorphSurface's `0.4 x volume`), so `"present"` reproduces it exactly. |
 | `light` | `{x, y} \| null` | above, 30% from left | Scene light in px (container coords). `null` disables highlights. |
 | `reflection` | `boolean` | `true` | Paint specular reflections on glass. |
 | `refraction` | `boolean` | `false` | Edge lensing on glass (SVG displacement inside `backdrop-filter`, Chromium-only; degrades silently to plain glass blur). |

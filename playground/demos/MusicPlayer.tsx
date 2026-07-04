@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { JellyButton, MorphSurface } from "fluidkit";
+import { LiquidButton, MorphSurface } from "fluidkit";
 
 /**
  * Liquid Music Player — a now-playing mini-pill that liquid-morphs into
  * the full player sheet. One MorphSurface in glass over the wallpaper;
- * the play/pause control is a JellyButton.
+ * the play/pause control is a LiquidButton.
  */
 export function MusicPlayer() {
   const [open, setOpen] = useState(false);
@@ -86,7 +86,7 @@ export function MusicPlayer() {
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
               <button aria-label="Previous" style={{ border: 0, background: "none", fontSize: 15, color: "#3a3b44", cursor: "pointer" }}>⏮</button>
-              <JellyButton
+              <LiquidButton
                 material="flat"
                 color="#23242c"
                 width={62}
@@ -95,7 +95,7 @@ export function MusicPlayer() {
                 style={{ color: "#fff", fontSize: 13 }}
               >
                 {playing ? "❚❚" : "►"}
-              </JellyButton>
+              </LiquidButton>
               <button aria-label="Next" style={{ border: 0, background: "none", fontSize: 15, color: "#3a3b44", cursor: "pointer" }}>⏭</button>
             </div>
           </div>

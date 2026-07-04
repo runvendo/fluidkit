@@ -119,7 +119,7 @@ describe("MorphSurface", () => {
 
   // Pin: today's two hand-rolled specular sites, BEFORE `intensity` exists.
   // Satellites use `specularPlacement`'s own bare default (0.7, like
-  // Droplets/Thinking); the body passes a hardcoded 0.28 (like JellyButton's
+  // Droplets/Thinking); the body passes a hardcoded 0.28 (like LiquidButton's
   // pre-pack glint). Both must keep rendering these exact numbers once
   // `intensity` lands (default "present" reproduces each pixel-identically).
   it("pins today's default specular opacities: satellites at 0.7 (bare default), body at 0.28 (hardcoded)", async () => {
@@ -148,7 +148,7 @@ describe("MorphSurface", () => {
   });
 
   // Per-site mapping: the body's hardcoded 0.28 maps `0.4 × intensity` (like
-  // JellyButton); satellites' bare `specularPlacement` default maps identity
+  // LiquidButton); satellites' bare `specularPlacement` default maps identity
   // (like Droplets/Thinking) — both because that's what reproduces each
   // site's pre-pack constant at the shared default "present" (0.7).
   it("intensity scales the body specular by 0.4x and satellites 1:1", async () => {
