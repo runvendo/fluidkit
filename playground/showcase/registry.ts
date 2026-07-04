@@ -41,6 +41,7 @@ export const REGISTRY: ShowcasePage[] = [
   { slug: "mesh-gradient", title: "MeshGradient", load: () => import("./pages/MeshGradient") },
   { slug: "silk", title: "Silk", load: () => import("./pages/Silk") },
   { slug: "glass-panes", title: "GlassPanes", load: () => import("./pages/GlassPanes") },
+  { slug: "caustics", title: "Caustics", load: () => import("./pages/Caustics") },
   { slug: "liquid-card", title: "LiquidCard", load: () => import("./pages/LiquidCard") },
   { slug: "meniscus-divider", title: "MeniscusDivider", load: () => import("./pages/MeniscusDivider") },
   { slug: "liquid-panel", title: "LiquidPanel", load: () => import("./pages/LiquidPanel") },
