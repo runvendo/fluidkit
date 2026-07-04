@@ -73,17 +73,22 @@ Pure refactor, zero visual change.
 
 ## Phase 3 — Toast, then Menu (overlay consumers)
 
-- [ ] **LiquidToast**: tests first (dispatcher before/after provider mount,
+- [x] **LiquidToast**: tests first (dispatcher before/after provider mount,
   dedupe by `id`, stack cap, hover pause, reduced-motion branch, `role="status"`).
   Then `LiquidToastProvider` + module-level `toast()` per spec, using approved
   Phase-1 condense/evaporate values. Docs page, showcase entry, changelog.
-  Commit.
-- [ ] **LiquidMenu**: tests first (full keyboard walk, focus return,
+  Commit. (Done: 11 tests.)
+- [x] **LiquidMenu**: tests first (full keyboard walk, focus return,
   outside-click close, `aria-haspopup`/`expanded`, disabled items, flip-to-fit).
   Then the component: pour-from-trigger via Panel geometry, `items` array per
-  spec. Docs, showcase, changelog. Commit.
+  spec. Docs, showcase, changelog. Commit. (Done: 9 tests. Flip-to-fit is
+  viewport-math inside the placement effect; jsdom rects are 0 so it's
+  exercised in the browser, not unit-tested.)
 - [ ] After Menu lands, extract whatever Toast and Menu duplicated into the
-  overlay module (second-consumer rule). Commit.
+  overlay module (second-consumer rule). Commit. (Reviewed: both share only
+  overlayRoot/overlayZ, already extracted; their measure-content and
+  settle-loop shapes match Tooltip/Panel precedent but differ in details —
+  no forced abstraction yet. Revisit after the form family lands.)
 
 ## Phase 4 — Droplet-thumb family: Switch → Checkbox → Slider
 
