@@ -14,10 +14,12 @@
  * under MIT.
  *
  * Lifecycle: GL boots in an effect (never during render/SSR), resolution
- * tracks the host via ResizeObserver (DPR capped), the rAF loop runs only
- * while in view, reduced motion renders a single still frame, context
- * loss stops drawing (CSS base remains), and unmount releases the context
- * via WEBGL_lose_context.
+ * tracks the host via ResizeObserver when available (sized once when
+ * not), the rAF loop runs only while in view, reduced motion renders a
+ * single still frame, context loss rebuilds the pipeline on restore (the
+ * CSS base shows meanwhile), and unmount releases the context via
+ * WEBGL_lose_context. Every failure path also releases the context —
+ * browsers cap live WebGL contexts, so a failed boot must not hold one.
  */
 
 import type { CSSProperties } from "react";
@@ -46,8 +48,17 @@ const STILL_TIME = 7.0;
 
 const VERT_SRC = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
 
+/**
+ * highp where the device offers it (uTime is unbounded — mediump's 10-bit
+ * mantissa turns long-running time into visible stepping); mediump is the
+ * WebGL1-guaranteed fallback for old GPUs.
+ */
 const FRAG_SRC = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
+#endif
 uniform vec2 uRes;
 uniform float uTime;
 uniform vec3 uLight;
@@ -76,7 +87,7 @@ void main() {
   vec2 p = uv * vec2(uRes.x / uRes.y, 1.0) * (6.0 / uScale);
   float g = web(p, uTime) + 0.5 * web(p * 1.9 + 3.7, uTime * 1.3);
   float d = uv.x + (1.0 - uv.y) * 0.6;
-  float beam = smoothstep(0.10, 0.55, d) * smoothstep(1.9, 0.9, d);
+  float beam = smoothstep(0.10, 0.55, d) * (1.0 - smoothstep(0.9, 1.9, d));
   float glow = g * g * uIntensity * 0.9 * mix(1.0, 0.45 + 0.55 * beam, uBand);
   gl_FragColor = vec4(uLight, clamp(glow, 0.0, 1.0));
 }
@@ -105,16 +116,21 @@ function parseColor(css: string): [number, number, number] {
   return rgb;
 }
 
-interface GlState {
-  canvas: HTMLCanvasElement;
-  gl: WebGLRenderingContext;
+interface Pipeline {
   uRes: WebGLUniformLocation | null;
   uTime: WebGLUniformLocation | null;
   uLight: WebGLUniformLocation | null;
   uIntensity: WebGLUniformLocation | null;
   uScale: WebGLUniformLocation | null;
   uBand: WebGLUniformLocation | null;
-  ro: ResizeObserver;
+}
+
+interface GlState {
+  canvas: HTMLCanvasElement;
+  gl: WebGLRenderingContext;
+  pipe: Pipeline;
+  fit: () => void;
+  ro: ResizeObserver | null;
   raf: number | null;
   t0: number;
   dead: boolean;
@@ -129,8 +145,65 @@ function compile(
   if (!shader) return null;
   gl.shaderSource(shader, src);
   gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return null;
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    gl.deleteShader(shader);
+    return null;
+  }
   return shader;
+}
+
+/**
+ * Compile + link the program and bind the fullscreen triangle. Returns the
+ * uniform locations, or null on any failure (created resources deleted).
+ * Called at boot AND again after a context restore — a restored context
+ * keeps nothing, so the whole pipeline must be rebuilt.
+ */
+function createPipeline(gl: WebGLRenderingContext): Pipeline | null {
+  const vs = compile(gl, gl.VERTEX_SHADER, VERT_SRC);
+  const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG_SRC);
+  const prog = gl.createProgram();
+  if (!vs || !fs || !prog) {
+    if (vs) gl.deleteShader(vs);
+    if (fs) gl.deleteShader(fs);
+    if (prog) gl.deleteProgram(prog);
+    return null;
+  }
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    gl.deleteProgram(prog);
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
+    return null;
+  }
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([-1, -1, 3, -1, -1, 3]),
+    gl.STATIC_DRAW
+  );
+  const loc = gl.getAttribLocation(prog, "a");
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  return {
+    uRes: gl.getUniformLocation(prog, "uRes"),
+    uTime: gl.getUniformLocation(prog, "uTime"),
+    uLight: gl.getUniformLocation(prog, "uLight"),
+    uIntensity: gl.getUniformLocation(prog, "uIntensity"),
+    uScale: gl.getUniformLocation(prog, "uScale"),
+    uBand: gl.getUniformLocation(prog, "uBand"),
+  };
+}
+
+function releaseContext(gl: WebGLRenderingContext): void {
+  try {
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+  } catch {
+    /* already lost */
+  }
 }
 
 const hostStyle: CSSProperties = {
@@ -154,6 +227,9 @@ export function CausticsLayer({
   // Live params, readable from the render loop without re-booting GL.
   const paramsRef = useRef({ light, intensity, scale, speed, band });
   paramsRef.current = { light, intensity, scale, speed, band };
+  // The draw effect's current "start drawing" entry point; a context
+  // restore re-invokes it so the loop (or still frame) resumes.
+  const startRef = useRef<(() => void) | null>(null);
 
   // useInView's ref is a callback; merge it with our own node capture so
   // the boot effect re-runs when the host actually exists.
@@ -165,8 +241,8 @@ export function CausticsLayer({
     [inViewRef]
   );
 
-  // Boot per host node. All failure paths leave the host empty — the CSS
-  // beneath the layer is the design's own fallback.
+  // Boot per host node. All failure paths release the context and leave
+  // the host empty — the CSS beneath the layer is the design's fallback.
   useEffect(() => {
     if (!host || !supportsWebGL()) return;
     const canvas = document.createElement("canvas");
@@ -181,62 +257,62 @@ export function CausticsLayer({
     });
     if (!gl) return;
 
-    const vs = compile(gl, gl.VERTEX_SHADER, VERT_SRC);
-    const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG_SRC);
-    const prog = gl.createProgram();
-    if (!vs || !fs || !prog) return;
-    gl.attachShader(prog, vs);
-    gl.attachShader(prog, fs);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
-    gl.useProgram(prog);
+    const pipe = createPipeline(gl);
+    if (!pipe) {
+      // Don't hold one of the page's few WebGL context slots for a canvas
+      // that will never draw.
+      releaseContext(gl);
+      return;
+    }
 
-    const buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 3, -1, -1, 3]),
-      gl.STATIC_DRAW
-    );
-    const loc = gl.getAttribLocation(prog, "a");
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+      const w = Math.max(1, Math.round(host.clientWidth * dpr));
+      const h = Math.max(1, Math.round(host.clientHeight * dpr));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        gl.viewport(0, 0, w, h);
+      }
+    };
 
     const state: GlState = {
       canvas,
       gl,
-      uRes: gl.getUniformLocation(prog, "uRes"),
-      uTime: gl.getUniformLocation(prog, "uTime"),
-      uLight: gl.getUniformLocation(prog, "uLight"),
-      uIntensity: gl.getUniformLocation(prog, "uIntensity"),
-      uScale: gl.getUniformLocation(prog, "uScale"),
-      uBand: gl.getUniformLocation(prog, "uBand"),
-      ro: new ResizeObserver(() => {
-        const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-        const w = Math.max(1, Math.round(host.clientWidth * dpr));
-        const h = Math.max(1, Math.round(host.clientHeight * dpr));
-        if (canvas.width !== w || canvas.height !== h) {
-          canvas.width = w;
-          canvas.height = h;
-          gl.viewport(0, 0, w, h);
-        }
-      }),
+      pipe,
+      fit,
+      ro: null,
       raf: null,
       t0: performance.now(),
       dead: false,
     };
-    state.ro.observe(host);
+    // ResizeObserver is near-universal but NOT implied by WebGL support
+    // (older embedded WebViews); without it, size once and stay put.
+    if (typeof ResizeObserver !== "undefined") {
+      state.ro = new ResizeObserver(fit);
+      state.ro.observe(host);
+    }
+    fit();
 
     const onLost = (e: Event) => {
-      // Stop drawing until the browser restores the context; if it never
-      // does, the CSS base beneath remains.
+      // preventDefault signals we want webglcontextrestored.
       e.preventDefault();
       state.dead = true;
       if (state.raf !== null) cancelAnimationFrame(state.raf);
       state.raf = null;
     };
     const onRestored = () => {
+      // A restored context keeps NO resources — rebuild everything.
+      const rebuilt = createPipeline(gl);
+      if (!rebuilt) {
+        releaseContext(gl);
+        canvas.remove();
+        return;
+      }
+      state.pipe = rebuilt;
       state.dead = false;
+      fit();
+      startRef.current?.();
     };
     canvas.addEventListener("webglcontextlost", onLost);
     canvas.addEventListener("webglcontextrestored", onRestored);
@@ -247,10 +323,10 @@ export function CausticsLayer({
     return () => {
       state.dead = true;
       if (state.raf !== null) cancelAnimationFrame(state.raf);
-      state.ro.disconnect();
+      state.ro?.disconnect();
       canvas.removeEventListener("webglcontextlost", onLost);
       canvas.removeEventListener("webglcontextrestored", onRestored);
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      releaseContext(gl);
       canvas.remove();
       stateRef.current = null;
     };
@@ -263,32 +339,38 @@ export function CausticsLayer({
 
     const frame = (timeSeconds: number) => {
       if (state.dead) return;
-      const { gl } = state;
+      const { gl, pipe } = state;
       const p = paramsRef.current;
       const [r, g, b] = parseColor(p.light);
-      gl.uniform2f(state.uRes, state.canvas.width, state.canvas.height);
-      gl.uniform1f(state.uTime, timeSeconds);
-      gl.uniform3f(state.uLight, r, g, b);
-      gl.uniform1f(state.uIntensity, p.intensity);
-      gl.uniform1f(state.uScale, Math.max(p.scale, 0.05));
-      gl.uniform1f(state.uBand, p.band);
+      gl.uniform2f(pipe.uRes, state.canvas.width, state.canvas.height);
+      gl.uniform1f(pipe.uTime, timeSeconds);
+      gl.uniform3f(pipe.uLight, r, g, b);
+      gl.uniform1f(pipe.uIntensity, p.intensity);
+      gl.uniform1f(pipe.uScale, Math.max(p.scale, 0.05));
+      gl.uniform1f(pipe.uBand, p.band);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
 
     const animating = inView && !reduced;
-    if (!animating) {
-      // Still frame (reduced motion, or offscreen with fresh props).
-      frame(STILL_TIME);
-      return;
-    }
-    const loop = (now: number) => {
-      frame(((now - state.t0) / 1000) * paramsRef.current.speed);
+    const start = () => {
+      if (!animating) {
+        // Still frame (reduced motion, or offscreen with fresh props).
+        frame(STILL_TIME);
+        return;
+      }
+      const loop = (now: number) => {
+        frame(((now - state.t0) / 1000) * paramsRef.current.speed);
+        state.raf = requestAnimationFrame(loop);
+      };
       state.raf = requestAnimationFrame(loop);
     };
-    state.raf = requestAnimationFrame(loop);
+    startRef.current = start;
+    start();
+
     return () => {
+      startRef.current = null;
       if (state.raf !== null) cancelAnimationFrame(state.raf);
       state.raf = null;
     };
