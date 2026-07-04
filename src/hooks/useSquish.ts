@@ -42,8 +42,9 @@ export const DEFAULT_INTENSITY = 0.12;
 
 /** Snappy but soft enough to overshoot slightly on release — that overshoot
  * is the entire "jiggle", so it's tuned deliberately rather than left at a
- * generic default. Exported for the same reason as `DEFAULT_INTENSITY`. */
-export const DEFAULT_SPRING: SpringConfig = { stiffness: 500, damping: 20 };
+ * generic default: one soft overshoot (ζ≈0.64), never a multi-cycle wobble.
+ * Exported for the same reason as `DEFAULT_INTENSITY`. */
+export const DEFAULT_SPRING: SpringConfig = { stiffness: 550, damping: 30 };
 
 /** The only keys that count as "activate" for a press-and-hold gesture.
  * Exported for the same reason as `DEFAULT_INTENSITY`. */

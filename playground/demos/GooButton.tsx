@@ -84,7 +84,7 @@ export function GooButton() {
         style={{ display: "block", margin: "0 auto", color: "#fff", fontSize: 13.5, fontWeight: 650, transition: "color .2s" }}
       >
         {phase === "idle" && "Download"}
-        {phase === "working" && <Thinking material="flat" color="#fff" size={8} spread={30} label="Downloading" />}
+        {phase === "working" && <Thinking material="flat" color="#fff" size={8} label="Downloading" />}
         {phase === "done" && "Saved ✓"}
       </JellyButton>
     </Ripple>

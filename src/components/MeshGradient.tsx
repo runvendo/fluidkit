@@ -44,8 +44,9 @@ export interface MeshGradientProps extends HTMLAttributes<HTMLDivElement> {
   blur?: number;
 }
 
-/** Soft pastel blue/violet/pink set — restrained, light-mode-first. */
-const DEFAULT_COLORS = ["#dbe4ff", "#e7d6f7", "#fbdce6"];
+/** Soft pastel blue/violet/pink set — restrained, light-mode-first, but with
+ * enough chroma that blobs read as distinct color regions instead of fog. */
+const DEFAULT_COLORS = ["#aac2ff", "#cfaaf0", "#f8b4cb"];
 
 const KEYFRAMES_STYLE_ID = "fluidkit-mesh-gradient-keyframes";
 const DRIFT_KEYFRAMES_NAME = "fluidkit-mesh-drift";
@@ -53,11 +54,18 @@ const DRIFT_KEYFRAMES_NAME = "fluidkit-mesh-drift";
 /** Blob diameter range, as a percentage of the container (both axes — no
  * measurement needed, so it degrades gracefully to whatever box the
  * consumer sizes the wrapper to). */
-const MIN_SIZE_PCT = 60;
-const SIZE_SPAN_PCT = 20; // 60-80%
+const MIN_SIZE_PCT = 52;
+const SIZE_SPAN_PCT = 20; // 52-72%
 
-/** How far blob centers spread from the container's center, as a percentage. */
-const SPREAD_PCT = 24;
+/** How far blob centers spread from the container's center, as a percentage.
+ * Wide enough that blobs read as separate regions rather than one melted
+ * central wash. */
+const SPREAD_PCT = 30;
+
+/** Where each blob's bright core sits inside its own circle. Off-center and
+ * IDENTICAL for every blob, so the whole composition reads as lit from one
+ * direction (upper left) instead of each blob glowing from its middle. */
+const CORE_POSITION = "35% 32%";
 
 /** Drift keyframe period range in seconds, before dividing by `speed`. */
 const MIN_PERIOD_S = 20;
@@ -156,7 +164,7 @@ export function MeshGradient({
             width: `${blob.sizePct}%`,
             height: `${blob.sizePct}%`,
             borderRadius: "50%",
-            background: `radial-gradient(circle, ${blob.color}, transparent 70%)`,
+            background: `radial-gradient(circle at ${CORE_POSITION}, ${blob.color}, transparent 68%)`,
             // Standalone ambient background layer, not a clipped liquid-engine
             // layer — the Chromium filtered-clip seam bug that forbids
             // `filter: blur()` elsewhere in this library doesn't apply here.

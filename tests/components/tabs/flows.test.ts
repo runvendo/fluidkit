@@ -53,6 +53,18 @@ describe("slideFlow", () => {
     // labels follow the liquid: body interval + tail interval
     expect(scene.inkIntervals).toHaveLength(2);
   });
+
+  it("presses the body against the tray wall instead of poking past it", () => {
+    // body overshot a 300px tray (cx 310, half-width 30 → raw right edge 340)
+    const scene = slideFlow.scene(
+      [310, 60, 250],
+      [0, 0, 0],
+      new TensionField(),
+      { height: H, restWidth: 60, width: 300 }
+    );
+    expect(scene.inkIntervals[0][1]).toBeLessThanOrEqual(300);
+    expect(scene.inkIntervals[0][0]).toBeGreaterThanOrEqual(0);
+  });
 });
 
 describe("stretchFlow", () => {
@@ -78,6 +90,24 @@ describe("stretchFlow", () => {
     // Extract the pill height from the first two path Y coordinates is fiddly;
     // instead assert the interval width reflects the stretch.
     expect(scene.inkIntervals[0][1] - scene.inkIntervals[0][0]).toBe(200);
+  });
+
+  it("presses overshooting edges against the tray walls", () => {
+    // eager right edge overshot a 300px tray by 12px; left overshot below 0
+    const over = stretchFlow.scene(
+      [220, 312],
+      [0, 0],
+      new TensionField(),
+      { height: H, restWidth: 80, width: 300 }
+    );
+    expect(over.inkIntervals).toEqual([[220, 300]]);
+    const under = stretchFlow.scene(
+      [-9, 71],
+      [0, 0],
+      new TensionField(),
+      { height: H, restWidth: 80, width: 300 }
+    );
+    expect(under.inkIntervals).toEqual([[0, 71]]);
   });
 });
 

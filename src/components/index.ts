@@ -2,7 +2,7 @@
 export { Droplets } from "./Droplets";
 export type { DropletsProps } from "./Droplets";
 export { Thinking } from "./Thinking";
-export type { ThinkingProps } from "./Thinking";
+export type { ThinkingProps, ThinkingVariant } from "./Thinking";
 export { MorphSurface } from "./MorphSurface";
 export type { MorphSurfaceProps, MorphSize } from "./MorphSurface";
 export { FlowStagger } from "./FlowStagger";
@@ -29,8 +29,10 @@ export { DripFuse } from "./DripFuse";
 export type { DripFuseProps } from "./DripFuse";
 export { MeshGradient } from "./MeshGradient";
 export type { MeshGradientProps } from "./MeshGradient";
-export { Aurora } from "./Aurora";
-export type { AuroraProps } from "./Aurora";
+export { Silk } from "./Silk";
+export type { SilkProps } from "./Silk";
+export { GlassPanes } from "./GlassPanes";
+export type { GlassPanesProps } from "./GlassPanes";
 export { LiquidCard } from "./LiquidCard";
 export type {
   LiquidCardProps,

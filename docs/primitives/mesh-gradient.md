@@ -4,7 +4,7 @@ An ambient CSS backdrop: a handful of large, softly blurred radial-gradient blob
 
 The component IS the background layer, not a child overlay: it renders `position: absolute; inset: 0; overflow: hidden; pointer-events: none`, so you place it inside a positioned parent alongside your real content.
 
-Blob placement and drift phase are derived deterministically from each color's index (golden-angle spread, same scheme as `Droplets`' `dropAngle`, no `Math.random`), so two renders with the same `colors` produce byte-identical blob styles.
+Blob placement and drift phase are derived deterministically from each color's index (golden-angle spread, same scheme as `Droplets`' `dropAngle`, no `Math.random`), so two renders with the same `colors` produce byte-identical blob styles. Every blob's bright core sits at the same off-center position inside its circle, so the composition reads as lit from one direction (upper left) rather than each blob glowing from its middle.
 
 ## Props
 
@@ -36,7 +36,7 @@ function Dashboard() {
 Pick a warmer or cooler set for the occasion:
 
 ```tsx
-<MeshGradient colors={["#ffe8b8", "#ffd0a8", "#ffb8c8"]} speed={0.7} blur={80} />
+<MeshGradient colors={["#ffd98a", "#ffb37a", "#ff9eb0"]} speed={0.7} blur={80} />
 ```
 
 ## Degrades to

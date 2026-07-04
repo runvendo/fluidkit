@@ -277,6 +277,65 @@ describe("JellyButton", () => {
     expect(mercury.container.querySelectorAll("ellipse")).toHaveLength(0);
   });
 
+  it("pressColor paints the pressed fill and reverts on release", async () => {
+    const JellyButton = await loadJellyButton(false);
+    const { getByRole, container } = render(
+      <JellyButton material="flat" color="rgb(100, 110, 120)" pressColor="rgb(10, 20, 30)">
+        Tint
+      </JellyButton>
+    );
+    const button = getByRole("button", { name: "Tint" });
+    const fill = container.querySelector(
+      '[data-fluidkit="liquid-fill"]'
+    ) as HTMLElement;
+    expect(fill.style.background).toBe("rgb(100, 110, 120)");
+
+    fireEvent.pointerDown(button);
+    expect(fill.style.background).toBe("rgb(10, 20, 30)");
+    // The fade is asymmetric: quick in, slow out — both directions carry a
+    // transition so neither snaps.
+    expect(fill.style.transition).toContain("background");
+
+    fireEvent.pointerUp(button);
+    expect(fill.style.background).toBe("rgb(100, 110, 120)");
+    expect(fill.style.transition).toContain("background");
+  });
+
+  it("pressFeedback=false leaves the fill untouched while pressed", async () => {
+    const JellyButton = await loadJellyButton(false);
+    const { getByRole, container } = render(
+      <JellyButton
+        material="flat"
+        color="rgb(100, 110, 120)"
+        pressColor="rgb(10, 20, 30)"
+        pressFeedback={false}
+      >
+        Off
+      </JellyButton>
+    );
+    const fill = container.querySelector(
+      '[data-fluidkit="liquid-fill"]'
+    ) as HTMLElement;
+    fireEvent.pointerDown(getByRole("button", { name: "Off" }));
+    expect(fill.style.background).toBe("rgb(100, 110, 120)");
+  });
+
+  it("press feedback still applies under reduced motion (color, not motion)", async () => {
+    const JellyButton = await loadJellyButton(true);
+    const { getByRole, container } = render(
+      <JellyButton material="flat" color="rgb(100, 110, 120)" pressColor="rgb(10, 20, 30)">
+        Calm
+      </JellyButton>
+    );
+    const fill = container.querySelector(
+      '[data-fluidkit="liquid-fill"]'
+    ) as HTMLElement;
+    fireEvent.pointerDown(getByRole("button", { name: "Calm" }));
+    expect(fill.style.background).toBe("rgb(10, 20, 30)");
+    fireEvent.pointerUp(getByRole("button", { name: "Calm" }));
+    expect(fill.style.background).toBe("rgb(100, 110, 120)");
+  });
+
   it("disables speculars when reflection is false", async () => {
     const JellyButton = await loadJellyButton(true);
     const { container } = render(

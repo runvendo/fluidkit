@@ -5,40 +5,48 @@ import {
   Stage,
   Controls,
   Slider,
-  Seg,
   Snippet,
   VariantGrid,
   VariantCell,
   MountOnView,
 } from "../kit";
 
-type LiquidMetalPreset = "mercury" | "gold" | "obsidian";
-
-const LIQUID_METAL_PRESET_KEYS: LiquidMetalPreset[] = ["mercury", "gold", "obsidian"];
-
-/** color/backgroundColor pairs; "mercury" mirrors the shader's own default look. */
-const LIQUID_METAL_PRESETS: Record<LiquidMetalPreset, { color: string; backgroundColor: string }> = {
-  mercury: { color: "#ffffff", backgroundColor: "#aaaaac" },
-  gold: { color: "#fff4d6", backgroundColor: "#8a6a2f" },
-  obsidian: { color: "#c9d6e3", backgroundColor: "#1b1d24" },
-};
+/** Same .field/label look as the kit's Slider/Seg, with a native color input — the kit has no color control. */
+function ColorField({ label, value, set }: { label: string; value: string; set: (v: string) => void }) {
+  return (
+    <div className="field">
+      <label>
+        {label} <span className="val">{value}</span>
+      </label>
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => set(e.target.value)}
+        style={{ width: 44, height: 24, padding: 0, border: "none", background: "none", cursor: "pointer" }}
+      />
+    </div>
+  );
+}
 
 export default function LiquidMetalPage() {
-  const [preset, setPreset] = useState<LiquidMetalPreset>("mercury");
   const [speed, setSpeed] = useState(1);
-  const [intensity, setIntensity] = useState(0.07);
-
-  const { color, backgroundColor } = LIQUID_METAL_PRESETS[preset];
+  const [repetition, setRepetition] = useState(1.5);
+  const [distortion, setDistortion] = useState(0.1);
+  const [softness, setSoftness] = useState(0.05);
+  const [colorBack, setColorBack] = useState("#aaaaac");
+  const [colorTint, setColorTint] = useState("#ffffff");
 
   const usage = `// optional peer: npm i @paper-design/shaders-react@0.0.76
 import { LiquidMetal } from "fluidkit/liquid-metal";
 
 <div style={{ position: "relative" }}>
   <LiquidMetal
-    color="${color}"
-    backgroundColor="${backgroundColor}"
+    colorBack="${colorBack}"
+    colorTint="${colorTint}"
     speed={${speed}}
-    intensity={${intensity}}
+    repetition={${repetition}}
+    distortion={${distortion}}
+    softness={${softness}}
   />
   <YourContent />
 </div>`;
@@ -46,16 +54,18 @@ import { LiquidMetal } from "fluidkit/liquid-metal";
   return (
     <PageLayout
       title="LiquidMetal"
-      description="Optional GPU tier: a WebGL liquid-metal shader from @paper-design/shaders-react (pinned exact), wrapped with fluidkit's capability + reduced-motion gating and off-screen pausing. Lives behind the fluidkit/liquid-metal subpath — install the optional peer to use it; the core bundle never pays for it."
+      description="Optional GPU tier: a WebGL liquid-metal shader from @paper-design/shaders-react (pinned exact), wrapped with fluidkit's capability + reduced-motion gating and off-screen pausing. Fills its container with raw flowing metal by default; every shader param is a top-level prop. Lives behind the fluidkit/liquid-metal subpath — install the optional peer to use it; the core bundle never pays for it."
       hero={
         <>
           <Stage hint="fluidkit/liquid-metal — optional peer: npm i @paper-design/shaders-react@0.0.76">
             <MountOnView>
               <LiquidMetal
-                color={color}
-                backgroundColor={backgroundColor}
+                colorBack={colorBack}
+                colorTint={colorTint}
                 speed={speed}
-                intensity={intensity}
+                repetition={repetition}
+                distortion={distortion}
+                softness={softness}
               />
               <div
                 style={{
@@ -79,36 +89,51 @@ import { LiquidMetal } from "fluidkit/liquid-metal";
             </MountOnView>
           </Stage>
           <Controls>
-            <Seg label="preset" value={preset} set={setPreset} options={LIQUID_METAL_PRESET_KEYS} />
+            <ColorField label="colorBack" value={colorBack} set={setColorBack} />
+            <ColorField label="colorTint" value={colorTint} set={setColorTint} />
             <Slider label="speed" value={speed} set={setSpeed} min={0.1} max={3} step={0.1} />
-            <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={0.3} step={0.01} />
+            <Slider
+              label="repetition"
+              value={repetition}
+              set={setRepetition}
+              min={1}
+              max={10}
+              step={0.5}
+            />
+            <Slider
+              label="distortion"
+              value={distortion}
+              set={setDistortion}
+              min={0}
+              max={1}
+              step={0.05}
+            />
+            <Slider
+              label="softness"
+              value={softness}
+              set={setSoftness}
+              min={0}
+              max={1}
+              step={0.05}
+            />
           </Controls>
         </>
       }
       variants={
         <VariantGrid>
-          <VariantCell label="mercury">
+          <VariantCell label="backdrop (defaults)">
             <MountOnView>
-              <LiquidMetal
-                color={LIQUID_METAL_PRESETS.mercury.color}
-                backgroundColor={LIQUID_METAL_PRESETS.mercury.backgroundColor}
-              />
+              <LiquidMetal />
             </MountOnView>
           </VariantCell>
-          <VariantCell label="gold">
+          <VariantCell label="dense stripes — repetition 4, softness 0.6">
             <MountOnView>
-              <LiquidMetal
-                color={LIQUID_METAL_PRESETS.gold.color}
-                backgroundColor={LIQUID_METAL_PRESETS.gold.backgroundColor}
-              />
+              <LiquidMetal repetition={4} softness={0.6} distortion={0.3} />
             </MountOnView>
           </VariantCell>
-          <VariantCell label="obsidian">
+          <VariantCell label="masked shape — shape=metaballs, scale 0.7">
             <MountOnView>
-              <LiquidMetal
-                color={LIQUID_METAL_PRESETS.obsidian.color}
-                backgroundColor={LIQUID_METAL_PRESETS.obsidian.backgroundColor}
-              />
+              <LiquidMetal shape="metaballs" scale={0.7} />
             </MountOnView>
           </VariantCell>
         </VariantGrid>
