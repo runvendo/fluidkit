@@ -27,6 +27,8 @@ export { Silk } from "./Silk";
 export type { SilkProps } from "./Silk";
 export { GlassPanes } from "./GlassPanes";
 export type { GlassPanesProps } from "./GlassPanes";
+export { Caustics } from "./Caustics";
+export type { CausticsProps } from "./Caustics";
 export { LiquidCard } from "./LiquidCard";
 export type {
   LiquidCardProps,

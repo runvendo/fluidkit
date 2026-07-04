@@ -86,4 +86,20 @@ describe("resolveMaterial", () => {
     );
     expect(resolveMaterial("flat").specular).toBe(false);
   });
+
+  it("caustics: plaster fill, no painted specular, carries the light color", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(true);
+    const m = resolveMaterial("caustics");
+    expect(m.kind).toBe("caustics");
+    expect(m.specular).toBe(false);
+    expect(String(m.fillStyle.background)).toContain("linear-gradient");
+    expect(m.caustics).toEqual({ light: "#fffdf7" });
+  });
+
+  it("caustics: tint recolors the light, color recolors the wall", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(true);
+    const m = resolveMaterial("caustics", { tint: "#dbeaff", color: "#10161a" });
+    expect(m.fillStyle.background).toBe("#10161a");
+    expect(m.caustics).toEqual({ light: "#dbeaff" });
+  });
 });

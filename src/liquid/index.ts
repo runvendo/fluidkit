@@ -16,6 +16,8 @@ export type {
 export { resolveMaterial } from "./materials";
 export type { RefractionDef } from "./refraction";
 export { displacementMapUri, useRefraction } from "./refraction";
+export { CausticsLayer, CAUSTICS_DEFAULT_LIGHT } from "./caustics";
+export type { CausticsLayerProps } from "./caustics";
 export { LiquidRenderer } from "./LiquidRenderer";
 export type {
   LiquidRendererProps,

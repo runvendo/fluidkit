@@ -502,11 +502,22 @@ describe("LiquidTabs (bar) — indicator surface style pack", () => {
    * The conformance helper drives the pack props; `reflection` is baked in
    * because tabs divergently default it to `false` (the shipped indicator
    * is unlit), and the helper's specular assertions assume glints CAN paint.
+   * `material` is narrowed by cast: tabs deliberately support only the
+   * flat/glass subset of `LiquidMaterial` (no caustics), and the pack
+   * helpers only ever pass those two.
    */
   const surfaceRender = (
     LiquidTabs: ComponentType<LiquidTabsProps>
-  ): SurfaceRender => (props) =>
-    render(<LiquidTabs items={ITEMS} defaultValue="one" reflection {...props} />);
+  ): SurfaceRender => ({ material, ...props }) =>
+    render(
+      <LiquidTabs
+        items={ITEMS}
+        defaultValue="one"
+        reflection
+        material={material as LiquidTabsProps["material"]}
+        {...props}
+      />
+    );
 
   const visibleSpeculars = (container: HTMLElement) =>
     Array.from(container.querySelectorAll("ellipse")).filter(
