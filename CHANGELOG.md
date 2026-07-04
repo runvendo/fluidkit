@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **LiquidToast.** Toast notifications as liquid: each toast condenses at a screen corner (the pill grows from a droplet while the canvas un-blurs — Tooltip's condense scaled up) and evaporates on dismiss (blur + lift + fade). Fired imperatively: mount `<LiquidToastProvider>` once, call `toast(message, options?)` from anywhere — calls before mount queue and flush. Classic controls: `duration` auto-dismiss with pause-on-hover (`0` = sticky), close button (`dismissible`, default on), one `action` button, `id` dedupe/update, `toast.dismiss(id?)`. Stack caps at 3 (oldest evaporates early), collapses under a dismissed toast. Viewport is `role="status"`/`aria-live="polite"` on the shared overlay layer. Reduced motion: opacity-only, timers unchanged.
+- **Shared overlay layer (internal).** One z-index scale for everything that floats — dialog (1000) < menu (1100) < toast (1200) < tooltip (1300) — each read through an overridable `--fluidkit-z-*` CSS custom property, plus one SSR-safe portal root. `LiquidDialog` retrofitted onto it; zero visual change.
+
 ## 0.4.0
 
 - **Caustics — poolside light.** New ambient background component and a new liquid-engine material: `material="caustics"` on every engine surface (LiquidCard, LiquidPanel, LiquidDialog, LiquidTooltip, JellyButton, MorphSurface, Droplets, Thinking, VoiceBall, MeniscusDivider) — `tint` recolors the light, `color` the wall. The light is a self-contained WebGL fragment shader (an original construction — no GPU dependencies, core stays clean per `check:gpu-leak`), mounted by `LiquidRenderer` inside the surface clip; the plaster-gradient CSS base doubles as the SSR/no-WebGL fallback, reduced motion renders one still frame, and the rAF loop pauses off-screen. Caustic surfaces paint no glass speculars — the caustic light is the highlight (one light source). Bundle re-pinned at 27.3 kB brotli (measures 22.77 kB with the style pack merged, usual +20% headroom).
