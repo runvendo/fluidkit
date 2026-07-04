@@ -83,6 +83,15 @@ Every surface component shares one styling pack, applied wherever it's physicall
 - **Graceful degradation**: feature detection picks the best available path; never hard-fails.
 - **Performance**: animation loops pause off-screen (IntersectionObserver) and under reduced motion.
 
+## Motion accessibility & degradation
+
+Every exported component ships with a tested degradation contract (`tests/degradation/`, one contract file per component). What you're guaranteed:
+
+- **Reduced motion.** With `prefers-reduced-motion` on, a component still renders its content and stays interactive — buttons click, tabs switch, tooltips show on focus, dialogs open and close. No animation loop runs and no frame rewrites geometry; each primitive parks in its documented static state (the "Degrades to" column above). Opacity-only cross-fades are the one kind of motion that remains. When the preference is unknown (e.g. SSR), components default to the static-safe rendering.
+- **Missing capability.** Where a component leans on a browser capability, the fallback is a real rendering, never a blank box: without `backdrop-filter`, glass degrades to a frosted flat fill (`GlassPanes`/`Silk` to layered tinted sheets); without WebGL, `Caustics` renders just its plaster wall and `LiquidMetal` a static metallic gradient; `refraction` is opt-in and silently skipped where SVG-filter backdrops aren't supported.
+
+Consumers don't need to keep their own static fallbacks on top: if fluidkit renders it moving, it also renders it still.
+
 ## Roadmap
 
 - **v0.2**: the liquid engine + `Droplets`, `Thinking`, `MorphSurface` in glass/mercury/flat.
