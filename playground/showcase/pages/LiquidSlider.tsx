@@ -24,6 +24,8 @@ export default function LiquidSliderPage() {
   const [trackWidth, setTrackWidth] = useState(240);
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.7);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
   const [fillTint, setFillTint] = useState<string | null>(null);
@@ -45,6 +47,7 @@ export default function LiquidSliderPage() {
               size={size}
               material={material}
               intensity={intensity}
+              opacity={opacityTouched ? opacity : undefined}
               tint={material === "glass" ? glassTint : undefined}
               color={material === "flat" ? color : undefined}
               fillTint={fill}
@@ -56,6 +59,17 @@ export default function LiquidSliderPage() {
             <Slider label="track width" value={trackWidth} set={setTrackWidth} min={140} max={420} step={10} suffix="px" />
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             {material === "glass" ? (
               <ColorField label="tint" value={tint} set={setTint} />
             ) : (
@@ -83,7 +97,7 @@ export default function LiquidSliderPage() {
           code={`<LiquidSlider
   aria-label="Volume"
   value={v}
-  onValueChange={setV}${size !== 20 ? `\n  size={${size}}` : ""}${trackWidth !== 240 ? `\n  width={${trackWidth}}` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}${fill ? `\n  fillTint="${fill}"` : ""}
+  onValueChange={setV}${size !== 20 ? `\n  size={${size}}` : ""}${trackWidth !== 240 ? `\n  width={${trackWidth}}` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${opacityTouched ? `\n  opacity={${opacity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}${fill ? `\n  fillTint="${fill}"` : ""}
 />
 
 // or uncontrolled, inside a form

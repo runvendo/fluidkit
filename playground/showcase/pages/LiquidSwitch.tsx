@@ -24,6 +24,8 @@ export default function LiquidSwitchPage() {
   const [size, setSize] = useState(24);
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.7);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
   const [checkedTint, setCheckedTint] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export default function LiquidSwitchPage() {
               size={size}
               material={material}
               intensity={intensity}
+              opacity={opacityTouched ? opacity : undefined}
               tint={material === "glass" ? glassTint : undefined}
               color={material === "flat" ? color : undefined}
               checkedTint={onTint}
@@ -54,6 +57,17 @@ export default function LiquidSwitchPage() {
             <Slider label="size" value={size} set={setSize} min={16} max={48} step={2} suffix="px" />
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             {material === "glass" ? (
               <ColorField label="tint" value={tint} set={setTint} />
             ) : (
@@ -84,7 +98,7 @@ export default function LiquidSwitchPage() {
           code={`<LiquidSwitch
   checked={on}
   onCheckedChange={setOn}
-  label="Wi-Fi"${size !== 24 ? `\n  size={${size}}` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}${onTint ? `\n  checkedTint="${onTint}"` : ""}
+  label="Wi-Fi"${size !== 24 ? `\n  size={${size}}` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${opacityTouched ? `\n  opacity={${opacity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}${onTint ? `\n  checkedTint="${onTint}"` : ""}
 />
 
 // or uncontrolled, inside a form

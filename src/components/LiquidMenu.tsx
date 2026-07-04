@@ -119,6 +119,7 @@ export function LiquidMenu({
   radius = 14,
   material = "glass",
   tint,
+  opacity,
   color,
   intensity = "whisper",
   light,
@@ -304,8 +305,8 @@ export function LiquidMenu({
   /* ------------------------------- surface ------------------------------- */
 
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, opacity }),
+    [material, tint, color, opacity]
   );
   const volume = resolveIntensity(intensity);
   const sceneLight = useMemo(() => {

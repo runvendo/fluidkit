@@ -56,6 +56,7 @@ export function LiquidField({
   radius = 12,
   material = "glass",
   tint,
+  opacity,
   color,
   intensity = "whisper",
   light,
@@ -94,8 +95,8 @@ export function LiquidField({
   }, []);
 
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, opacity }),
+    [material, tint, color, opacity]
   );
   const volume = resolveIntensity(intensity);
   const sceneLight = useMemo<Vec | null>(() => {

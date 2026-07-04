@@ -21,6 +21,8 @@ export default function LiquidFieldPage() {
   const [multiline, setMultiline] = useState(false);
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
   const glassTint = tint ? glassTintFromHex(tint) : undefined;
@@ -40,6 +42,7 @@ export default function LiquidFieldPage() {
                 multiline={multiline}
                 material={material}
                 intensity={intensity}
+                opacity={opacityTouched ? opacity : undefined}
                 tint={material === "glass" ? glassTint : undefined}
                 color={material === "flat" ? color : undefined}
               />
@@ -49,6 +52,17 @@ export default function LiquidFieldPage() {
             <Toggle label="multiline" value={multiline} set={setMultiline} />
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             {material === "glass" ? (
               <ColorField label="tint" value={tint} set={setTint} />
             ) : (
@@ -62,7 +76,7 @@ export default function LiquidFieldPage() {
           code={`<LiquidField
   label="Email"
   placeholder="you@example.com"
-  name="email"${multiline ? "\n  multiline" : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.35 ? `\n  intensity={${intensity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}
+  name="email"${multiline ? "\n  multiline" : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.35 ? `\n  intensity={${intensity}}` : ""}${opacityTouched ? `\n  opacity={${opacity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}
 />`}
         />
       }

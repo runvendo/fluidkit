@@ -146,6 +146,7 @@ export function LiquidToastProvider({
   dismissible = true,
   material = "glass",
   tint = "rgba(255, 255, 255, 0.82)",
+  opacity,
   color,
   intensity = "present",
   light,
@@ -224,6 +225,7 @@ export function LiquidToastProvider({
     material,
     tint,
     color,
+    opacity,
     volume: resolveIntensity(intensity),
     lightOverride: light,
     reflection,
@@ -291,6 +293,7 @@ interface ItemSurfaceProps {
   material: NonNullable<SurfaceStyleProps["material"]>;
   tint?: string;
   color?: string;
+  opacity?: number;
   volume: number;
   lightOverride?: SurfaceStyleProps["light"];
   reflection: boolean;
@@ -376,8 +379,9 @@ function ToastItem({
       resolveMaterial(surface.material, {
         tint: surface.tint,
         color: surface.color,
+        opacity: surface.opacity,
       }),
-    [surface.material, surface.tint, surface.color]
+    [surface.material, surface.tint, surface.color, surface.opacity]
   );
   const sceneLight = useMemo(() => {
     if (!surface.reflection || surface.lightOverride === null || !size)

@@ -21,6 +21,8 @@ export default function LiquidProgressPage() {
   const [height, setHeight] = useState(12);
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.7);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [fillTint, setFillTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
   const [playing, setPlaying] = useState(false);
@@ -54,6 +56,7 @@ export default function LiquidProgressPage() {
                 height={height}
                 material={material}
                 intensity={intensity}
+                opacity={opacityTouched ? opacity : undefined}
                 fillTint={fill}
                 color={material === "flat" ? color : undefined}
                 aria-label="Demo progress"
@@ -82,6 +85,17 @@ export default function LiquidProgressPage() {
             <Slider label="height" value={height} set={setHeight} min={6} max={20} step={1} suffix="px" />
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             <ColorField label="fill tint" value={fillTint} set={setFillTint} />
             {material === "flat" && <ColorField label="color" value={color} set={setColor} />}
           </Controls>
@@ -89,7 +103,7 @@ export default function LiquidProgressPage() {
       }
       usage={
         <Snippet
-          code={`<LiquidProgress value={progress} max={100} aria-label="Upload"${height !== 12 ? `\n  height={${height}}` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${fill ? `\n  fillTint="${fill}"` : ""} />
+          code={`<LiquidProgress value={progress} max={100} aria-label="Upload"${height !== 12 ? `\n  height={${height}}` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${opacityTouched ? `\n  opacity={${opacity}}` : ""}${fill ? `\n  fillTint="${fill}"` : ""} />
 
 // fractions work too — max defaults to 1
 <LiquidProgress value={0.6} aria-label="Upload" />`}

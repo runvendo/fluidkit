@@ -24,6 +24,8 @@ export default function LiquidMenuPage() {
   const [align, setAlign] = useState<LiquidMenuAlign>("start");
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
   const [last, setLast] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export default function LiquidMenuPage() {
                 align={align}
                 material={material}
                 intensity={intensity}
+                opacity={opacityTouched ? opacity : undefined}
                 tint={material === "glass" ? glassTint : undefined}
                 color={material === "flat" ? color : undefined}
               />
@@ -72,6 +75,17 @@ export default function LiquidMenuPage() {
               max={1}
               step={0.05}
             />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             {material === "glass" ? (
               <ColorField label="tint" value={tint} set={setTint} />
             ) : (
@@ -83,7 +97,7 @@ export default function LiquidMenuPage() {
       usage={
         <Snippet
           code={`<LiquidMenu
-  trigger={<JellyButton>Options</JellyButton>}${side !== "bottom" ? `\n  side="${side}"` : ""}${align !== "start" ? `\n  align="${align}"` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.35 ? `\n  intensity={${intensity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}
+  trigger={<JellyButton>Options</JellyButton>}${side !== "bottom" ? `\n  side="${side}"` : ""}${align !== "start" ? `\n  align="${align}"` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.35 ? `\n  intensity={${intensity}}` : ""}${opacityTouched ? `\n  opacity={${opacity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}
   items={[
     { label: "Rename", onSelect: rename },
     { label: "Duplicate", onSelect: duplicate },

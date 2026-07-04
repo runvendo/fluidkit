@@ -190,6 +190,7 @@ export function LiquidTabs({
   size = "md",
   color,
   tint,
+  opacity,
   intensity = "whisper",
   light,
   reflection = false,
@@ -361,6 +362,7 @@ export function LiquidTabs({
   const resolvedMaterial = resolveMaterial(material, {
     tint,
     color: resolvedColor,
+    opacity,
   });
 
   // Scene light for the indicator glint — glass only; flat stays unlit per
@@ -448,7 +450,7 @@ export function LiquidTabs({
     // container's softer 10px blur — under a barely-there ring.
     ...(material === "glass"
       ? {
-          ...resolveMaterial("glass", { tint, blurPx: 10 }).fillStyle,
+          ...resolveMaterial("glass", { tint, blurPx: 10, opacity }).fillStyle,
           // The container never appears/re-rasterizes; only the indicator
           // fill needs the pinned layer.
           willChange: undefined,

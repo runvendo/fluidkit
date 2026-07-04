@@ -3,6 +3,7 @@ export { resolveColor } from "./color";
 export {
   supportsBackdropFilter,
   supportsRefraction,
+  supportsRelativeColor,
   supportsViewTransition,
 } from "./featureDetect";
 export {

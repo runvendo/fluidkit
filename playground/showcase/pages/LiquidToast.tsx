@@ -31,17 +31,6 @@ type LiquidMaterial = NonNullable<LiquidToastProviderProps["material"]>;
 const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 const FLAT_COLOR = "#e7eaf2";
 
-/** Hex + free alpha → rgba (the pack's clamped picker helper won't do —
- * the whole point of this knob is controlling how see-through toasts are). */
-function tintWithOpacity(hex: string, alpha: number): string {
-  const clean = hex.replace("#", "");
-  const full = clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean;
-  const r = parseInt(full.slice(0, 2), 16);
-  const g = parseInt(full.slice(2, 4), 16);
-  const b = parseInt(full.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 export default function LiquidToastPage() {
   const [position, setPosition] = useState<LiquidToastPosition>("bottom-right");
   const [duration, setDuration] = useState(5);
@@ -51,10 +40,10 @@ export default function LiquidToastPage() {
   const [tint, setTint] = useState("#ffffff");
   const [opacity, setOpacity] = useState(0.82);
   const [color, setColor] = useState(FLAT_COLOR);
-  // The toast tint carries its own alpha — the opacity knob IS the
-  // see-through control (default matches the component's 0.82).
-  const glassTint = tintWithOpacity(tint, opacity);
-  const isDefaultTint = tint === "#ffffff" && opacity === 0.82;
+  // The pack's `opacity` prop replaces the tint's alpha directly — this is
+  // the see-through control (default matches the component's 0.82).
+  const isDefaultTint = tint === "#ffffff";
+  const isDefaultOpacity = opacity === 0.82;
 
   return (
     <PageLayout
@@ -65,13 +54,14 @@ export default function LiquidToastPage() {
           {/* The provider portals its viewport to the page body — toasts
               condense at the real screen corner, exactly like in an app. */}
           <LiquidToastProvider
-            key={`${position}-${duration}-${dismissible}-${material}-${intensity}-${glassTint}-${color}`}
+            key={`${position}-${duration}-${dismissible}-${material}-${intensity}-${tint}-${opacity}-${color}`}
             position={position}
             duration={duration * 1000}
             dismissible={dismissible}
             material={material}
             intensity={intensity}
-            tint={material === "glass" ? glassTint : undefined}
+            opacity={opacity}
+            tint={material === "glass" && !isDefaultTint ? tint : undefined}
             color={material === "flat" ? color : undefined}
           />
           <Stage wall hint="fire a toast — it condenses at the screen corner">
@@ -150,7 +140,7 @@ export default function LiquidToastPage() {
       usage={
         <Snippet
           code={`// once, near the root
-<LiquidToastProvider${position !== "bottom-right" ? `\n  position="${position}"` : ""}${duration !== 5 ? `\n  duration={${duration * 1000}}` : ""}${!dismissible ? `\n  dismissible={false}` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${material === "glass" && !isDefaultTint ? `\n  tint="${glassTint}"` : ""}>
+<LiquidToastProvider${position !== "bottom-right" ? `\n  position="${position}"` : ""}${duration !== 5 ? `\n  duration={${duration * 1000}}` : ""}${!dismissible ? `\n  dismissible={false}` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${!isDefaultOpacity ? `\n  opacity={${opacity}}` : ""}${material === "glass" && !isDefaultTint ? `\n  tint="${tint}"` : ""}>
   <App />
 </LiquidToastProvider>
 

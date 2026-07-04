@@ -63,6 +63,7 @@ function buildBeadScene(
 export function MeniscusDivider({
   material = "glass",
   tint,
+  opacity,
   color,
   thickness = 4,
   intensity = "whisper",
@@ -97,8 +98,8 @@ export function MeniscusDivider({
     thickness
   );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color, refractionUrl }),
-    [material, tint, color, refractionUrl]
+    () => resolveMaterial(material, { tint, color, refractionUrl, opacity }),
+    [material, tint, color, refractionUrl, opacity]
   );
   const volume = resolveIntensity(intensity);
 

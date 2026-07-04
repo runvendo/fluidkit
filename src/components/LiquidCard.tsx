@@ -98,6 +98,7 @@ function buildCardScene(
 export function LiquidCard({
   material = "glass",
   tint,
+  opacity,
   color,
   variant = "default",
   intensity = "whisper",
@@ -145,8 +146,9 @@ export function LiquidCard({
         tint: tint ?? accent?.tint,
         color: color ?? accent?.color,
         refractionUrl,
+        opacity,
       }),
-    [material, tint, color, accent, refractionUrl]
+    [material, tint, color, accent, refractionUrl, opacity]
   );
 
   const sceneLight = useMemo(() => {

@@ -108,6 +108,7 @@ export function LiquidSlider({
   fillTint = DEFAULT_FILL_TINT,
   material = "glass",
   tint,
+  opacity,
   color,
   intensity = "present",
   light,
@@ -164,8 +165,8 @@ export function LiquidSlider({
   }, [reflection, light, bleed, W, H]);
   const volume = resolveIntensity(intensity);
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, opacity }),
+    [material, tint, color, opacity]
   );
   const fillMaterial = useMemo(
     () => resolveMaterial(material, { tint: fillTint, color }),
@@ -257,12 +258,14 @@ export function LiquidSlider({
   );
 
   const thumbRenderer = useRef<LiquidSceneHandle>(null);
+  const vividThumbRenderer = useRef<LiquidSceneHandle>(null);
   const fillRenderer = useRef<LiquidSceneHandle>(null);
   const vividRenderer = useRef<LiquidSceneHandle>(null);
 
   useEffect(() => {
     if (!(animating && settlingRef.current)) {
       thumbRenderer.current?.setScene(staticThumb);
+      vividThumbRenderer.current?.setScene(staticThumb);
       fillRenderer.current?.setScene(staticFill);
       vividRenderer.current?.setScene(staticFill);
     }
@@ -272,7 +275,9 @@ export function LiquidSlider({
     if (!animating || !settling) return;
     const tx = x.values[0].get();
     const fillScene = buildFillScene(tx);
-    thumbRenderer.current?.setScene(buildThumbScene(tx));
+    const thumbScene = buildThumbScene(tx);
+    thumbRenderer.current?.setScene(thumbScene);
+    vividThumbRenderer.current?.setScene(thumbScene);
     fillRenderer.current?.setScene(fillScene);
     vividRenderer.current?.setScene(fillScene);
   });
@@ -346,6 +351,25 @@ export function LiquidSlider({
             speculars={staticThumb.speculars}
             specularSlots={resolved.specular && sceneLight ? 1 : 0}
             shadow={shadow}
+          />
+        </span>
+        {/* The thumb saturates with the fill while being slid — the circle
+            answers the touch too, not just the channel. */}
+        <span
+          aria-hidden
+          data-fluidkit="liquid-slider-active-thumb"
+          style={{
+            position: "absolute",
+            inset: -bleed,
+            opacity: active ? 1 : 0,
+            transition: "opacity 180ms ease",
+            pointerEvents: "none",
+          }}
+        >
+          <LiquidRenderer
+            ref={vividThumbRenderer}
+            path={staticThumb.path}
+            material={vividMaterial}
           />
         </span>
         {focus.focusVisible && (

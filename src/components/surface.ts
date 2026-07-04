@@ -19,6 +19,13 @@ export interface SurfaceStyleProps {
   /** Fill for the `flat` material (any CSS color). */
   color?: string;
   /**
+   * How see-through the material's fill is: `0` fully clear, `1` fully
+   * solid. Replaces the tint/color's own alpha (so it composes with any
+   * color format). Unset keeps the material's default transparency; where
+   * CSS relative color syntax is unsupported the default renders instead.
+   */
+  opacity?: number;
+  /**
    * How loudly the material reads: 0–1, or the presets `"whisper"`
    * (0.35) / `"present"` (0.7). Defaults to `"whisper"`.
    */

@@ -75,6 +75,7 @@ export function LiquidCheckbox({
   size = 20,
   material = "glass",
   tint,
+  opacity,
   color,
   intensity = "present",
   light,
@@ -111,8 +112,8 @@ export function LiquidCheckbox({
   }, [reflection, light, bleed, W, H]);
   const volume = resolveIntensity(intensity);
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, opacity }),
+    [material, tint, color, opacity]
   );
   const wellMaterial = useMemo(
     () => resolveMaterial(material, { tint: "rgba(120, 128, 150, 0.16)", color }),

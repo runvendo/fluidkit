@@ -76,6 +76,7 @@ export function LiquidProgress({
   fillTint = DEFAULT_FILL_TINT,
   material = "glass",
   tint,
+  opacity,
   color,
   intensity = "present",
   light,
@@ -109,8 +110,8 @@ export function LiquidProgress({
   }, [reflection, light, bleed, W, H]);
   const volume = resolveIntensity(intensity);
   const fillMaterial = useMemo(
-    () => resolveMaterial(material, { tint: fillTint, color }),
-    [material, fillTint, color]
+    () => resolveMaterial(material, { tint: fillTint, color, opacity }),
+    [material, fillTint, color, opacity]
   );
   const trackMaterial = useMemo(
     () =>
