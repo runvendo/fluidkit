@@ -5,11 +5,11 @@ import { PageLayout, Stage, Controls, Slider, Seg, Snippet, VariantGrid, Variant
 
 type Material = NonNullable<LiquidTextProps["material"]>;
 
-const MATERIALS: Material[] = ["glass", "ink"];
+const MATERIALS: Material[] = ["glass", "flat"];
 
 export default function LiquidTextPage() {
   const [material, setMaterial] = useState<Material>("glass");
-  const [intensity, setIntensity] = useState(0.5);
+  const [intensity, setIntensity] = useState(0.35);
   const [speed, setSpeed] = useState(1);
   const [angle, setAngle] = useState(115);
 
@@ -46,21 +46,21 @@ export default function LiquidTextPage() {
               <LiquidText tint="rgba(125,170,255,0.4)" intensity={0.5}>Tinted glass</LiquidText>
             </h3>
           </VariantCell>
-          <VariantCell label="ink · whisper" wall>
+          <VariantCell label="flat · whisper" wall>
             <h3 style={{ margin: 0, fontSize: 26, fontWeight: 750 }}>
-              <LiquidText material="ink" intensity="whisper">Quiet shimmer</LiquidText>
+              <LiquidText material="flat" intensity="whisper">Quiet shimmer</LiquidText>
             </h3>
           </VariantCell>
-          <VariantCell label="ink · colored" wall>
+          <VariantCell label="flat · colored" wall>
             <h3 style={{ margin: 0, fontSize: 26, fontWeight: 750 }}>
-              <LiquidText material="ink" intensity={0.6} color="#3b5bd9" sheenColor="#dff0ff">Ocean ink</LiquidText>
+              <LiquidText material="flat" intensity={0.6} color="#3b5bd9" sheenColor="#dff0ff">Ocean ink</LiquidText>
             </h3>
           </VariantCell>
         </VariantGrid>
       }
       usage={
         <Snippet code={`<h1>
-  <LiquidText${material !== "glass" ? ` material="${material}"` : ""} intensity={${intensity}}${speed !== 1 ? ` speed={${speed}}` : ""}${angle !== 115 ? ` angle={${angle}}` : ""}>
+  <LiquidText${material !== "glass" ? ` material="${material}"` : ""}${intensity !== 0.35 ? ` intensity={${intensity}}` : ""}${speed !== 1 ? ` speed={${speed}}` : ""}${angle !== 115 ? ` angle={${angle}}` : ""}>
     Liquid lettering
   </LiquidText>
 </h1>`} />
