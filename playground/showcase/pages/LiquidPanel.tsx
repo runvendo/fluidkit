@@ -6,7 +6,7 @@ import { PageLayout, Stage, Controls, Slider, Seg, Toggle, Snippet, VariantGrid,
 type LiquidMaterial = NonNullable<LiquidPanelProps["material"]>;
 type Side = NonNullable<LiquidPanelProps["side"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 const SIDES: Side[] = ["top", "bottom", "left", "right"];
 
 /** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */
@@ -79,9 +79,6 @@ export default function LiquidPanelPage() {
           </VariantCell>
           <VariantCell label="pours from bottom" wall>
             <PanelVariant open side="bottom" material="glass" intensity={0.35} />
-          </VariantCell>
-          <VariantCell label="mercury" wall>
-            <PanelVariant open side="top" material="mercury" intensity={0.35} />
           </VariantCell>
           <VariantCell label="flat" wall>
             <PanelVariant open side="top" material="flat" intensity={0.35} />

@@ -83,7 +83,7 @@ export interface JellyButtonProps
   /** Overrides the press/release spring (same shape as `useSquish`'s). */
   spring?: SpringConfig;
   /**
-   * Deepens the fill while pressed (glass frosts up, mercury/flat darken)
+   * Deepens the fill while pressed (glass frosts up, flat darkens)
    * with a short crossfade — press feedback beyond the geometry, and the
    * color counterpart to reduced motion's opacity dip. Defaults to `true`.
    */
@@ -109,8 +109,8 @@ export interface JellyButtonProps
   releaseWave?: boolean;
   /**
    * On press, an expanding specular glint spreads from the press point —
-   * light catching the wave. Specular materials only (glass; mercury and
-   * flat paint no speculars). Defaults to `true`.
+   * light catching the wave. Specular materials only (glass;
+   * flat paints no speculars). Defaults to `true`.
    */
   pressGlint?: boolean;
 }
@@ -166,7 +166,7 @@ const FILL_FADE_IN = "background 180ms ease-out";
 const FILL_FADE_OUT = "background 420ms ease-out";
 /** How far the pressed glass tint mixes toward opaque white (frostier). */
 const GLASS_PRESS_MIX = 28;
-/** How far pressed mercury/flat fills mix toward black (deeper). */
+/** How far pressed flat fills mix toward black (deeper). */
 const SOLID_PRESS_MIX = 10;
 
 interface Scene {

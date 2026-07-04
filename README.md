@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/yousefh409/fluidkit/actions/workflows/ci.yml/badge.svg)](https://github.com/yousefh409/fluidkit/actions/workflows/ci.yml)
 
-A React library of liquid UI animations built on one idea: **one liquid engine, swappable materials.** Shapes are real metaball geometry (computed bezier bridges applied as a live `clip-path`), motion is spring-driven with surface tension (drops connect on touch, stretch, and snap), and the same shape renders as clear glass, mercury, or a flat fill via a `material` prop. Built on top of [Motion](https://motion.dev).
+A React library of liquid UI animations built on one idea: **one liquid engine, swappable materials.** Shapes are real metaball geometry (computed bezier bridges applied as a live `clip-path`), motion is spring-driven with surface tension (drops connect on touch, stretch, and snap), and the same shape renders as clear glass or a flat fill via a `material` prop. Built on top of [Motion](https://motion.dev).
 
 ## The core principle
 
@@ -72,7 +72,6 @@ function App() {
 `MorphSurface`, `Droplets`, and `Thinking` take `material`:
 
 - `glass` — white tint + backdrop blur/saturation, specular highlights from one configurable scene light (`light` prop), toggleable via `reflection`. Opt-in `refraction` adds Chromium-only edge lensing (SVG displacement inside `backdrop-filter`; degrades silently). A drop of water is liquid glass.
-- `mercury` — solid liquid metal; no gradient, no painted highlight.
 - `flat` — plain color; also the automatic fallback when `backdrop-filter` is unsupported.
 
 ## Cross-cutting guarantees

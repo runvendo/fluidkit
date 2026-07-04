@@ -46,7 +46,7 @@ export interface LiquidCardProps extends HTMLAttributes<HTMLDivElement> {
   material?: LiquidMaterial;
   /** Glass tint override; `variant` supplies one when omitted. */
   tint?: string;
-  /** Flat/mercury fill override; `variant` supplies one when omitted. */
+  /** Flat fill override; `variant` supplies one when omitted. */
   color?: string;
   /** Accent preset for callout cards. Defaults to `"default"` (no accent). */
   variant?: LiquidCardVariant;

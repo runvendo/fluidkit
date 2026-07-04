@@ -267,14 +267,14 @@ describe("JellyButton", () => {
     );
   });
 
-  it("paints a specular highlight for glass but not for mercury", async () => {
+  it("paints a specular highlight for glass but not for flat", async () => {
     const JellyButton = await loadJellyButton(true);
     const glass = render(<JellyButton material="glass">G</JellyButton>);
     expect(
       glass.container.querySelectorAll("ellipse").length
     ).toBeGreaterThan(0);
-    const mercury = render(<JellyButton material="mercury">M</JellyButton>);
-    expect(mercury.container.querySelectorAll("ellipse")).toHaveLength(0);
+    const flat = render(<JellyButton material="flat">F</JellyButton>);
+    expect(flat.container.querySelectorAll("ellipse")).toHaveLength(0);
   });
 
   it("pressColor paints the pressed fill and reverts on release", async () => {

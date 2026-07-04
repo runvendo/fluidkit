@@ -24,6 +24,23 @@ describe("resolveMaterial", () => {
     expect(m.fillStyle.background).toBe("rgba(255,255,255,0.3)");
   });
 
+  it("glass: hints the compositor so idle surfaces keep their GPU layer", async () => {
+    // Without will-change, Chromium evicts a still glass surface's
+    // backdrop-filter layer after a couple of idle seconds; the next
+    // enter then paints one unblurred frame while it re-rasterizes.
+    const { resolveMaterial } = await loadWithBackdropSupport(true);
+    const m = resolveMaterial("glass");
+    expect(m.fillStyle.willChange).toBe("transform");
+  });
+
+  it("solid fills carry no compositor hint (nothing to keep warm)", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(true);
+    expect(resolveMaterial("flat").fillStyle.willChange).toBeUndefined();
+    // degraded glass is a flat fill too
+    const { resolveMaterial: degraded } = await loadWithBackdropSupport(false);
+    expect(degraded("glass").fillStyle.willChange).toBeUndefined();
+  });
+
   it("glass: honors a custom tint", async () => {
     const { resolveMaterial } = await loadWithBackdropSupport(true);
     const m = resolveMaterial("glass", { tint: "rgba(200,220,255,0.4)" });
@@ -48,20 +65,6 @@ describe("resolveMaterial", () => {
     const { resolveMaterial } = await loadWithBackdropSupport(false);
     const m = resolveMaterial("glass", { refractionUrl: "url(#rf)" });
     expect(m.fillStyle.backdropFilter).toBeUndefined();
-  });
-
-  it("mercury: SOLID fill (no gradient), NO specular, light silver default", async () => {
-    const { resolveMaterial } = await loadWithBackdropSupport(true);
-    const m = resolveMaterial("mercury");
-    expect(m.specular).toBe(false);
-    expect(String(m.fillStyle.background)).not.toContain("gradient");
-    expect(m.fillStyle.background).toBe("#cdd3dd");
-  });
-
-  it("mercury: honors a custom color", async () => {
-    const { resolveMaterial } = await loadWithBackdropSupport(true);
-    const m = resolveMaterial("mercury", { color: "#8d94a1" });
-    expect(m.fillStyle.background).toBe("#8d94a1");
   });
 
   it("flat: plain color fill, no specular, defaults to currentColor", async () => {

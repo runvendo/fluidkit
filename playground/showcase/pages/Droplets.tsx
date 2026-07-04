@@ -15,7 +15,7 @@ import {
 
 type LiquidMaterial = NonNullable<DropletsProps["material"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 
 /** Flat material needs an explicit fill — matches the old demo's neutral. */
 const FLAT_COLOR = "#8d94a1";
@@ -73,9 +73,6 @@ export default function DropletsPage() {
         <VariantGrid>
           <VariantCell label="glass" wall>
             <Droplets interactive material="glass" />
-          </VariantCell>
-          <VariantCell label="mercury" wall>
-            <Droplets interactive material="mercury" />
           </VariantCell>
           <VariantCell label="flat" wall>
             <Droplets interactive material="flat" color={FLAT_COLOR} />

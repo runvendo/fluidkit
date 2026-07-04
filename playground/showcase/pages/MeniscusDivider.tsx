@@ -5,7 +5,7 @@ import { PageLayout, Stage, Controls, Slider, Seg, Snippet, VariantGrid, Variant
 
 type LiquidMaterial = NonNullable<MeniscusDividerProps["material"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 
 /** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */
 const FLAT_COLOR = "#b8bdc9";
@@ -66,9 +66,6 @@ export default function MeniscusDividerPage() {
           </VariantCell>
           <VariantCell label="glass · bead" wall>
             <DividerInContext material="glass" thickness={6} intensity={0.7} />
-          </VariantCell>
-          <VariantCell label="mercury" wall>
-            <DividerInContext material="mercury" thickness={4} intensity={0.35} />
           </VariantCell>
           <VariantCell label="flat" wall>
             <DividerInContext material="flat" thickness={4} intensity={0.35} />

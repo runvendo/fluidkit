@@ -43,12 +43,12 @@ describe("Droplets", () => {
     expect(closures).toBe(3);
   });
 
-  it("paints speculars for glass but not for mercury", async () => {
+  it("paints speculars for glass but not for flat", async () => {
     const Droplets = await loadDroplets(true);
     const glass = render(<Droplets material="glass" />);
     expect(glass.container.querySelectorAll("ellipse").length).toBeGreaterThan(0);
-    const mercury = render(<Droplets material="mercury" />);
-    expect(mercury.container.querySelectorAll("ellipse")).toHaveLength(0);
+    const flat = render(<Droplets material="flat" />);
+    expect(flat.container.querySelectorAll("ellipse")).toHaveLength(0);
   });
 
   it("disables speculars when light is null", async () => {

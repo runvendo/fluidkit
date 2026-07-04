@@ -5,7 +5,7 @@ import { PageLayout, Stage, Controls, Slider, Seg, Snippet, VariantGrid, Variant
 
 type LiquidMaterial = NonNullable<JellyButtonProps["material"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 
 /** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */
 const FLAT_COLOR = "#8d94a1";
@@ -84,11 +84,8 @@ export default function JellyButtonPage() {
               Press me
             </JellyButton>
           </VariantCell>
-          <VariantCell label="mercury · soft" wall>
-            <JellyVariant material="mercury" intensity={0.06} />
-          </VariantCell>
-          <VariantCell label="mercury · strong" wall>
-            <JellyVariant material="mercury" intensity={0.2} />
+          <VariantCell label="flat · soft" wall>
+            <JellyVariant material="flat" intensity={0.06} />
           </VariantCell>
           <VariantCell label="flat · strong" wall>
             <JellyVariant material="flat" intensity={0.2} />

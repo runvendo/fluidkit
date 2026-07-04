@@ -7,7 +7,7 @@ type LiquidMaterial = NonNullable<LiquidCardProps["material"]>;
 type Intensity = NonNullable<LiquidCardProps["intensity"]>;
 type Variant = NonNullable<LiquidCardProps["variant"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 const VARIANTS: Variant[] = ["default", "info", "success", "warning"];
 
 /** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */

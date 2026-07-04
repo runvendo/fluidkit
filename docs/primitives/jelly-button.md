@@ -10,7 +10,7 @@ The press is point-aware by default: the outline dents around the pointer and th
 
 | Name | Type | Default | Description |
 |---|---|---|---|
-| `material` | `"glass" \| "mercury" \| "flat"` | `"glass"` | Rendered material. |
+| `material` | `"glass" \| "flat"` | `"glass"` | Rendered material. |
 | `tint` | `string` | translucent white | Glass tint. |
 | `color` | `string` | `currentColor` | Flat-material fill. |
 | `light` | `{x, y} \| null` | above, 30% from left | Scene light in px (button coords). `null` disables highlights. |
@@ -23,7 +23,7 @@ The press is point-aware by default: the outline dents around the pointer and th
 | `deformPress` | `boolean` | `true` | Press-point-aware squash: dent around the pointer, bulge away from it. `false` restores the uniform squash. |
 | `pressGlint` | `boolean` | `true` | Expanding specular glint from the press point. Glass only; off when `reflection` is `false` or `light` is `null`. |
 | `releaseWave` | `boolean` | `false` | On release, a single decaying ripple radiates through the outline from the press point. |
-| `pressFeedback` | `boolean` | `true` | Deepens the fill while pressed (glass frosts up, mercury/flat darken), fading in 180ms / out 420ms. |
+| `pressFeedback` | `boolean` | `true` | Deepens the fill while pressed (glass frosts up, flat darkens), fading in 180ms / out 420ms. |
 | `pressColor` | `string` | derived | Pressed fill (any CSS color), replacing the derived deepening. Acts as the pressed tint on glass, so translucent colors read best there. |
 | `disabled` | `boolean` | `false` | Disables the button; also releases any press in flight. |
 | `children` | `ReactNode` | `undefined` | The label, rendered on the unclipped overlay (never scaled). |

@@ -4,8 +4,8 @@
  * On glass the bead is lit like LiquidCard — the shared rim ring + inset
  * glow wrap the whole border, brightest toward the scene light, plus one
  * glint on the stretch facing it (the same single light source as every
- * other surface). Mercury and flat stay unlit per the house material
- * rules — there the pill profile and shadow carry the read.
+ * other surface). Flat stays unlit per the house material
+ * rule — there the pill profile and shadow carry the read.
  *
  * Static like LiquidCard: the bead spans whatever width its container
  * gives it, a ResizeObserver rebuilds the geometry on layout changes, and
@@ -30,7 +30,7 @@ export interface MeniscusDividerProps extends HTMLAttributes<HTMLDivElement> {
   material?: LiquidMaterial;
   /** Glass tint override. */
   tint?: string;
-  /** Mercury/flat fill override. */
+  /** Flat fill override. */
   color?: string;
   /** Bead height in px. Defaults to `4`. */
   thickness?: number;

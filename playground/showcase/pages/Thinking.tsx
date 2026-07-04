@@ -5,7 +5,7 @@ import { PageLayout, Stage, Controls, Slider, Seg, Toggle, Snippet, VariantGrid,
 
 // LiquidMaterial isn't exported from the package root; derive it consumer-style.
 type LiquidMaterial = NonNullable<ThinkingProps["material"]>;
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 const VARIANTS: ThinkingVariant[] = ["gather", "orbit", "wave"];
 
 /** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */

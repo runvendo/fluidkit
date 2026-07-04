@@ -1,18 +1,17 @@
 /**
  * Liquid materials. A material is a PROP, not a component family: the same
- * engine shape renders as clear glass, mercury, or a flat fill.
+ * engine shape renders as clear glass or a flat fill.
  *
  * - glass: white tint + backdrop blur/saturation, lit by the scene light.
  *   Degrades to a frosted flat fill when backdrop-filter is unsupported.
- * - mercury: solid liquid-metal fill. No gradient, no painted highlight —
- *   the shape and motion carry the metal read.
- * - flat: plain color; also the reduced/fallback rendering.
+ * - flat: plain color, unlit — the shape and motion carry the liquid read;
+ *   also the reduced/fallback rendering.
  */
 
 import type { CSSProperties } from "react";
 import { supportsBackdropFilter } from "../utils/featureDetect";
 
-export type LiquidMaterial = "glass" | "mercury" | "flat";
+export type LiquidMaterial = "glass" | "flat";
 
 export interface ResolveMaterialOptions {
   /** Glass tint (any CSS color, normally translucent white). */
@@ -40,7 +39,6 @@ const GLASS_BACKDROP = "blur(16px) saturate(1.8)";
 /** Refracting glass frosts less, so the lensing stays legible. */
 const GLASS_BACKDROP_REFRACT = "blur(8px) saturate(1.8)";
 const GLASS_FALLBACK_FILL = "rgba(255,255,255,0.65)";
-const MERCURY_FILL = "#cdd3dd";
 
 export function resolveMaterial(
   material: LiquidMaterial,
@@ -63,15 +61,13 @@ export function resolveMaterial(
         background: options.tint ?? GLASS_TINT,
         backdropFilter: backdrop,
         WebkitBackdropFilter: backdrop,
+        // Keep the fill on its own GPU layer even while still: without a
+        // hint Chromium evicts the backdrop-filter layer after a couple
+        // of idle seconds, and the next appear/geometry change paints an
+        // unblurred frame while it re-rasterizes.
+        willChange: "transform",
       },
       specular: true,
-    };
-  }
-  if (material === "mercury") {
-    return {
-      kind: "mercury",
-      fillStyle: { background: options.color ?? MERCURY_FILL },
-      specular: false,
     };
   }
   return {

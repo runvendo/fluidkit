@@ -6,7 +6,7 @@ import { PageLayout, Stage, Controls, Slider, Seg, Snippet, VariantGrid, Variant
 type LiquidMaterial = NonNullable<LiquidTooltipProps["material"]>;
 type Placement = NonNullable<LiquidTooltipProps["placement"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 const PLACEMENTS: Placement[] = ["top", "bottom", "left", "right"];
 
 /** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */
@@ -75,9 +75,6 @@ export default function LiquidTooltipPage() {
           </VariantCell>
           <VariantCell label="placement · right" wall>
             <TooltipVariant placement="right" material="glass" intensity={0.35} />
-          </VariantCell>
-          <VariantCell label="mercury" wall>
-            <TooltipVariant placement="top" material="mercury" intensity={0.35} />
           </VariantCell>
           <VariantCell label="flat" wall>
             <TooltipVariant placement="top" material="flat" intensity={0.35} />

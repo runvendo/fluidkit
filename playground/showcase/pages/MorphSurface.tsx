@@ -7,7 +7,7 @@ type LiquidMaterial = NonNullable<MorphSurfaceProps["material"]>;
 type Anchor = NonNullable<MorphSurfaceProps["anchor"]>;
 type Absorption = NonNullable<MorphSurfaceProps["absorption"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 const ANCHORS: Anchor[] = ["center", "top"];
 const ABSORPTIONS: Absorption[] = ["shrink", "pull"];
 
@@ -107,7 +107,6 @@ export default function MorphSurfacePage() {
       variants={
         <VariantGrid>
           <MorphVariant material="glass" />
-          <MorphVariant material="mercury" />
           <MorphVariant material="flat" />
         </VariantGrid>
       }

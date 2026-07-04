@@ -6,7 +6,7 @@ import { PageLayout, Stage, Controls, Slider, Seg, Toggle, Snippet, VariantGrid,
 type LiquidMaterial = NonNullable<VoiceBallProps["material"]>;
 type Mode = NonNullable<VoiceBallProps["mode"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 const MODES: Mode[] = ["idle", "listening", "speaking"];
 
 /** Neutral fill so the flat material doesn't render as bare currentColor on the wall. */
@@ -100,8 +100,8 @@ export default function VoiceBallPage() {
           <VariantCell label="speaking" wall>
             <VoiceBall mode="speaking" level={0.85} intensity={0.5} />
           </VariantCell>
-          <VariantCell label="speaking · mercury" wall>
-            <VoiceBall mode="speaking" level={0.6} material="mercury" color={FLAT_COLOR} />
+          <VariantCell label="speaking · flat" wall>
+            <VoiceBall mode="speaking" level={0.6} material="flat" color={FLAT_COLOR} />
           </VariantCell>
         </VariantGrid>
       }

@@ -5,7 +5,7 @@ import { PageLayout, Stage, Controls, Slider, Seg, Snippet } from "../kit";
 
 type LiquidMaterial = NonNullable<LiquidDialogProps["material"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 
 /** Neutral fill so the flat material doesn't render as bare currentColor. */
 const FLAT_COLOR = "#eef0f4";

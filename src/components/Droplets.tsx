@@ -4,7 +4,7 @@
  * again. Optionally an extra drop chases the pointer and merges with the
  * cluster (`followPointer`), and drops can be grabbed, dragged out until
  * the neck tears, and released to spring home (`interactive`). Rendered by
- * the liquid engine; the material (glass / mercury / flat) is a prop, not a
+ * the liquid engine; the material (glass / flat) is a prop, not a
  * different component.
  *
  * Reduced motion / off-screen: renders the drops as separate static dots

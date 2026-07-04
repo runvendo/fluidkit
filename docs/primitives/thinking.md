@@ -12,7 +12,7 @@ An organic "working" indicator: three liquid droplets merging and splitting on t
 | `size` | `number` | `18` | Drop diameter in px. |
 | `spread` | `number` | `44` | Cluster extent in px. |
 | `speed` | `number` | `1.2` | Cycle speed multiplier. |
-| `material` | `"glass" \| "mercury" \| "flat"` | `"glass"` | Rendered material. |
+| `material` | `"glass" \| "flat"` | `"glass"` | Rendered material. |
 | `refraction` | `boolean` | `false` | Edge lensing on glass (Chromium-only; degrades silently to plain glass blur). |
 
 ## Usage

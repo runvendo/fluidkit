@@ -16,7 +16,7 @@ The flagship primitive. One liquid body morphs between a closed (pill) and open 
 | `closedSize` | `{width, height}` | `150x46` | Pill geometry. |
 | `openSize` | `{width, height}` | `250x200` | Panel geometry. |
 | `radius` | `number` | `24` | Panel corner radius (the pill is always fully rounded). |
-| `material` | `"glass" \| "mercury" \| "flat"` | `"glass"` | Rendered material. |
+| `material` | `"glass" \| "flat"` | `"glass"` | Rendered material. |
 | `tint` / `color` | `string` | — | Glass tint / flat fill. |
 | `light` | `{x, y} \| null` | above, 30% from left | Scene light; `null` disables highlights. |
 | `reflection` | `boolean` | `true` | Paint specular reflections on glass. |
