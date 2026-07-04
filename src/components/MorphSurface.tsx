@@ -29,6 +29,7 @@ import type {
 import { useMotionSprings } from "../liquid/useMotionSprings";
 import type { SpringConfig } from "../liquid/useMotionSprings";
 import { resolveIntensity } from "./intensity";
+import type { LiquidIntensity } from "./intensity";
 import type { SurfaceStyleProps } from "./surface";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
@@ -40,6 +41,13 @@ export interface MorphSize {
 export interface MorphSurfaceProps
   extends SurfaceStyleProps,
     Omit<HTMLAttributes<HTMLDivElement>, "children"> {
+  /**
+   * How loudly the material reads: 0–1, or the presets `"whisper"` (0.35) /
+   * `"present"` (0.7). Defaults to `"present"` — a documented divergence
+   * from the pack's usual `"whisper"`: 0.7 reproduces the surface's
+   * pre-pack specular brightness exactly.
+   */
+  intensity?: LiquidIntensity;
   /** Controlled state: false = pill, true = panel. */
   open: boolean;
   closedSize?: MorphSize;

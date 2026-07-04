@@ -32,6 +32,7 @@ import type {
   Vec,
 } from "../liquid";
 import { resolveIntensity } from "./intensity";
+import type { LiquidIntensity } from "./intensity";
 import type { SurfaceStyleProps } from "./surface";
 import { useMotionSprings } from "../liquid/useMotionSprings";
 import { useInView, usePrefersReducedMotion } from "../utils";
@@ -39,6 +40,13 @@ import { useInView, usePrefersReducedMotion } from "../utils";
 export interface DropletsProps
   extends SurfaceStyleProps,
     HTMLAttributes<HTMLDivElement> {
+  /**
+   * How loudly the material reads: 0–1, or the presets `"whisper"` (0.35) /
+   * `"present"` (0.7). Defaults to `"present"` — a documented divergence
+   * from the pack's usual `"whisper"`: 0.7 reproduces the drops' pre-pack
+   * specular brightness exactly.
+   */
+  intensity?: LiquidIntensity;
   /** Number of drops in the cluster. */
   count?: number;
   /** Base drop diameter in px. */

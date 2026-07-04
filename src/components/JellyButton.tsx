@@ -57,12 +57,20 @@ import type { LiquidSceneHandle, SpecularSpot, Vec } from "../liquid";
 import { useMotionSprings, type SpringConfig } from "../liquid/useMotionSprings";
 import { ACTIVATION_KEYS, DEFAULT_INTENSITY, DEFAULT_SPRING } from "../hooks/useSquish";
 import { resolveIntensity } from "./intensity";
+import type { LiquidIntensity } from "./intensity";
 import type { SurfaceStyleProps } from "./surface";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
 export interface JellyButtonProps
   extends SurfaceStyleProps,
     ButtonHTMLAttributes<HTMLButtonElement> {
+  /**
+   * How loudly the material reads: 0–1, or the presets `"whisper"` (0.35) /
+   * `"present"` (0.7). Defaults to `"present"` — a documented divergence
+   * from the pack's usual `"whisper"`: 0.7 reproduces the button's
+   * pre-pack glint brightness exactly.
+   */
+  intensity?: LiquidIntensity;
   /** Fractional squash at full press (volume-preserving). Defaults to the
    * same `0.12` as `useSquish`. */
   squash?: number;

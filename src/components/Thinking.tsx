@@ -40,6 +40,7 @@ import type {
   Vec,
 } from "../liquid";
 import { resolveIntensity } from "./intensity";
+import type { LiquidIntensity } from "./intensity";
 import type { SurfaceStyleProps } from "./surface";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
@@ -48,6 +49,13 @@ export type ThinkingVariant = "gather" | "orbit" | "wave";
 export interface ThinkingProps
   extends SurfaceStyleProps,
     HTMLAttributes<HTMLDivElement> {
+  /**
+   * How loudly the material reads: 0–1, or the presets `"whisper"` (0.35) /
+   * `"present"` (0.7). Defaults to `"present"` — a documented divergence
+   * from the pack's usual `"whisper"`: 0.7 reproduces the drops' pre-pack
+   * specular brightness exactly.
+   */
+  intensity?: LiquidIntensity;
   /** Choreography. */
   variant?: ThinkingVariant;
   /** Accessible label announced to screen readers. */
