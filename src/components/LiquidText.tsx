@@ -73,12 +73,12 @@ const SWEEP_KEYFRAMES_NAME = "fluidkit-liquid-text-sweep";
 const PERIOD_S = 7;
 
 /**
- * Post-resolve blur override: the glass recipe comes from the shared
- * `resolveMaterial`, but glyph-masked glass frosts harder than a panel at
- * the same radius — the shared 16px turns letterforms to fog. 10px keeps
- * the glyphs legible, so only the blur radius diverges from the resolver.
+ * Blur override for the shared glass recipe: glyph-masked glass frosts
+ * harder than a panel at the same radius — the shared 16px turns
+ * letterforms to fog. 10px keeps the glyphs legible, so only the blur
+ * radius diverges from the resolver.
  */
-const GLYPH_BLUR = "blur(10px)";
+const GLYPH_BLUR_PX = 10;
 
 /**
  * The sheen layer is 2.5× the text box, so the moving band spends most of
@@ -215,19 +215,18 @@ export function LiquidText({
 
   // Glass: the layer carries backdrop blur + tint, masked to the glyphs.
   // The recipe (tint, saturation, compositor hint) is the shared resolver's;
-  // only the blur radius is swapped for GLYPH_BLUR (see its comment).
-  const glassFill = glass ? resolveMaterial("glass", { tint }).fillStyle : null;
-  const glassBackdrop = glassFill
-    ? String(glassFill.backdropFilter).replace(/blur\([^)]*\)/, GLYPH_BLUR)
-    : undefined;
+  // only the blur radius is overridden to GLYPH_BLUR_PX (see its comment).
+  const glassFill = glass
+    ? resolveMaterial("glass", { tint, blurPx: GLYPH_BLUR_PX }).fillStyle
+    : null;
   const glassLayer: CSSProperties | null =
     glass && mask && glassFill
       ? {
           position: "absolute",
           inset: 0,
           background: glassFill.background,
-          backdropFilter: glassBackdrop,
-          WebkitBackdropFilter: glassBackdrop,
+          backdropFilter: glassFill.backdropFilter,
+          WebkitBackdropFilter: glassFill.WebkitBackdropFilter,
           willChange: glassFill.willChange,
           WebkitMaskImage: mask.uri,
           maskImage: mask.uri,
@@ -247,6 +246,8 @@ export function LiquidText({
           background: "transparent",
           backdropFilter: undefined,
           WebkitBackdropFilter: undefined,
+          // Strip the glass fill's transform hint: the sheen animates
+          // background-position only.
           willChange: undefined,
           backgroundImage: sheenGradient,
           backgroundSize: "250% 100%",

@@ -61,6 +61,18 @@ describe("resolveMaterial", () => {
     expect(m.fillStyle.backdropFilter).toBe("url(#rf) blur(8px) saturate(1.8)");
   });
 
+  it("glass: blurPx overrides the blur radius, rest of the chain intact", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(true);
+    const m = resolveMaterial("glass", { blurPx: 10 });
+    expect(m.fillStyle.backdropFilter).toBe("blur(10px) saturate(1.8)");
+  });
+
+  it("glass: blurPx also overrides the refracting chain's blur", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(true);
+    const m = resolveMaterial("glass", { refractionUrl: "url(#rf)", blurPx: 10 });
+    expect(m.fillStyle.backdropFilter).toBe("url(#rf) blur(10px) saturate(1.8)");
+  });
+
   it("glass: ignores the refraction url when backdrop-filter is unsupported", async () => {
     const { resolveMaterial } = await loadWithBackdropSupport(false);
     const m = resolveMaterial("glass", { refractionUrl: "url(#rf)" });

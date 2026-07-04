@@ -53,7 +53,7 @@ export default function LiquidTextPage() {
           </VariantCell>
           <VariantCell label="flat · colored" wall>
             <h3 style={{ margin: 0, fontSize: 26, fontWeight: 750 }}>
-              <LiquidText material="flat" intensity={0.6} color="#3b5bd9" sheenColor="#dff0ff">Ocean ink</LiquidText>
+              <LiquidText material="flat" intensity={0.6} color="#3b5bd9" sheenColor="#dff0ff">Ocean blue</LiquidText>
             </h3>
           </VariantCell>
         </VariantGrid>

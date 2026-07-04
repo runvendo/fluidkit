@@ -137,9 +137,8 @@ describe("LiquidText", () => {
     // The shared resolver's default tint (alpha 0.3), not a private recipe.
     expect(fill!.style.background).toBe("rgba(255, 255, 255, 0.3)");
     // Glyph-masked glass keeps its deliberate 10px blur (not the shared
-    // 16px) but the rest of the chain is the resolver's.
-    expect(fill!.style.backdropFilter).toContain("blur(10px)");
-    expect(fill!.style.backdropFilter).toContain("saturate(1.8)");
+    // 16px) but the rest of the chain is the resolver's — exactly.
+    expect(fill!.style.backdropFilter).toBe("blur(10px) saturate(1.8)");
     // The resolver's compositor hint rides along.
     expect(fill!.style.willChange).toBe("transform");
     // Masked to the glyphs: an SVG-of-the-text data URI.
