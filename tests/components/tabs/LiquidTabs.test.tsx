@@ -1,18 +1,31 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
+import type {
+  LiquidTabsMaterial,
+  LiquidTabsProps,
+} from "../../../src/components/tabs/LiquidTabs";
 
 /**
  * Mock `motion/react` per test so only `useReducedMotion` is overridden, then
  * re-import LiquidTabs fresh against the mock (same pattern as other component
  * tests). jsdom reports 0 for offset* so geometry is degenerate — assert
  * structure, roles, colors, and callbacks, not pixel geometry.
+ *
+ * Glass is gated on `supportsBackdropFilter()`, which jsdom answers false, so
+ * `backdropSupported` mocks featureDetect (same pattern as
+ * tests/liquid/materials.test.ts) when a test needs real glass.
  */
-async function loadTabs(reduced: boolean) {
+async function loadTabs(reduced: boolean, backdropSupported = false) {
   vi.resetModules();
   vi.doMock("motion/react", async (importOriginal) => {
     const actual = await importOriginal<typeof import("motion/react")>();
     return { ...actual, useReducedMotion: () => reduced };
   });
+  vi.doMock("../../../src/utils/featureDetect", () => ({
+    supportsBackdropFilter: () => backdropSupported,
+    supportsRefraction: () => false,
+    supportsViewTransition: () => false,
+  }));
   const mod = await import("../../../src/components/tabs/LiquidTabs");
   return mod.LiquidTabs;
 }
@@ -26,7 +39,25 @@ const ITEMS = [
 describe("LiquidTabs (bar)", () => {
   afterEach(() => {
     vi.doUnmock("motion/react");
+    vi.doUnmock("../../../src/utils/featureDetect");
     vi.resetModules();
+  });
+
+  it('rejects the old "ink" material name at the type level', () => {
+    // @ts-expect-error — "ink" was renamed to "flat" and must be gone
+    const rejected: LiquidTabsMaterial = "ink";
+    const accepted: LiquidTabsMaterial = "flat";
+    expect(rejected).not.toBe(accepted);
+  });
+
+  it("rejects the old glassTint prop name at the type level", () => {
+    const props: LiquidTabsProps = {
+      items: ITEMS,
+      material: "glass",
+      // @ts-expect-error — glassTint was renamed to tint
+      glassTint: "rgba(200, 220, 255, 0.4)",
+    };
+    expect(props.material).toBe("glass");
   });
 
   it("renders one tab per item with role=tab and a role=tablist container", async () => {
@@ -56,7 +87,7 @@ describe("LiquidTabs (bar)", () => {
     expect(tab.style.color).toBe("rgb(74, 108, 247)");
   });
 
-  it("fills glass with a custom glassTint (fallback path — jsdom lacks backdrop-filter)", async () => {
+  it("fills glass with a custom tint (fallback path — no backdrop-filter)", async () => {
     const LiquidTabs = await loadTabs(false);
     const { container } = render(
       <LiquidTabs
@@ -64,13 +95,56 @@ describe("LiquidTabs (bar)", () => {
         value="one"
         onChange={() => {}}
         material="glass"
-        glassTint="rgba(200, 220, 255, 0.4)"
+        tint="rgba(200, 220, 255, 0.4)"
       />
     );
     const fill = container.querySelector(
       '[data-fluidkit="liquid-fill"]'
     ) as HTMLElement;
     expect(fill.style.background).toBe("rgba(200, 220, 255, 0.4)");
+  });
+
+  it("container glass comes from resolveMaterial: shared tint, 10px blur", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} material="glass" />
+    );
+    const stage = container.querySelector(
+      '[data-fluidkit="liquid-tabs"]'
+    ) as HTMLElement;
+    // The shared resolver's default tint (alpha 0.3), not a private recipe.
+    expect(stage.style.background).toBe("rgba(255, 255, 255, 0.3)");
+    // The container keeps its softer 10px blur via the resolver's override.
+    expect(stage.style.backdropFilter).toBe("blur(10px) saturate(1.8)");
+  });
+
+  it("a custom tint reaches the glass container", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    const { container } = render(
+      <LiquidTabs
+        items={ITEMS}
+        value="one"
+        onChange={() => {}}
+        material="glass"
+        tint="rgba(200, 220, 255, 0.4)"
+      />
+    );
+    const stage = container.querySelector(
+      '[data-fluidkit="liquid-tabs"]'
+    ) as HTMLElement;
+    expect(stage.style.background).toBe("rgba(200, 220, 255, 0.4)");
+  });
+
+  it("the flat container keeps its solid frosted fill (not the glass recipe)", async () => {
+    const LiquidTabs = await loadTabs(false, true);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} material="flat" />
+    );
+    const stage = container.querySelector(
+      '[data-fluidkit="liquid-tabs"]'
+    ) as HTMLElement;
+    expect(stage.style.background).toBe("rgba(255, 255, 255, 0.62)");
+    expect(stage.style.backdropFilter).toBe("blur(10px)");
   });
 
   it("marks the active tab via aria-selected", async () => {
@@ -113,15 +187,27 @@ describe("LiquidTabs (bar)", () => {
     expect(tabs[1].getAttribute("aria-selected")).toBe("true");
   });
 
-  it("ink material fills the indicator with the resolved color", async () => {
+  it("flat material fills the indicator with the resolved color", async () => {
     const LiquidTabs = await loadTabs(false);
     const { container } = render(
-      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} material="ink" color="#abcdef" />
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} material="flat" color="#abcdef" />
     );
     const fill = container.querySelector(
       '[data-fluidkit="liquid-tab-indicator"] [data-fluidkit="liquid-fill"]'
     ) as HTMLElement;
     expect(fill.style.backgroundColor).toBe("rgb(171, 205, 239)");
+  });
+
+  it('defaults to the flat material and reflects it via data-material', async () => {
+    const LiquidTabs = await loadTabs(false);
+    const { container } = render(
+      <LiquidTabs items={ITEMS} value="one" onChange={() => {}} />
+    );
+    expect(
+      container
+        .querySelector('[data-fluidkit="liquid-tabs"]')
+        ?.getAttribute("data-material")
+    ).toBe("flat");
   });
 
   it("draws the indicator as engine geometry (clip-path)", async () => {

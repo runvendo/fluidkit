@@ -39,7 +39,7 @@ import { mixColor, parseColor, tabCoverage, type RGB } from "./tint";
 import { useTabList } from "./useTabList";
 import { useTabsContext } from "./TabsGroup";
 
-export type LiquidTabsMaterial = "ink" | "glass";
+export type LiquidTabsMaterial = "flat" | "glass";
 export type LiquidTabsSize = "sm" | "md" | "lg";
 
 export interface LiquidTabsItem {
@@ -64,14 +64,15 @@ export interface LiquidTabsProps
   flow?: FlowName;
   material?: LiquidTabsMaterial;
   size?: LiquidTabsSize;
-  /** Ink color (ignored by the glass material). Defaults to `currentColor`. */
+  /** Flat fill color (ignored by the glass material). Defaults to `currentColor`. */
   color?: string;
   /**
-   * Glass tint (ignored by the ink material) — any CSS color, normally a
-   * translucent white. Also the fallback fill where `backdrop-filter` is
-   * unsupported. Defaults to the engine's glass tint.
+   * Glass tint (ignored by the flat material) — any CSS color, normally a
+   * translucent white. Tints both the container and the indicator; also the
+   * fallback fill where `backdrop-filter` is unsupported. Defaults to the
+   * engine's glass tint.
    */
-  glassTint?: string;
+  tint?: string;
   /**
    * Inactive label color. Hex or `rgb()` (label colors are mixed
    * numerically per frame); defaults per material.
@@ -96,7 +97,7 @@ const SIZES: Record<LiquidTabsSize, SizeSpec> = {
 
 /** base (inactive) and active label colors per material. */
 const LABEL_COLORS: Record<LiquidTabsMaterial, { base: RGB; active: RGB }> = {
-  ink: { base: [75, 76, 86], active: [255, 255, 255] },
+  flat: { base: [75, 76, 86], active: [255, 255, 255] },
   glass: { base: [75, 76, 86], active: [23, 24, 28] },
 };
 
@@ -127,10 +128,10 @@ export function LiquidTabs({
   defaultValue,
   onChange,
   flow = "slide",
-  material = "ink",
+  material = "flat",
   size = "md",
   color,
-  glassTint,
+  tint,
   labelColor,
   activeLabelColor,
   className,
@@ -337,10 +338,10 @@ export function LiquidTabs({
   });
 
   const resolvedColor = resolveColor(color);
-  const resolvedMaterial =
-    material === "glass"
-      ? resolveMaterial("glass", { tint: glassTint })
-      : resolveMaterial("flat", { color: resolvedColor });
+  const resolvedMaterial = resolveMaterial(material, {
+    tint,
+    color: resolvedColor,
+  });
 
   const containerStyle: CSSProperties = {
     position: "relative",
@@ -348,16 +349,20 @@ export function LiquidTabs({
     gap: sizeSpec.gap,
     padding: sizeSpec.containerPad,
     borderRadius: 999,
-    // Shipped default chrome (overridable via style / className). Ink gets a
-    // frosted pill; glass gets a barely-there ring.
-    background:
-      material === "glass" ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.62)",
+    // Shipped default chrome (overridable via style / className). Flat gets
+    // a frosted solid pill; glass gets the shared glass recipe — kept at the
+    // container's softer 10px blur — under a barely-there ring.
+    ...(material === "glass"
+      ? resolveMaterial("glass", { tint, blurPx: 10 }).fillStyle
+      : {
+          background: "rgba(255,255,255,0.62)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+        }),
     boxShadow:
       material === "glass"
         ? "inset 0 0 0 1px rgba(255,255,255,0.45)"
         : "inset 0 1px 0 rgba(255,255,255,0.7), 0 10px 28px rgba(46,44,72,0.14)",
-    backdropFilter: "blur(10px)",
-    WebkitBackdropFilter: "blur(10px)",
     ...style,
   };
 

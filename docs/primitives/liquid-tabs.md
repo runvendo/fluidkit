@@ -17,8 +17,8 @@ Both are spring-driven, so rapid clicks interrupt cleanly and retarget from the 
 
 Set the surface with `material`:
 
-- `ink` (default): a solid dark indicator on a frosted container. Highest contrast, reads on any background. Use `color` to set the fill.
-- `glass`: the indicator itself is liquid glass, translucent and blurring what sits behind it. `color` is ignored. Falls back to a frosted flat fill where `backdrop-filter` is unsupported.
+- `flat` (default): a solid dark indicator on a frosted container. Highest contrast, reads on any background. Use `color` to set the fill.
+- `glass`: the indicator itself is liquid glass, translucent and blurring what sits behind it. `color` is ignored; use `tint` to tint both the container and the indicator. Falls back to a frosted flat fill where `backdrop-filter` is unsupported.
 
 ## Layering
 
@@ -44,9 +44,10 @@ Tab boxes are measured (`offsetLeft` / `offsetWidth`) in a layout effect (a Resi
 | `defaultValue` | `string` | first enabled item | Uncontrolled initial active id. |
 | `onChange` | `(id: string) => void` | undefined | Called when the active tab changes. |
 | `flow` | `"slide" \| "stretch"` | `"slide"` | Transition style. |
-| `material` | `"ink" \| "glass"` | `"ink"` | Indicator surface. |
+| `material` | `"flat" \| "glass"` | `"flat"` | Indicator surface. |
 | `size` | `"sm" \| "md" \| "lg"` | `"md"` | Padding, font size, and pill height. |
-| `color` | `string` | `currentColor` | Ink color. Ignored by the glass material. |
+| `color` | `string` | `currentColor` | Flat fill color. Ignored by the glass material. |
+| `tint` | `string` | engine glass tint | Glass tint for the container and indicator. Ignored by the flat material. |
 | `className` | `string` | undefined | Applied to the container. |
 | `style` | `CSSProperties` | undefined | Applied to the container. |
 

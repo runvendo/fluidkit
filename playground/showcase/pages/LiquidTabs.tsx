@@ -2,11 +2,11 @@ import { useState } from "react";
 import { LiquidTabs } from "fluidkit";
 import { PageLayout, Stage, Controls, Toggle, Seg, Snippet, VariantGrid, VariantCell } from "../kit";
 
-const INK = "#23242c";
+const FLAT_COLOR = "#23242c";
 
 /** Component defaults, mirrored so untouched pickers stay honest in the snippet. */
 const LABEL_DEFAULT = "#4b4c56";
-const ACTIVE_LABEL_DEFAULTS = { ink: "#ffffff", glass: "#17181c" };
+const ACTIVE_LABEL_DEFAULTS = { flat: "#ffffff", glass: "#17181c" };
 
 function ColorField({ label, value, set }: {
   label: string;
@@ -22,9 +22,9 @@ function ColorField({ label, value, set }: {
 }
 
 /** One self-managing tab strip for the variants grid (uncontrolled via `defaultValue`). */
-function TabsVariant({ flow, material, size, color = INK, activeLabelColor }: {
+function TabsVariant({ flow, material, size, color = FLAT_COLOR, activeLabelColor }: {
   flow: "slide" | "stretch";
-  material: "ink" | "glass";
+  material: "flat" | "glass";
   size: "sm" | "md" | "lg";
   color?: string;
   activeLabelColor?: string;
@@ -49,16 +49,16 @@ function TabsVariant({ flow, material, size, color = INK, activeLabelColor }: {
 export default function LiquidTabsPage() {
   const [value, setValue] = useState("chat");
   const [flow, setFlow] = useState<"slide" | "stretch">("slide");
-  const [material, setMaterial] = useState<"ink" | "glass">("ink");
+  const [material, setMaterial] = useState<"flat" | "glass">("flat");
   const [size, setSize] = useState<"sm" | "md" | "lg">("md");
   const [disableOne, setDisableOne] = useState(false);
-  const [ink, setInk] = useState(INK);
+  const [color, setColor] = useState(FLAT_COLOR);
   // null = untouched: picker shows the component default, snippet omits the prop.
   const [labelColor, setLabelColor] = useState<string | null>(null);
   const [activeLabelColor, setActiveLabelColor] = useState<string | null>(null);
-  const [glassTintHue, setGlassTintHue] = useState<string | null>(null);
+  const [tintHue, setTintHue] = useState<string | null>(null);
   // pickers can't do alpha; keep the tint translucent (0x4d ≈ 30%) like the default
-  const glassTint = glassTintHue ? `${glassTintHue}4d` : undefined;
+  const tint = tintHue ? `${tintHue}4d` : undefined;
 
   const items = [
     { id: "chat", label: "Chat" },
@@ -79,8 +79,8 @@ export default function LiquidTabsPage() {
               flow={flow}
               material={material}
               size={size}
-              color={ink}
-              glassTint={material === "glass" ? glassTint : undefined}
+              color={color}
+              tint={material === "glass" ? tint : undefined}
               labelColor={labelColor ?? undefined}
               activeLabelColor={activeLabelColor ?? undefined}
               items={items}
@@ -88,15 +88,15 @@ export default function LiquidTabsPage() {
           </Stage>
           <Controls>
             <Seg label="flow" value={flow} set={setFlow} options={["slide", "stretch"]} />
-            <Seg label="material" value={material} set={setMaterial} options={["ink", "glass"]} />
+            <Seg label="material" value={material} set={setMaterial} options={["flat", "glass"]} />
             <Seg label="size" value={size} set={setSize} options={["sm", "md", "lg"]} />
-            {material === "ink" ? (
-              <ColorField label="ink" value={ink} set={setInk} />
+            {material === "flat" ? (
+              <ColorField label="color" value={color} set={setColor} />
             ) : (
               <ColorField
                 label="tint"
-                value={glassTintHue ?? "#ffffff"}
-                set={setGlassTintHue}
+                value={tintHue ?? "#ffffff"}
+                set={setTintHue}
               />
             )}
             <ColorField
@@ -115,29 +115,29 @@ export default function LiquidTabsPage() {
       }
       variants={
         <VariantGrid>
-          <VariantCell label="slide · ink" wall>
-            <TabsVariant flow="slide" material="ink" size="md" />
+          <VariantCell label="slide · flat" wall>
+            <TabsVariant flow="slide" material="flat" size="md" />
           </VariantCell>
           <VariantCell label="slide · glass" wall>
             <TabsVariant flow="slide" material="glass" size="md" />
           </VariantCell>
-          <VariantCell label="stretch · ink" wall>
-            <TabsVariant flow="stretch" material="ink" size="md" />
+          <VariantCell label="stretch · flat" wall>
+            <TabsVariant flow="stretch" material="flat" size="md" />
           </VariantCell>
           <VariantCell label="stretch · glass" wall>
             <TabsVariant flow="stretch" material="glass" size="md" />
           </VariantCell>
           <VariantCell label="size sm" wall>
-            <TabsVariant flow="slide" material="ink" size="sm" />
+            <TabsVariant flow="slide" material="flat" size="sm" />
           </VariantCell>
           <VariantCell label="size md" wall>
-            <TabsVariant flow="slide" material="ink" size="md" />
+            <TabsVariant flow="slide" material="flat" size="md" />
           </VariantCell>
           <VariantCell label="size lg" wall>
-            <TabsVariant flow="slide" material="ink" size="lg" />
+            <TabsVariant flow="slide" material="flat" size="lg" />
           </VariantCell>
           <VariantCell label="custom color" wall>
-            <TabsVariant flow="slide" material="ink" size="md" color="#4a6cf7" />
+            <TabsVariant flow="slide" material="flat" size="md" color="#4a6cf7" />
           </VariantCell>
         </VariantGrid>
       }
@@ -148,7 +148,7 @@ export default function LiquidTabsPage() {
   defaultValue="chat"
   flow="${flow}"
   material="${material}"
-  size="${size}"${material === "ink" ? `\n  color="${ink}"` : ""}${material === "glass" && glassTint ? `\n  glassTint="${glassTint}"` : ""}${labelColor ? `\n  labelColor="${labelColor}"` : ""}${activeLabelColor ? `\n  activeLabelColor="${activeLabelColor}"` : ""}
+  size="${size}"${material === "flat" ? `\n  color="${color}"` : ""}${material === "glass" && tint ? `\n  tint="${tint}"` : ""}${labelColor ? `\n  labelColor="${labelColor}"` : ""}${activeLabelColor ? `\n  activeLabelColor="${activeLabelColor}"` : ""}
 />`}
         />
       }
