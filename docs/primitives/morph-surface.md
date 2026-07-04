@@ -18,9 +18,11 @@ The flagship primitive. One liquid body morphs between a closed (pill) and open 
 | `radius` | `number` | `24` | Panel corner radius (the pill is always fully rounded). |
 | `material` | `"glass" \| "flat"` | `"glass"` | Rendered material. |
 | `tint` / `color` | `string` | — | Glass tint / flat fill. |
+| `intensity` | `number \| "whisper" \| "present"` | `"present"` (0.7) | Material volume. Divergence: unlike the rest of the surface family (default `"whisper"`), MorphSurface defaults to `"present"` because that's the value that reproduces its pre-existing look pixel-for-pixel — the body's specular was hardcoded brighter (`0.4 × intensity`) than the satellites' (`1 × intensity`), and both land on their old constants at 0.7. |
 | `light` | `{x, y} \| null` | above, 30% from left | Scene light; `null` disables highlights. |
 | `reflection` | `boolean` | `true` | Paint specular reflections on glass. |
 | `refraction` | `boolean` | `false` | Edge lensing on glass (SVG displacement inside `backdrop-filter`, Chromium-only; degrades silently to plain glass blur). |
+| `shadow` | `boolean` | `true` | Drop shadow under the surface. |
 | `satellites` | `boolean` | `true` | Droplets absorbed into the surface on open. |
 | `closedContent` | `ReactNode` | — | Face shown on the pill. |
 | `openContent` | `ReactNode` | — | Face shown on the panel. |

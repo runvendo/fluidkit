@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MorphSurface } from "fluidkit";
 import type { MorphSurfaceProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Toggle, Seg, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Toggle, Seg, Slider, Snippet, VariantGrid, VariantCell } from "../kit";
 
 type LiquidMaterial = NonNullable<MorphSurfaceProps["material"]>;
 type Anchor = NonNullable<MorphSurfaceProps["anchor"]>;
@@ -72,6 +72,8 @@ export default function MorphSurfacePage() {
   const [anchor, setAnchor] = useState<Anchor>("center");
   const [absorption, setAbsorption] = useState<Absorption>("shrink");
   const [spring, setSpring] = useState<SpringPreset>("standard");
+  const [intensity, setIntensity] = useState(0.7);
+  const [shadow, setShadow] = useState(true);
 
   return (
     <PageLayout
@@ -89,6 +91,8 @@ export default function MorphSurfacePage() {
               anchor={anchor}
               absorption={absorption}
               bodySpring={SPRING_PRESETS[spring]}
+              intensity={intensity}
+              shadow={shadow}
               closedContent={<PillFace />}
               openContent={<PanelFace />}
             />
@@ -101,6 +105,8 @@ export default function MorphSurfacePage() {
             <Toggle label="reflection" value={reflection} set={setReflection} />
             <Toggle label="refraction" value={refraction} set={setRefraction} />
             <Toggle label="satellites" value={satellites} set={setSatellites} />
+            <Toggle label="shadow" value={shadow} set={setShadow} />
+            <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
           </Controls>
         </>
       }
@@ -113,7 +119,7 @@ export default function MorphSurfacePage() {
       usage={
         <Snippet code={`<MorphSurface
   open={open}
-  material="${material}"${anchor !== "center" ? `\n  anchor="${anchor}"` : ""}${absorption !== "shrink" ? `\n  absorption="${absorption}"` : ""}${spring !== "standard" ? `\n  bodySpring={{ stiffness: ${SPRING_PRESETS[spring].stiffness}, damping: ${SPRING_PRESETS[spring].damping} }}` : ""}${refraction ? "\n  refraction" : ""}
+  material="${material}"${anchor !== "center" ? `\n  anchor="${anchor}"` : ""}${absorption !== "shrink" ? `\n  absorption="${absorption}"` : ""}${spring !== "standard" ? `\n  bodySpring={{ stiffness: ${SPRING_PRESETS[spring].stiffness}, damping: ${SPRING_PRESETS[spring].damping} }}` : ""}${refraction ? "\n  refraction" : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${!shadow ? "\n  shadow={false}" : ""}
   closedContent={<PillFace />}
   openContent={<PanelFace />}
 />`} />
