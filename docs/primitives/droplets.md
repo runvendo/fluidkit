@@ -13,6 +13,7 @@ The material is a prop, not a separate component: the same shapes render as clea
 | `count` | `number` | `3` | Number of drops in the cluster. |
 | `size` | `number` | `36` | Base drop diameter in px. |
 | `spread` | `number` | `100` | Px extent the cluster spreads across. |
+| `bleed` | `number` | `0` | Extra canvas padding in px on every side of the cluster (room to drag drops and chase the pointer beyond the cluster's own footprint). |
 | `speed` | `number` | `1` | Merge/split cycle speed multiplier. |
 | `material` | `"glass" \| "flat"` | `"glass"` | Rendered material. |
 | `tint` | `string` | translucent white | Glass tint. |

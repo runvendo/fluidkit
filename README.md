@@ -69,7 +69,7 @@ function App() {
 
 ### Materials
 
-`MorphSurface`, `Droplets`, and `Thinking` take `material`:
+Every surface component shares one styling pack, applied wherever it's physically meaningful: `material` (`"glass"`/`"flat"`), `tint`/`color` (the glass tint or flat fill), `intensity` (how loudly the material reads, `0`-`1` or `"whisper"`/`"present"`), `light` (scene light position; `null` disables speculars), `reflection` (specular highlights on/off), `refraction` (opt-in Chromium-only edge lensing), and `shadow` (drop shadow on/off). Components omit only what can't physically apply: `LiquidText`'s lighting is its sheen sweep, not the scene light, so it takes none of `light`/`reflection`/`refraction`/`shadow`.
 
 - `glass` — white tint + backdrop blur/saturation, specular highlights from one configurable scene light (`light` prop), toggleable via `reflection`. Opt-in `refraction` adds Chromium-only edge lensing (SVG displacement inside `backdrop-filter`; degrades silently). A drop of water is liquid glass.
 - `flat` — plain color; also the automatic fallback when `backdrop-filter` is unsupported.

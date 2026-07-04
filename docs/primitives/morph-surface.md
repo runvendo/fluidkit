@@ -24,6 +24,10 @@ The flagship primitive. One liquid body morphs between a closed (pill) and open 
 | `refraction` | `boolean` | `false` | Edge lensing on glass (SVG displacement inside `backdrop-filter`, Chromium-only; degrades silently to plain glass blur). |
 | `shadow` | `boolean` | `true` | Drop shadow under the surface. |
 | `satellites` | `boolean` | `true` | Droplets absorbed into the surface on open. |
+| `anchor` | `"center" \| "top"` | `"center"` | Where the panel grows from. `"center"` inflates in place; `"top"` pins the top edge so the panel pours downward out of the pill. |
+| `absorption` | `"shrink" \| "pull"` | `"shrink"` | How satellites merge on open. `"shrink"` collapses each drop in place; `"pull"` draws it across at full size until the body swallows it (radius follows travel, so the drop re-emerges on close). |
+| `bodySpring` | `{stiffness, damping}` | `{stiffness: 240, damping: 24}` | Overrides the body's morph spring. |
+| `satelliteSpring` | `{stiffness, damping}` | `{stiffness: 150, damping: 14}` | Overrides the satellites' spring. |
 | `closedContent` | `ReactNode` | — | Face shown on the pill. |
 | `openContent` | `ReactNode` | — | Face shown on the panel. |
 

@@ -54,6 +54,8 @@ Tab boxes are measured (`offsetLeft` / `offsetWidth`) in a layout effect (a Resi
 | `light` | `{x, y} \| null` | above, 30% from left | Scene light in px (tabs coords). `null` disables the glint. |
 | `reflection` | `boolean` | `false` | Paint a specular glint on the glass indicator. Defaults off — unlike the rest of the surface pack — so the shipped pill stays unlit. |
 | `shadow` | `boolean` | `false` | Drop shadow under the indicator pill. Defaults off — unlike the rest of the surface pack — so the shipped pill stays flush in its tray. |
+| `labelColor` | `string` | per material | Inactive label color. Hex or `rgb()` (label colors are mixed numerically per frame). |
+| `activeLabelColor` | `string` | per material | Label color while the ink covers the tab. Hex or `rgb()`. |
 | `className` | `string` | undefined | Applied to the container. |
 | `style` | `CSSProperties` | undefined | Applied to the container. |
 
