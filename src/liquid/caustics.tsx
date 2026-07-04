@@ -28,7 +28,7 @@ import { supportsWebGL } from "../utils/supportsWebGL";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
 export interface CausticsLayerProps {
-  /** Light color (any CSS color). Defaults to warm ivory. */
+  /** Light color (any CSS color). Defaults to warm white. */
   light?: string;
   /** Brightness of the light webs, 0-1. Defaults to 0.5. */
   intensity?: number;
@@ -40,7 +40,7 @@ export interface CausticsLayerProps {
   band?: number;
 }
 
-export const CAUSTICS_DEFAULT_LIGHT = "#ffefd6";
+export const CAUSTICS_DEFAULT_LIGHT = "#fffdf7";
 
 const MAX_DPR = 1.5;
 /** Fixed phase for the reduced-motion still frame (a pleasant, dense frame). */
@@ -98,7 +98,7 @@ const colorCache = new Map<string, [number, number, number]>();
 function parseColor(css: string): [number, number, number] {
   const cached = colorCache.get(css);
   if (cached) return cached;
-  let rgb: [number, number, number] = [1, 0.937, 0.839]; // ivory fallback
+  let rgb: [number, number, number] = [1, 0.992, 0.969]; // warm-white fallback
   try {
     const c = document.createElement("canvas");
     c.width = c.height = 1;

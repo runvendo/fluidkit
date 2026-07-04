@@ -46,8 +46,8 @@ const GLASS_BACKDROP = "blur(16px) saturate(1.8)";
 const GLASS_BACKDROP_REFRACT = "blur(8px) saturate(1.8)";
 const GLASS_FALLBACK_FILL = "rgba(255,255,255,0.65)";
 const MERCURY_FILL = "#cdd3dd";
-/** Warm ivory — the caustic light's default color. */
-const CAUSTICS_LIGHT = "#ffefd6";
+/** Warm white — the caustic light's default color. */
+const CAUSTICS_LIGHT = "#fffdf7";
 /** Soft plaster wall — also the SSR / no-WebGL rendering. */
 const CAUSTICS_WALL = "linear-gradient(180deg, #f8f8f5, #eceeef)";
 

@@ -16,7 +16,7 @@ Degradation: without WebGL (old browsers, SSR, context-starved pages) only the w
 
 | Name | Type | Default | Description |
 |---|---|---|---|
-| `color` | `string` | warm ivory | Light color. |
+| `color` | `string` | warm white | Light color. |
 | `background` | `string \| [string, string]` | soft plaster | Wall color: one color or a `[top, bottom]` gradient pair. |
 | `intensity` | `number` | `0.5` | Brightness of the light webs, `0`-`1`. |
 | `scale` | `number` | `1` | Size of the light pattern; higher = larger webs. |

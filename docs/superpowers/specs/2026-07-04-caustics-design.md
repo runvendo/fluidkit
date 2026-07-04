@@ -66,7 +66,7 @@ Material-level tuning reuses the two color options every surface already forward
 no new options, no new component props:
 
 - `color` → wall/base color (default: soft plaster);
-- `tint` → the light's color (default: warm ivory) — consistent with glass, where
+- `tint` → the light's color (default: warm white) — consistent with glass, where
   `tint` already means "the material's optical color".
 
 ```tsx
@@ -80,7 +80,7 @@ Backdrop (raw params, backgrounds house rule):
 
 ```ts
 export interface CausticsProps extends HTMLAttributes<HTMLDivElement> {
-  /** Light color. Defaults to warm ivory. */
+  /** Light color. Defaults to warm white. */
   color?: string;
   /** Wall color: one color or a [top, bottom] pair. Defaults to soft plaster. */
   background?: string | [string, string];

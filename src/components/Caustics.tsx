@@ -26,7 +26,7 @@ import type { CSSProperties, HTMLAttributes } from "react";
 import { CausticsLayer, CAUSTICS_DEFAULT_LIGHT } from "../liquid/caustics";
 
 export interface CausticsProps extends HTMLAttributes<HTMLDivElement> {
-  /** Light color. Defaults to warm ivory. */
+  /** Light color. Defaults to warm white. */
   color?: string;
   /** Wall color: one color or a [top, bottom] pair. Defaults to soft plaster. */
   background?: string | [string, string];

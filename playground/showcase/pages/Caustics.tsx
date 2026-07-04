@@ -28,7 +28,7 @@ function ColorField({ label, value, set }: { label: string; value: string; set: 
 }
 
 export default function CausticsPage() {
-  const [color, setColor] = useState("#ffefd6");
+  const [color, setColor] = useState("#fffdf7");
   const [top, setTop] = useState("#f8f8f5");
   const [bottom, setBottom] = useState("#eceeef");
   const [intensity, setIntensity] = useState(0.5);

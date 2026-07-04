@@ -79,7 +79,7 @@ describe("resolveMaterial", () => {
     expect(m.kind).toBe("caustics");
     expect(m.specular).toBe(false);
     expect(String(m.fillStyle.background)).toContain("linear-gradient");
-    expect(m.caustics).toEqual({ light: "#ffefd6" });
+    expect(m.caustics).toEqual({ light: "#fffdf7" });
   });
 
   it("caustics: tint recolors the light, color recolors the wall", async () => {
