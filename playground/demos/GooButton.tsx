@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { JellyButton, Ripple, Thinking } from "fluidkit";
+import { LiquidButton, Ripple, Thinking } from "fluidkit";
 
 /**
  * Goo Progress Button — a download flow built from three primitives:
- * JellyButton squashes on press, Thinking droplets churn while the
+ * LiquidButton squashes on press, Thinking droplets churn while the
  * liquid progress track fills, and the whole card is a Ripple surface.
  */
 type Phase = "idle" | "working" | "done";
@@ -75,7 +75,7 @@ export function GooButton() {
           }}
         />
       </div>
-      <JellyButton
+      <LiquidButton
         material="flat"
         color={phase === "done" ? "#2fa46a" : "#4a6cf7"}
         width={202}
@@ -86,7 +86,7 @@ export function GooButton() {
         {phase === "idle" && "Download"}
         {phase === "working" && <Thinking material="flat" color="#fff" size={8} label="Downloading" />}
         {phase === "done" && "Saved ✓"}
-      </JellyButton>
+      </LiquidButton>
     </Ripple>
   );
 }

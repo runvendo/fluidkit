@@ -1,45 +1,46 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { Profiler } from "react";
-import type { JellyButtonProps } from "../../src/components/JellyButton";
+import * as LiquidButtonModule from "../../src/components/LiquidButton";
+import type { LiquidButtonProps } from "../../src/components/LiquidButton";
 import {
   expectIntensityScalesSpeculars,
   expectShadowToggles,
 } from "./surfacePack";
 
 /** Same mocking pattern as the other component tests. */
-async function loadJellyButton(reduced: boolean) {
+async function loadLiquidButton(reduced: boolean) {
   vi.resetModules();
   vi.doMock("motion/react", async (importOriginal) => {
     const actual = await importOriginal<typeof import("motion/react")>();
     return { ...actual, useReducedMotion: () => reduced };
   });
-  const mod = await import("../../src/components/JellyButton");
-  return mod.JellyButton;
+  const mod = await import("../../src/components/LiquidButton");
+  return mod.LiquidButton;
 }
 
-describe("JellyButton", () => {
+describe("LiquidButton", () => {
   afterEach(() => {
     vi.doUnmock("motion/react");
     vi.resetModules();
   });
 
   it("renders a focusable button carrying the label", async () => {
-    const JellyButton = await loadJellyButton(false);
-    const { getByRole } = render(<JellyButton>Click me</JellyButton>);
+    const LiquidButton = await loadLiquidButton(false);
+    const { getByRole } = render(<LiquidButton>Click me</LiquidButton>);
     const button = getByRole("button", { name: "Click me" });
     expect(button.tagName).toBe("BUTTON");
     expect(button).not.toBeDisabled();
-    expect(button.getAttribute("data-fluidkit")).toBe("jelly-button");
+    expect(button.getAttribute("data-fluidkit")).toBe("liquid-button");
   });
 
   it("disabled prop disables the real button and blocks clicks", async () => {
-    const JellyButton = await loadJellyButton(false);
+    const LiquidButton = await loadLiquidButton(false);
     const onClick = vi.fn();
     const { getByRole } = render(
-      <JellyButton disabled onClick={onClick}>
+      <LiquidButton disabled onClick={onClick}>
         Nope
-      </JellyButton>
+      </LiquidButton>
     );
     const button = getByRole("button", { name: "Nope" });
     expect(button).toBeDisabled();
@@ -48,8 +49,8 @@ describe("JellyButton", () => {
   });
 
   it("label sits on the unclipped content overlay, never inside the clipped fill", async () => {
-    const JellyButton = await loadJellyButton(false);
-    const { getByText, container } = render(<JellyButton>Label</JellyButton>);
+    const LiquidButton = await loadLiquidButton(false);
+    const { getByText, container } = render(<LiquidButton>Label</LiquidButton>);
     const label = getByText("Label");
     const overlay = label.closest('[data-fluidkit="liquid-content"]');
     expect(overlay).not.toBeNull();
@@ -67,8 +68,8 @@ describe("JellyButton", () => {
   });
 
   it("renders one round-rect body at rest (a single clipped subpath)", async () => {
-    const JellyButton = await loadJellyButton(true);
-    const { container } = render(<JellyButton>Go</JellyButton>);
+    const LiquidButton = await loadLiquidButton(true);
+    const { container } = render(<LiquidButton>Go</LiquidButton>);
     const clip = container.querySelector(
       '[data-fluidkit="liquid-clip"]'
     ) as HTMLElement;
@@ -77,11 +78,11 @@ describe("JellyButton", () => {
   });
 
   it("sizes the button from the width/height props", async () => {
-    const JellyButton = await loadJellyButton(true);
+    const LiquidButton = await loadLiquidButton(true);
     const { getByRole } = render(
-      <JellyButton width={200} height={60}>
+      <LiquidButton width={200} height={60}>
         Big
-      </JellyButton>
+      </LiquidButton>
     );
     const button = getByRole("button", { name: "Big" });
     expect(button.style.width).toBe("200px");
@@ -89,8 +90,8 @@ describe("JellyButton", () => {
   });
 
   it("press (pointerdown) while animating starts geometry deformation", async () => {
-    const JellyButton = await loadJellyButton(false);
-    const { getByRole, container } = render(<JellyButton>Press</JellyButton>);
+    const LiquidButton = await loadLiquidButton(false);
+    const { getByRole, container } = render(<LiquidButton>Press</LiquidButton>);
     const button = getByRole("button", { name: "Press" });
     const clip = container.querySelector(
       '[data-fluidkit="liquid-clip"]'
@@ -110,8 +111,8 @@ describe("JellyButton", () => {
   });
 
   it("keyboard press (Space/Enter) mirrors pointer press, ignoring key repeat", async () => {
-    const JellyButton = await loadJellyButton(false);
-    const { getByRole } = render(<JellyButton>Kbd</JellyButton>);
+    const LiquidButton = await loadLiquidButton(false);
+    const { getByRole } = render(<LiquidButton>Kbd</LiquidButton>);
     const button = getByRole("button", { name: "Kbd" });
 
     fireEvent.keyDown(button, { key: " ", repeat: true });
@@ -130,10 +131,10 @@ describe("JellyButton", () => {
   });
 
   it("reduced motion keeps data-animating false and the clip path static, but click still fires", async () => {
-    const JellyButton = await loadJellyButton(true);
+    const LiquidButton = await loadLiquidButton(true);
     const onClick = vi.fn();
     const { getByRole, container } = render(
-      <JellyButton onClick={onClick}>Reduced</JellyButton>
+      <LiquidButton onClick={onClick}>Reduced</LiquidButton>
     );
     const button = getByRole("button", { name: "Reduced" });
     const clip = container.querySelector(
@@ -154,12 +155,104 @@ describe("JellyButton", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it("variant='still' presses with zero geometry deformation while the fill still deepens", async () => {
+    const LiquidButton = await loadLiquidButton(false);
+    // Snappier spring so the settle window closes fast (matches the squash
+    // behavior test's settle-resync read).
+    const spring = { stiffness: 550, damping: 60 };
+    const { getByRole, container } = render(
+      <LiquidButton
+        variant="still"
+        material="flat"
+        color="rgb(100, 110, 120)"
+        pressColor="rgb(10, 20, 30)"
+        deformPress={false}
+        pressGlint={false}
+        spring={spring}
+      >
+        Still
+      </LiquidButton>
+    );
+    const button = getByRole("button", { name: "Still" });
+    const clip = container.querySelector(
+      '[data-fluidkit="liquid-clip"]'
+    ) as HTMLElement;
+    const fill = container.querySelector(
+      '[data-fluidkit="liquid-fill"]'
+    ) as HTMLElement;
+    const restingClip = clip.style.clipPath;
+
+    fireEvent.keyDown(button, { key: " " });
+    // The non-geometric press polish still runs: the fill deepens immediately.
+    expect(fill.style.background).toBe("rgb(10, 20, 30)");
+    // The press still enters the settle window...
+    await vi.waitFor(() => {
+      expect(button.getAttribute("data-animating")).toBe("true");
+    });
+    // ...but the geometry never leaves rest: the resynced clip once the
+    // window closes is byte-identical to the resting path.
+    await vi.waitFor(
+      () => {
+        expect(button.getAttribute("data-animating")).toBe("false");
+      },
+      { timeout: 2000, interval: 20 }
+    );
+    expect(clip.style.clipPath).toBe(restingClip);
+
+    fireEvent.keyUp(button, { key: " " });
+    expect(fill.style.background).toBe("rgb(100, 110, 120)");
+  });
+
+  it("variant='still' ignores releaseWave and deformPress — geometry never deforms", async () => {
+    const LiquidButton = await loadLiquidButton(false);
+    const spring = { stiffness: 550, damping: 60 };
+    const { getByRole, container } = render(
+      <LiquidButton
+        variant="still"
+        releaseWave
+        deformPress
+        pressGlint={false}
+        spring={spring}
+      >
+        Wave
+      </LiquidButton>
+    );
+    const button = getByRole("button", { name: "Wave" });
+    const clip = container.querySelector(
+      '[data-fluidkit="liquid-clip"]'
+    ) as HTMLElement;
+    const restingClip = clip.style.clipPath;
+
+    // A pointer press lands a press point (jelly would dent around it)...
+    fireEvent.pointerDown(button);
+    await vi.waitFor(() => {
+      expect(button.getAttribute("data-animating")).toBe("true");
+    });
+    expect(clip.style.clipPath).toBe(restingClip);
+
+    // ...and release (jelly would ripple with releaseWave) still moves nothing.
+    fireEvent.pointerUp(button);
+    await vi.waitFor(
+      () => {
+        expect(button.getAttribute("data-animating")).toBe("false");
+      },
+      { timeout: 2000, interval: 20 }
+    );
+    expect(clip.style.clipPath).toBe(restingClip);
+  });
+
+  it("renames JellyButton to LiquidButton (no JellyButton export)", () => {
+    expect(LiquidButtonModule.LiquidButton).toBeDefined();
+    // @ts-expect-error — JellyButton was renamed to LiquidButton; no alias.
+    expect(LiquidButtonModule.JellyButton).toBeUndefined();
+  });
+
   it("commits no React updates during the settle loop (frames go through the imperative handle)", async () => {
-    const JellyButton = await loadJellyButton(false);
+    const LiquidButton = await loadLiquidButton(false);
     const onRender = vi.fn();
     const { getByRole } = render(
-      <Profiler id="jelly" onRender={onRender}>
-        <JellyButton>Profiled</JellyButton>
+      <Profiler id="liquid" onRender={onRender}>
+        <LiquidButton>Profiled</LiquidButton>
       </Profiler>
     );
     const button = getByRole("button", { name: "Profiled" });
@@ -175,11 +268,11 @@ describe("JellyButton", () => {
   });
 
   it("paints on a bleed canvas so widened press geometry isn't sliced at the button box", async () => {
-    const JellyButton = await loadJellyButton(true);
+    const LiquidButton = await loadLiquidButton(true);
     const { getByRole, container } = render(
-      <JellyButton width={160} height={48} squash={0.12}>
+      <LiquidButton width={160} height={48} squash={0.12}>
         B
-      </JellyButton>
+      </LiquidButton>
     );
     // The button's layout box stays at the requested size...
     const button = getByRole("button", { name: "B" });
@@ -189,7 +282,7 @@ describe("JellyButton", () => {
     // widened press geometry (plus spring overshoot) has room to paint.
     // bleed = ceil(160 * 0.12) = 20.
     const canvas = container.querySelector(
-      '[data-fluidkit="jelly-canvas"]'
+      '[data-fluidkit="liquid-canvas"]'
     ) as HTMLElement;
     expect(canvas).not.toBeNull();
     expect(canvas.style.top).toBe("-20px");
@@ -209,20 +302,20 @@ describe("JellyButton", () => {
   });
 
   it("composes consumer pointer/keyboard handlers (they still fire)", async () => {
-    const JellyButton = await loadJellyButton(false);
+    const LiquidButton = await loadLiquidButton(false);
     const onPointerDown = vi.fn();
     const onPointerUp = vi.fn();
     const onKeyDown = vi.fn();
     const onKeyUp = vi.fn();
     const { getByRole } = render(
-      <JellyButton
+      <LiquidButton
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onKeyDown={onKeyDown}
         onKeyUp={onKeyUp}
       >
         Compose
-      </JellyButton>
+      </LiquidButton>
     );
     const button = getByRole("button", { name: "Compose" });
 
@@ -243,9 +336,9 @@ describe("JellyButton", () => {
   });
 
   it("force-releases when disabled flips true mid-press and geometry returns home", async () => {
-    const JellyButton = await loadJellyButton(false);
+    const LiquidButton = await loadLiquidButton(false);
     const { getByRole, container, rerender } = render(
-      <JellyButton>Hold</JellyButton>
+      <LiquidButton>Hold</LiquidButton>
     );
     const button = getByRole("button", { name: "Hold" });
     const clip = container.querySelector(
@@ -259,7 +352,7 @@ describe("JellyButton", () => {
       expect(clip.style.clipPath).not.toBe(restingClip);
     });
 
-    rerender(<JellyButton disabled>Hold</JellyButton>);
+    rerender(<LiquidButton disabled>Hold</LiquidButton>);
     expect(button.getAttribute("data-pressed")).toBe("false");
 
     // The spring retargets home; once it settles the clip is exactly the
@@ -273,21 +366,21 @@ describe("JellyButton", () => {
   });
 
   it("paints a specular highlight for glass but not for flat", async () => {
-    const JellyButton = await loadJellyButton(true);
-    const glass = render(<JellyButton material="glass">G</JellyButton>);
+    const LiquidButton = await loadLiquidButton(true);
+    const glass = render(<LiquidButton material="glass">G</LiquidButton>);
     expect(
       glass.container.querySelectorAll("ellipse").length
     ).toBeGreaterThan(0);
-    const flat = render(<JellyButton material="flat">F</JellyButton>);
+    const flat = render(<LiquidButton material="flat">F</LiquidButton>);
     expect(flat.container.querySelectorAll("ellipse")).toHaveLength(0);
   });
 
   it("pressColor paints the pressed fill and reverts on release", async () => {
-    const JellyButton = await loadJellyButton(false);
+    const LiquidButton = await loadLiquidButton(false);
     const { getByRole, container } = render(
-      <JellyButton material="flat" color="rgb(100, 110, 120)" pressColor="rgb(10, 20, 30)">
+      <LiquidButton material="flat" color="rgb(100, 110, 120)" pressColor="rgb(10, 20, 30)">
         Tint
-      </JellyButton>
+      </LiquidButton>
     );
     const button = getByRole("button", { name: "Tint" });
     const fill = container.querySelector(
@@ -307,16 +400,16 @@ describe("JellyButton", () => {
   });
 
   it("pressFeedback=false leaves the fill untouched while pressed", async () => {
-    const JellyButton = await loadJellyButton(false);
+    const LiquidButton = await loadLiquidButton(false);
     const { getByRole, container } = render(
-      <JellyButton
+      <LiquidButton
         material="flat"
         color="rgb(100, 110, 120)"
         pressColor="rgb(10, 20, 30)"
         pressFeedback={false}
       >
         Off
-      </JellyButton>
+      </LiquidButton>
     );
     const fill = container.querySelector(
       '[data-fluidkit="liquid-fill"]'
@@ -326,11 +419,11 @@ describe("JellyButton", () => {
   });
 
   it("press feedback still applies under reduced motion (color, not motion)", async () => {
-    const JellyButton = await loadJellyButton(true);
+    const LiquidButton = await loadLiquidButton(true);
     const { getByRole, container } = render(
-      <JellyButton material="flat" color="rgb(100, 110, 120)" pressColor="rgb(10, 20, 30)">
+      <LiquidButton material="flat" color="rgb(100, 110, 120)" pressColor="rgb(10, 20, 30)">
         Calm
-      </JellyButton>
+      </LiquidButton>
     );
     const fill = container.querySelector(
       '[data-fluidkit="liquid-fill"]'
@@ -342,32 +435,32 @@ describe("JellyButton", () => {
   });
 
   it("disables speculars when reflection is false", async () => {
-    const JellyButton = await loadJellyButton(true);
+    const LiquidButton = await loadLiquidButton(true);
     const { container } = render(
-      <JellyButton material="glass" reflection={false}>
+      <LiquidButton material="glass" reflection={false}>
         R
-      </JellyButton>
+      </LiquidButton>
     );
     expect(container.querySelectorAll("ellipse")).toHaveLength(0);
   });
 
   it("squash sets the press depth; intensity (material volume) never touches geometry", async () => {
-    const JellyButton = await loadJellyButton(false);
+    const LiquidButton = await loadLiquidButton(false);
     // Snappier spring than the default so the settle window closes fast.
     const spring = { stiffness: 550, damping: 60 };
 
     /** Press via keyboard (symmetric), wait for the settle window to close,
      * and read the resynced pressed clip — exactly the spring target. */
-    async function settledPressClip(props: Partial<JellyButtonProps>) {
+    async function settledPressClip(props: Partial<LiquidButtonProps>) {
       const utils = render(
-        <JellyButton
+        <LiquidButton
           deformPress={false}
           pressGlint={false}
           spring={spring}
           {...props}
         >
           P
-        </JellyButton>
+        </LiquidButton>
       );
       const button = utils.getByRole("button", { name: "P" });
       const clip = utils.container.querySelector(
@@ -397,22 +490,22 @@ describe("JellyButton", () => {
   });
 
   it("scales specular brightness with `intensity`", async () => {
-    const JellyButton = await loadJellyButton(true);
+    const LiquidButton = await loadLiquidButton(true);
     expectIntensityScalesSpeculars((props) =>
-      render(<JellyButton {...props}>I</JellyButton>)
+      render(<LiquidButton {...props}>I</LiquidButton>)
     );
   });
 
   it("renders the shadow layer by default and drops it on `shadow={false}`", async () => {
-    const JellyButton = await loadJellyButton(true);
+    const LiquidButton = await loadLiquidButton(true);
     expectShadowToggles((props) =>
-      render(<JellyButton {...props}>S</JellyButton>)
+      render(<LiquidButton {...props}>S</LiquidButton>)
     );
   });
 
   it("default speculars keep the pre-pack 0.28 opacity (intensity defaults to 'present')", async () => {
-    const JellyButton = await loadJellyButton(true);
-    const { container } = render(<JellyButton>D</JellyButton>);
+    const LiquidButton = await loadLiquidButton(true);
+    const { container } = render(<LiquidButton>D</LiquidButton>);
     const opacities = Array.from(container.querySelectorAll("ellipse"))
       .map((el) => Number(el.getAttribute("opacity") ?? 0))
       .filter((opacity) => opacity > 0);

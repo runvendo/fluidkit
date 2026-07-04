@@ -35,7 +35,7 @@ import { usePrefersReducedMotion } from "../utils";
 import { useMotionSprings, type SpringConfig } from "../liquid/useMotionSprings";
 
 /** Fractional squash: press scales X by `1 + intensity`, Y by its inverse.
- * Exported so other press-squash primitives (e.g. `JellyButton`, which
+ * Exported so other press-squash primitives (e.g. `LiquidButton`, which
  * squashes geometry instead of a CSS transform) share the same default
  * instead of redeclaring it. */
 export const DEFAULT_INTENSITY = 0.12;

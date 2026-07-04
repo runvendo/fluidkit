@@ -19,8 +19,8 @@ export type {
 } from "./tabs";
 export { Ripple } from "./Ripple";
 export type { RippleProps } from "./Ripple";
-export { JellyButton } from "./JellyButton";
-export type { JellyButtonProps } from "./JellyButton";
+export { LiquidButton } from "./LiquidButton";
+export type { LiquidButtonProps } from "./LiquidButton";
 export { MeshGradient } from "./MeshGradient";
 export type { MeshGradientProps } from "./MeshGradient";
 export { Silk } from "./Silk";

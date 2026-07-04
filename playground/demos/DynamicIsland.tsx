@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { JellyButton, MorphSurface } from "fluidkit";
+import { LiquidButton, MorphSurface } from "fluidkit";
 
 /**
  * Dynamic Island — a workout-timer live activity. The island is one
  * MorphSurface: a flat black pill that liquid-morphs into the expanded
- * card. Tap to toggle; the controls are JellyButtons.
+ * card. Tap to toggle; the controls are LiquidButtons.
  */
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -56,7 +56,7 @@ export function DynamicIsland() {
             {time}
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <JellyButton
+            <LiquidButton
               material="flat"
               color="#2c2e38"
               width={100}
@@ -68,8 +68,8 @@ export function DynamicIsland() {
               style={{ color: "#fff", fontSize: 12.5, fontWeight: 650 }}
             >
               {running ? "Pause" : "Resume"}
-            </JellyButton>
-            <JellyButton
+            </LiquidButton>
+            <LiquidButton
               material="flat"
               color="#e0483f"
               width={72}
@@ -83,7 +83,7 @@ export function DynamicIsland() {
               style={{ color: "#fff", fontSize: 12.5, fontWeight: 650 }}
             >
               End
-            </JellyButton>
+            </LiquidButton>
           </div>
         </div>
       }
