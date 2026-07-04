@@ -298,6 +298,7 @@ export function CausticsLayer({
     <div
       ref={hostRef}
       data-fluidkit="caustics-layer"
+      data-animating={inView && !reduced}
       aria-hidden="true"
       style={hostStyle}
     />
