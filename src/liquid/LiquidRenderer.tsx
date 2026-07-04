@@ -8,7 +8,9 @@
  *                never backdrop-samples a heavy black behind itself)
  *   2. clip    — wrapper holding the clip-path; the material fill (possibly
  *                backdrop-filtered) is its CHILD (Chromium artifact when
- *                clip-path + backdrop-filter share an element)
+ *                clip-path + backdrop-filter share an element). For the
+ *                caustics material a `CausticsLayer` (WebGL light) mounts
+ *                after the fill, clipped by the same wrapper.
  *   3. spec    — svg with EXPLICIT 100% width/height, clipped to the shape,
  *                radial-gradient ellipses (no blur filters)
  *   4. content — unclipped overlay; only ever cross-fades, never scales
@@ -23,6 +25,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { forwardRef, useId, useImperativeHandle, useRef } from "react";
+import { CausticsLayer } from "./caustics";
 import type { ResolvedMaterial } from "./materials";
 import type { SpecularSpot } from "./specular";
 
@@ -149,6 +152,9 @@ export const LiquidRenderer = forwardRef<
           data-fluidkit="liquid-fill"
           style={{ ...layer, ...material.fillStyle }}
         />
+        {material.kind === "caustics" && material.caustics && (
+          <CausticsLayer light={material.caustics.light} />
+        )}
       </div>
       {showSpec && (
         <svg

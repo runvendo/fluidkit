@@ -126,4 +126,23 @@ describe("LiquidRenderer", () => {
     expect(overlay.getAttribute("data-fluidkit")).toBe("liquid-content");
     expect(overlay.style.clipPath).toBe("");
   });
+
+  it("mounts the caustics layer inside the clip for caustics material", () => {
+    const { container } = render(
+      <LiquidRenderer path={PATH} material={resolveMaterial("caustics")} />
+    );
+    const clip = container.querySelector('[data-fluidkit="liquid-clip"]');
+    expect(
+      clip?.querySelector('[data-fluidkit="caustics-layer"]')
+    ).toBeTruthy();
+  });
+
+  it("mounts no caustics layer for glass", () => {
+    const { container } = render(
+      <LiquidRenderer path={PATH} material={resolveMaterial("glass")} />
+    );
+    expect(
+      container.querySelector('[data-fluidkit="caustics-layer"]')
+    ).toBeNull();
+  });
 });
