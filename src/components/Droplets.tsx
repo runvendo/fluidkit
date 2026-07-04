@@ -27,15 +27,18 @@ import {
 import { CONNECT_STRETCH, SNAP_STRETCH } from "../liquid/tension";
 import type {
   LiquidBody,
-  LiquidMaterial,
   LiquidSceneHandle,
   SpecularSpot,
   Vec,
 } from "../liquid";
+import { resolveIntensity } from "./intensity";
+import type { SurfaceStyleProps } from "./surface";
 import { useMotionSprings } from "../liquid/useMotionSprings";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
-export interface DropletsProps extends HTMLAttributes<HTMLDivElement> {
+export interface DropletsProps
+  extends SurfaceStyleProps,
+    HTMLAttributes<HTMLDivElement> {
   /** Number of drops in the cluster. */
   count?: number;
   /** Base drop diameter in px. */
@@ -49,25 +52,6 @@ export interface DropletsProps extends HTMLAttributes<HTMLDivElement> {
   bleed?: number;
   /** Merge/split cycle speed multiplier. */
   speed?: number;
-  /** Rendered material. */
-  material?: LiquidMaterial;
-  /** Glass tint (translucent white by default). */
-  tint?: string;
-  /** Flat-material fill color. */
-  color?: string;
-  /**
-   * Scene light position in px (container coordinates). `null` disables
-   * specular highlights. Defaults to above the stage, 30% from the left.
-   */
-  light?: Vec | null;
-  /** Paint specular reflections on glass. Defaults to `true`. */
-  reflection?: boolean;
-  /**
-   * Edge lensing on glass via an SVG displacement filter inside
-   * `backdrop-filter` (Chromium-only; silently degrades to plain glass
-   * blur elsewhere). Defaults to `false`.
-   */
-  refraction?: boolean;
   /** An extra drop chases the pointer and merges with the cluster. */
   followPointer?: boolean;
   /**
@@ -146,6 +130,13 @@ export function Droplets({
   light,
   reflection = true,
   refraction = false,
+  // Droplets' pre-pack specular opacity was `specularPlacement`'s own
+  // default (0.7) — nobody ever overrode it — which already equals the
+  // "present" preset exactly, so intensity maps straight through (no 0.4x
+  // scaling like JellyButton/MorphSurface): default "present" reproduces
+  // today's 0.7 pixel-identically.
+  intensity = "present",
+  shadow = true,
   followPointer = false,
   interactive = false,
   onGrab,
@@ -177,6 +168,7 @@ export function Droplets({
   );
   const sceneLight =
     !reflection || light === null ? null : light ?? defaultLight(side, side);
+  const specularOpacity = resolveIntensity(intensity);
 
   // x/y springs per drop, interleaved [x0, y0, x1, y1, ...]
   const springs = useMotionSprings(
@@ -210,9 +202,10 @@ export function Droplets({
         null,
         resolved.specular,
         sceneLight,
+        specularOpacity,
         false
       ),
-    [homes, center, resolved.specular, sceneLight]
+    [homes, center, resolved.specular, sceneLight, specularOpacity]
   );
 
   // The loop mutates the DOM behind React's back; when it stops (reduced
@@ -293,6 +286,7 @@ export function Droplets({
         tension.current,
         resolved.specular,
         sceneLight,
+        specularOpacity,
         true,
         satPath
       )
@@ -420,7 +414,7 @@ export function Droplets({
         material={resolved}
         speculars={staticScene.speculars}
         specularSlots={resolved.specular && sceneLight ? count + 1 : 0}
-        shadow
+        shadow={shadow}
       />
     </div>
   );
@@ -448,6 +442,7 @@ function buildScene(
   tension: TensionField | null,
   wantSpecular: boolean,
   light: Vec | null,
+  opacity: number,
   bridged: boolean,
   extraPath = ""
 ): Scene {
@@ -455,6 +450,8 @@ function buildScene(
   if (bridged && tension) path += tension.bridges(bodies);
   path += extraPath;
   const speculars =
-    wantSpecular && light ? bodies.map((b) => specularPlacement(b, light)) : [];
+    wantSpecular && light
+      ? bodies.map((b) => specularPlacement(b, light, opacity))
+      : [];
   return { path, speculars };
 }

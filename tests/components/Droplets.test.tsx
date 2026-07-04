@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import { Profiler } from "react";
+import {
+  expectIntensityScalesSpeculars,
+  expectNullLightPaintsNoSpeculars,
+  expectShadowToggles,
+} from "./surfacePack";
 
 /** Same mocking pattern as the other component tests. */
 async function loadDroplets(reduced: boolean) {
@@ -63,6 +68,35 @@ describe("Droplets", () => {
       <Droplets material="glass" reflection={false} />
     );
     expect(container.querySelectorAll("ellipse")).toHaveLength(0);
+  });
+
+  // Pin: `specularPlacement`'s own default opacity (0.7) is what Droplets has
+  // always rendered — it never passed a third argument. This must keep
+  // holding once `intensity` exists (default "present" reproduces it).
+  it("pins today's default specular opacity at 0.7 (specularPlacement's own default, never overridden)", async () => {
+    const Droplets = await loadDroplets(true);
+    expectNullLightPaintsNoSpeculars((props) =>
+      render(<Droplets {...props} />)
+    );
+    const { container } = render(<Droplets material="glass" />);
+    const opacities = Array.from(container.querySelectorAll("ellipse"))
+      .map((el) => Number(el.getAttribute("opacity") ?? 0))
+      .filter((opacity) => opacity > 0);
+    // One lit spot per drop (default count 3).
+    expect(opacities).toHaveLength(3);
+    for (const opacity of opacities) {
+      expect(opacity).toBeCloseTo(0.7, 12);
+    }
+  });
+
+  it("scales specular brightness with `intensity`", async () => {
+    const Droplets = await loadDroplets(true);
+    expectIntensityScalesSpeculars((props) => render(<Droplets {...props} />));
+  });
+
+  it("renders the shadow layer by default and drops it on `shadow={false}`", async () => {
+    const Droplets = await loadDroplets(true);
+    expectShadowToggles((props) => render(<Droplets {...props} />));
   });
 
   it("commits no React updates during the animation loop (scenes go through the imperative handle)", async () => {

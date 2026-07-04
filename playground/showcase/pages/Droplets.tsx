@@ -29,10 +29,11 @@ export default function DropletsPage() {
   const [reflection, setReflection] = useState(true);
   const [interactive, setInteractive] = useState(true);
   const [refraction, setRefraction] = useState(false);
+  const [intensity, setIntensity] = useState(0.7);
 
   const usage = `import { Droplets } from "fluidkit";
 
-<Droplets${interactive ? " interactive" : " followPointer"} bleed={120} material="${material}"${refraction ? " refraction" : ""} />`;
+<Droplets${interactive ? " interactive" : " followPointer"} bleed={120} material="${material}"${refraction ? " refraction" : ""}${intensity !== 0.7 ? ` intensity={${intensity}}` : ""} />`;
 
   return (
     <PageLayout
@@ -54,6 +55,7 @@ export default function DropletsPage() {
               material={material}
               reflection={reflection}
               refraction={refraction}
+              intensity={intensity}
               color={material === "flat" ? FLAT_COLOR : undefined}
             />
           </Stage>
@@ -62,6 +64,7 @@ export default function DropletsPage() {
             <Toggle label="interactive" value={interactive} set={setInteractive} />
             <Toggle label="reflection" value={reflection} set={setReflection} />
             <Toggle label="refraction" value={refraction} set={setRefraction} />
+            <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
             <Slider label="count" value={count} set={setCount} min={1} max={5} />
             <Slider label="size" value={size} set={setSize} min={20} max={64} />
             <Slider label="spread" value={spread} set={setSpread} min={40} max={160} />
