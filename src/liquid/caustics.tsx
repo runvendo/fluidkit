@@ -67,17 +67,17 @@ float web(vec2 p, float t) {
   float f = sin(dot(q, vec2(0.98, 0.21)) * 2.10 + t * 0.70)
           + sin(dot(q, vec2(-0.45, 0.89)) * 1.71 - t * 0.53)
           + sin(dot(q, vec2(0.37, -0.93)) * 2.63 + t * 0.31);
-  float ridge = 1.0 - abs(f) * 0.62;
-  return pow(clamp(ridge, 0.0, 1.0), 5.0);
+  float ridge = 1.0 - abs(f) * 0.40;
+  return pow(clamp(ridge, 0.0, 1.0), 2.6);
 }
 
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes;
   vec2 p = uv * vec2(uRes.x / uRes.y, 1.0) * (6.0 / uScale);
-  float g = web(p, uTime) + 0.6 * web(p * 1.9 + 3.7, uTime * 1.3);
+  float g = web(p, uTime) + 0.5 * web(p * 1.9 + 3.7, uTime * 1.3);
   float d = uv.x + (1.0 - uv.y) * 0.6;
   float beam = smoothstep(0.10, 0.55, d) * smoothstep(1.9, 0.9, d);
-  float glow = g * uIntensity * 0.85 * mix(1.0, 0.45 + 0.55 * beam, uBand);
+  float glow = g * g * uIntensity * 0.9 * mix(1.0, 0.45 + 0.55 * beam, uBand);
   gl_FragColor = vec4(uLight, clamp(glow, 0.0, 1.0));
 }
 `;
