@@ -4,8 +4,8 @@
  * On glass the bead is lit like LiquidCard — the shared rim ring + inset
  * glow wrap the whole border, brightest toward the scene light, plus one
  * glint on the stretch facing it (the same single light source as every
- * other surface). Mercury and flat stay unlit per the house material
- * rules — there the pill profile and shadow carry the read.
+ * other surface). Flat stays unlit per the house material
+ * rule — there the pill profile and shadow carry the read.
  *
  * Static like LiquidCard: the bead spans whatever width its container
  * gives it, a ResizeObserver rebuilds the geometry on layout changes, and
@@ -20,31 +20,18 @@ import {
   defaultLight,
   resolveMaterial,
   roundRectPath,
+  useRefraction,
 } from "../liquid";
-import type { LiquidMaterial, SpecularSpot, Vec } from "../liquid";
+import type { SpecularSpot, Vec } from "../liquid";
 import { resolveIntensity } from "./intensity";
-import type { LiquidIntensity } from "./intensity";
 import { rimGlowStyle, rimStyle } from "./rim";
+import type { SurfaceStyleProps } from "./surface";
 
-export interface MeniscusDividerProps extends HTMLAttributes<HTMLDivElement> {
-  material?: LiquidMaterial;
-  /** Glass tint override. */
-  tint?: string;
-  /** Mercury/flat fill override. */
-  color?: string;
+export interface MeniscusDividerProps
+  extends SurfaceStyleProps,
+    HTMLAttributes<HTMLDivElement> {
   /** Bead height in px. Defaults to `4`. */
   thickness?: number;
-  /**
-   * How loudly the glint reads: 0–1, or the presets `"whisper"` (0.35) /
-   * `"present"` (0.7). Defaults to `"whisper"`.
-   */
-  intensity?: LiquidIntensity;
-  /** Scene light in divider coordinates; null disables the glint. */
-  light?: Vec | null;
-  /** Paint the glint on glass. Defaults to `true`. */
-  reflection?: boolean;
-  /** Drop shadow lifting the bead off the page. Defaults to `true`. */
-  shadow?: boolean;
 }
 
 function buildBeadScene(
@@ -81,6 +68,7 @@ export function MeniscusDivider({
   intensity = "whisper",
   light,
   reflection = true,
+  refraction = false,
   shadow = true,
   className,
   style,
@@ -103,9 +91,14 @@ export function MeniscusDivider({
     return () => ro.disconnect();
   }, []);
 
+  const { url: refractionUrl, defs: refractionDefs } = useRefraction(
+    refraction && material === "glass",
+    width ?? 0,
+    thickness
+  );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, refractionUrl }),
+    [material, tint, color, refractionUrl]
   );
   const volume = resolveIntensity(intensity);
 
@@ -144,6 +137,7 @@ export function MeniscusDivider({
       data-fluidkit="meniscus-divider"
       {...rest}
     >
+      {refractionDefs}
       {scene && (
         <LiquidRenderer
           path={scene.path}

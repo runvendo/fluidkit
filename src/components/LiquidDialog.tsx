@@ -44,9 +44,9 @@ import {
   resolveMaterial,
   roundRectPath,
   specularPlacement,
+  useRefraction,
 } from "../liquid";
 import type {
-  LiquidMaterial,
   LiquidSceneHandle,
   SpecularSpot,
   Vec,
@@ -54,11 +54,12 @@ import type {
 import { useMotionSprings } from "../liquid/useMotionSprings";
 import { usePrefersReducedMotion } from "../utils";
 import { resolveIntensity } from "./intensity";
-import type { LiquidIntensity } from "./intensity";
 import { rimGlowStyle, rimStyle } from "./rim";
+import type { SurfaceStyleProps } from "./surface";
 
 export interface LiquidDialogProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "role"> {
+  extends SurfaceStyleProps,
+    Omit<HTMLAttributes<HTMLDivElement>, "role"> {
   /** Controlled state. */
   open: boolean;
   /** Called on Escape or backdrop click. */
@@ -70,24 +71,10 @@ export interface LiquidDialogProps
   origin?: HTMLElement | null;
   /** Accessible dialog name. */
   "aria-label"?: string;
-  material?: LiquidMaterial;
-  tint?: string;
-  color?: string;
-  /**
-   * How loudly the material reads: 0–1, or the presets `"whisper"`
-   * (0.35) / `"present"` (0.7). Defaults to `"whisper"`.
-   */
-  intensity?: LiquidIntensity;
   /** Corner radius in px. Defaults to `24`. */
   radius?: number;
   /** Content padding in px. Defaults to `28`. */
   padding?: number;
-  /** Scene light in dialog coordinates; null disables speculars. */
-  light?: Vec | null;
-  /** Paint specular reflections on glass. Defaults to `true`. */
-  reflection?: boolean;
-  /** Drop shadow under the surface. Defaults to `true`. */
-  shadow?: boolean;
   children?: ReactNode;
 }
 
@@ -150,6 +137,7 @@ export function LiquidDialog({
   padding = 28,
   light,
   reflection = true,
+  refraction = false,
   shadow = true,
   children,
   className,
@@ -239,9 +227,17 @@ export function LiquidDialog({
     return () => ro.disconnect();
   }, [mounted]);
 
+  // Sized to the OPEN (measured) box, not the mid-morph pw/ph — the dialog
+  // is a morphing surface, but the refraction lens should match its settled
+  // shape, same as `LiquidPanel` sizes to its box.
+  const { url: refractionUrl, defs: refractionDefs } = useRefraction(
+    refraction && material === "glass",
+    size?.w ?? 0,
+    size?.h ?? 0
+  );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, refractionUrl }),
+    [material, tint, color, refractionUrl]
   );
   const volume = resolveIntensity(intensity);
   const sceneLight = useMemo(() => {
@@ -404,6 +400,10 @@ export function LiquidDialog({
       ? "blur(6px) saturate(1.15)"
       : "blur(0px) saturate(1)",
     opacity: entered ? 1 : 0,
+    // The layer is built fresh every open and transitions immediately;
+    // hint the compositor so the first frames aren't spent promoting and
+    // rasterizing it cold (worst after the page has sat idle).
+    willChange: "opacity, backdrop-filter",
     // Open: the water rises with the morph. Close: the fade WAITS while
     // the box drops back toward the trigger, then drains — fading at
     // t=0 would chop the drop-back morph off mid-flight.
@@ -466,6 +466,7 @@ export function LiquidDialog({
             pointerEvents: "none",
           }}
         >
+          {refractionDefs}
           {staticScene && (
             <LiquidRenderer
               ref={renderer}

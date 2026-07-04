@@ -8,14 +8,16 @@ import {
   Slider,
   Toggle,
   Seg,
+  ColorField,
   Snippet,
   VariantGrid,
   VariantCell,
+  glassTintFromHex,
 } from "../kit";
 
 type LiquidMaterial = NonNullable<DropletsProps["material"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 
 /** Flat material needs an explicit fill — matches the old demo's neutral. */
 const FLAT_COLOR = "#8d94a1";
@@ -29,10 +31,15 @@ export default function DropletsPage() {
   const [reflection, setReflection] = useState(true);
   const [interactive, setInteractive] = useState(true);
   const [refraction, setRefraction] = useState(false);
+  const [intensity, setIntensity] = useState(0.7);
+  // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
+  const [tint, setTint] = useState<string | null>(null);
+  const [color, setColor] = useState(FLAT_COLOR);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
 
   const usage = `import { Droplets } from "fluidkit";
 
-<Droplets${interactive ? " interactive" : " followPointer"} bleed={120} material="${material}"${refraction ? " refraction" : ""} />`;
+<Droplets${interactive ? " interactive" : " followPointer"} bleed={120} material="${material}"${refraction ? " refraction" : ""}${intensity !== 0.7 ? ` intensity={${intensity}}` : ""}${material === "glass" && glassTint ? ` tint="${glassTint}"` : ""}${material === "flat" ? ` color="${color}"` : ""} />`;
 
   return (
     <PageLayout
@@ -54,7 +61,9 @@ export default function DropletsPage() {
               material={material}
               reflection={reflection}
               refraction={refraction}
-              color={material === "flat" ? FLAT_COLOR : undefined}
+              intensity={intensity}
+              tint={material === "glass" ? glassTint : undefined}
+              color={material === "flat" ? color : undefined}
             />
           </Stage>
           <Controls>
@@ -62,6 +71,12 @@ export default function DropletsPage() {
             <Toggle label="interactive" value={interactive} set={setInteractive} />
             <Toggle label="reflection" value={reflection} set={setReflection} />
             <Toggle label="refraction" value={refraction} set={setRefraction} />
+            <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            {material === "glass" ? (
+              <ColorField label="tint" value={tint} set={setTint} />
+            ) : (
+              <ColorField label="color" value={color} set={setColor} />
+            )}
             <Slider label="count" value={count} set={setCount} min={1} max={5} />
             <Slider label="size" value={size} set={setSize} min={20} max={64} />
             <Slider label="spread" value={spread} set={setSpread} min={40} max={160} />
@@ -73,9 +88,6 @@ export default function DropletsPage() {
         <VariantGrid>
           <VariantCell label="glass" wall>
             <Droplets interactive material="glass" />
-          </VariantCell>
-          <VariantCell label="mercury" wall>
-            <Droplets interactive material="mercury" />
           </VariantCell>
           <VariantCell label="flat" wall>
             <Droplets interactive material="flat" color={FLAT_COLOR} />

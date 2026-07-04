@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { MorphSurface } from "fluidkit";
 import type { MorphSurfaceProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Toggle, Seg, Snippet, VariantGrid, VariantCell } from "../kit";
+import { PageLayout, Stage, Controls, Toggle, Seg, Slider, ColorField, Snippet, VariantGrid, VariantCell, glassTintFromHex } from "../kit";
 
 type LiquidMaterial = NonNullable<MorphSurfaceProps["material"]>;
 type Anchor = NonNullable<MorphSurfaceProps["anchor"]>;
 type Absorption = NonNullable<MorphSurfaceProps["absorption"]>;
 
-const MATERIALS: LiquidMaterial[] = ["glass", "mercury", "flat"];
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
 const ANCHORS: Anchor[] = ["center", "top"];
 const ABSORPTIONS: Absorption[] = ["shrink", "pull"];
 
@@ -72,6 +72,12 @@ export default function MorphSurfacePage() {
   const [anchor, setAnchor] = useState<Anchor>("center");
   const [absorption, setAbsorption] = useState<Absorption>("shrink");
   const [spring, setSpring] = useState<SpringPreset>("standard");
+  const [intensity, setIntensity] = useState(0.7);
+  const [shadow, setShadow] = useState(true);
+  // null = untouched: picker shows a neutral swatch, prop stays omitted (component default).
+  const [tint, setTint] = useState<string | null>(null);
+  const [color, setColor] = useState<string | null>(null);
+  const glassTint = tint ? glassTintFromHex(tint) : undefined;
 
   return (
     <PageLayout
@@ -89,6 +95,10 @@ export default function MorphSurfacePage() {
               anchor={anchor}
               absorption={absorption}
               bodySpring={SPRING_PRESETS[spring]}
+              intensity={intensity}
+              shadow={shadow}
+              tint={material === "glass" ? glassTint : undefined}
+              color={material === "flat" ? color ?? undefined : undefined}
               closedContent={<PillFace />}
               openContent={<PanelFace />}
             />
@@ -101,20 +111,26 @@ export default function MorphSurfacePage() {
             <Toggle label="reflection" value={reflection} set={setReflection} />
             <Toggle label="refraction" value={refraction} set={setRefraction} />
             <Toggle label="satellites" value={satellites} set={setSatellites} />
+            <Toggle label="shadow" value={shadow} set={setShadow} />
+            <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            {material === "glass" ? (
+              <ColorField label="tint" value={tint} set={setTint} />
+            ) : (
+              <ColorField label="color" value={color} set={setColor} />
+            )}
           </Controls>
         </>
       }
       variants={
         <VariantGrid>
           <MorphVariant material="glass" />
-          <MorphVariant material="mercury" />
           <MorphVariant material="flat" />
         </VariantGrid>
       }
       usage={
         <Snippet code={`<MorphSurface
   open={open}
-  material="${material}"${anchor !== "center" ? `\n  anchor="${anchor}"` : ""}${absorption !== "shrink" ? `\n  absorption="${absorption}"` : ""}${spring !== "standard" ? `\n  bodySpring={{ stiffness: ${SPRING_PRESETS[spring].stiffness}, damping: ${SPRING_PRESETS[spring].damping} }}` : ""}${refraction ? "\n  refraction" : ""}
+  material="${material}"${anchor !== "center" ? `\n  anchor="${anchor}"` : ""}${absorption !== "shrink" ? `\n  absorption="${absorption}"` : ""}${spring !== "standard" ? `\n  bodySpring={{ stiffness: ${SPRING_PRESETS[spring].stiffness}, damping: ${SPRING_PRESETS[spring].damping} }}` : ""}${refraction ? "\n  refraction" : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${!shadow ? "\n  shadow={false}" : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}${material === "flat" && color ? `\n  color="${color}"` : ""}
   closedContent={<PillFace />}
   openContent={<PanelFace />}
 />`} />

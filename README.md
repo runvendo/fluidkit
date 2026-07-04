@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/yousefh409/fluidkit/actions/workflows/ci.yml/badge.svg)](https://github.com/yousefh409/fluidkit/actions/workflows/ci.yml)
 
-A React library of liquid UI animations built on one idea: **one liquid engine, swappable materials.** Shapes are real metaball geometry (computed bezier bridges applied as a live `clip-path`), motion is spring-driven with surface tension (drops connect on touch, stretch, and snap), and the same shape renders as clear glass, mercury, or a flat fill via a `material` prop. Built on top of [Motion](https://motion.dev).
+A React library of liquid UI animations built on one idea: **one liquid engine, swappable materials.** Shapes are real metaball geometry (computed bezier bridges applied as a live `clip-path`), motion is spring-driven with surface tension (drops connect on touch, stretch, and snap), and the same shape renders as clear glass or a flat fill via a `material` prop. Built on top of [Motion](https://motion.dev).
 
 ## The core principle
 
@@ -69,10 +69,9 @@ function App() {
 
 ### Materials
 
-`MorphSurface`, `Droplets`, and `Thinking` take `material`:
+Every surface component shares one styling pack, applied wherever it's physically meaningful: `material` (`"glass"`/`"flat"`), `tint`/`color` (the glass tint or flat fill), `intensity` (how loudly the material reads, `0`-`1` or `"whisper"`/`"present"`), `light` (scene light position; `null` disables speculars), `reflection` (specular highlights on/off), `refraction` (opt-in Chromium-only edge lensing), and `shadow` (drop shadow on/off). Components omit only what can't physically apply: `LiquidText`'s lighting is its sheen sweep, not the scene light, so it takes none of `light`/`reflection`/`refraction`/`shadow`.
 
 - `glass` — white tint + backdrop blur/saturation, specular highlights from one configurable scene light (`light` prop), toggleable via `reflection`. Opt-in `refraction` adds Chromium-only edge lensing (SVG displacement inside `backdrop-filter`; degrades silently). A drop of water is liquid glass.
-- `mercury` — solid liquid metal; no gradient, no painted highlight.
 - `flat` — plain color; also the automatic fallback when `backdrop-filter` is unsupported.
 
 ## Cross-cutting guarantees

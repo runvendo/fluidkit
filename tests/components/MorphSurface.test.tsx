@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { Profiler } from "react";
+import {
+  expectIntensityScalesSpeculars,
+  expectShadowToggles,
+} from "./surfacePack";
 
 async function loadMorphSurface(reduced: boolean) {
   vi.resetModules();
@@ -111,5 +115,51 @@ describe("MorphSurface", () => {
     const root = container.firstChild as HTMLElement;
     expect(parseInt(root.style.width, 10)).toBeGreaterThanOrEqual(200);
     expect(parseInt(root.style.height, 10)).toBeGreaterThanOrEqual(160);
+  });
+
+  // Pin: today's two hand-rolled specular sites, BEFORE `intensity` exists.
+  // Satellites use `specularPlacement`'s own bare default (0.7, like
+  // Droplets/Thinking); the body passes a hardcoded 0.28 (like JellyButton's
+  // pre-pack glint). Both must keep rendering these exact numbers once
+  // `intensity` lands (default "present" reproduces each pixel-identically).
+  it("pins today's default specular opacities: satellites at 0.7 (bare default), body at 0.28 (hardcoded)", async () => {
+    const MorphSurface = await loadMorphSurface(true);
+    const { container } = render(<MorphSurface open={false} />);
+    const opacities = Array.from(container.querySelectorAll("ellipse"))
+      .map((el) => Number(el.getAttribute("opacity") ?? 0))
+      .filter((opacity) => opacity > 0);
+    // 2 parked satellites + 1 body sheen.
+    expect(opacities).toHaveLength(3);
+    expect(opacities[0]).toBeCloseTo(0.7, 12);
+    expect(opacities[1]).toBeCloseTo(0.7, 12);
+    expect(opacities[2]).toBeCloseTo(0.28, 12);
+  });
+
+  it("renders the shadow layer by default and drops it on `shadow={false}`", async () => {
+    const MorphSurface = await loadMorphSurface(true);
+    expectShadowToggles((props) => render(<MorphSurface open={false} {...props} />));
+  });
+
+  it("scales specular brightness with `intensity`", async () => {
+    const MorphSurface = await loadMorphSurface(true);
+    expectIntensityScalesSpeculars((props) =>
+      render(<MorphSurface open={false} {...props} />)
+    );
+  });
+
+  // Per-site mapping: the body's hardcoded 0.28 maps `0.4 × intensity` (like
+  // JellyButton); satellites' bare `specularPlacement` default maps identity
+  // (like Droplets/Thinking) — both because that's what reproduces each
+  // site's pre-pack constant at the shared default "present" (0.7).
+  it("intensity scales the body specular by 0.4x and satellites 1:1", async () => {
+    const MorphSurface = await loadMorphSurface(true);
+    const { container } = render(<MorphSurface open={false} intensity={0.5} />);
+    const opacities = Array.from(container.querySelectorAll("ellipse"))
+      .map((el) => Number(el.getAttribute("opacity") ?? 0))
+      .filter((opacity) => opacity > 0);
+    expect(opacities).toHaveLength(3);
+    expect(opacities[0]).toBeCloseTo(0.5, 12);
+    expect(opacities[1]).toBeCloseTo(0.5, 12);
+    expect(opacities[2]).toBeCloseTo(0.2, 12);
   });
 });

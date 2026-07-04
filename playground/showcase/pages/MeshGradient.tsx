@@ -5,6 +5,7 @@ import {
   Stage,
   Controls,
   Slider,
+  ColorField,
   Snippet,
   VariantGrid,
   VariantCell,
@@ -17,23 +18,6 @@ const MESH_PALETTES: Record<"pastel" | "citrus" | "mint", string[]> = {
   citrus: ["#ffd98a", "#ffb37a", "#ff9eb0"],
   mint: ["#93e6c8", "#8ad4ea", "#b3c0f5"],
 };
-
-/** Same .field/label look as the kit's Slider/Seg, with a native color input — the kit has no color control. */
-function ColorField({ label, value, set }: { label: string; value: string; set: (v: string) => void }) {
-  return (
-    <div className="field">
-      <label>
-        {label} <span className="val">{value}</span>
-      </label>
-      <input
-        type="color"
-        value={value}
-        onChange={(e) => set(e.target.value)}
-        style={{ width: 44, height: 24, padding: 0, border: "none", background: "none", cursor: "pointer" }}
-      />
-    </div>
-  );
-}
 
 export default function MeshGradientPage() {
   const [colors, setColors] = useState<string[]>(MESH_PALETTES.pastel);

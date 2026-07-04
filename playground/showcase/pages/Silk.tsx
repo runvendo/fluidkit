@@ -6,6 +6,7 @@ import {
   Controls,
   Slider,
   Seg,
+  ColorField,
   Snippet,
   VariantGrid,
   VariantCell,
@@ -18,30 +19,13 @@ const SILK_PALETTES: Record<"lilac" | "champagne" | "glacier", string[]> = {
   glacier: ["#b8e2f2", "#c2d4f7", "#d6e8f2"],
 };
 
-type SilkMaterial = "color" | "glass";
+type SilkMaterial = "flat" | "glass";
 
-const SILK_MATERIALS: SilkMaterial[] = ["color", "glass"];
-
-/** Same .field/label look as the kit's Slider/Seg, with a native color input — the kit has no color control. */
-function ColorField({ label, value, set }: { label: string; value: string; set: (v: string) => void }) {
-  return (
-    <div className="field">
-      <label>
-        {label} <span className="val">{value}</span>
-      </label>
-      <input
-        type="color"
-        value={value}
-        onChange={(e) => set(e.target.value)}
-        style={{ width: 44, height: 24, padding: 0, border: "none", background: "none", cursor: "pointer" }}
-      />
-    </div>
-  );
-}
+const SILK_MATERIALS: SilkMaterial[] = ["flat", "glass"];
 
 export default function SilkPage() {
   const [colors, setColors] = useState<string[]>(SILK_PALETTES.lilac);
-  const [material, setMaterial] = useState<SilkMaterial>("color");
+  const [material, setMaterial] = useState<SilkMaterial>("flat");
   const [count, setCount] = useState(3);
   const [intensity, setIntensity] = useState(0.55);
   const [speed, setSpeed] = useState(1);

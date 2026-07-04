@@ -108,7 +108,7 @@ describe("Silk", () => {
     const glassWrapper = glass.container.querySelector(
       '[data-fluidkit="silk"]'
     ) as HTMLElement;
-    expect(defaultWrapper.getAttribute("data-material")).toBe("color");
+    expect(defaultWrapper.getAttribute("data-material")).toBe("flat");
     expect(glassWrapper.getAttribute("data-material")).toBe("glass");
 
     sheets(byDefault.container).forEach((el) => {
@@ -116,6 +116,20 @@ describe("Silk", () => {
     });
     sheets(glass.container).forEach((el) => {
       expect(el.style.filter).not.toContain("blur");
+    });
+  });
+
+  it("renders the solid blurred-gradient path when material is explicitly 'flat'", async () => {
+    const Silk = await loadSilk(false);
+    const { container } = render(<Silk colors={["#ff0000"]} material="flat" />);
+
+    const wrapper = container.querySelector(
+      '[data-fluidkit="silk"]'
+    ) as HTMLElement;
+    expect(wrapper.getAttribute("data-material")).toBe("flat");
+    sheets(container).forEach((el) => {
+      expect(el.style.background).toContain("linear-gradient");
+      expect(el.style.filter).toContain("blur");
     });
   });
 

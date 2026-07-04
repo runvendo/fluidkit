@@ -50,10 +50,13 @@ describe("useInView (with IntersectionObserver available)", () => {
     vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
   });
 
-  it("reports inView as false before any intersecting entry fires", () => {
+  it("stays in view between mount and the observer's first callback", () => {
+    // The first IntersectionObserver callback is asynchronous. Reporting
+    // false in that window makes consumers treat a visible element as
+    // off-screen — an `open` flip then snaps instead of animating.
     const { getByTestId } = render(<Probe />);
 
-    expect(getByTestId("target").textContent).toBe("false");
+    expect(getByTestId("target").textContent).toBe("true");
   });
 
   it("flips inView to true when the observer fires an intersecting entry", () => {

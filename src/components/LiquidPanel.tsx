@@ -35,7 +35,6 @@ import {
   useRefraction,
 } from "../liquid";
 import type {
-  LiquidMaterial,
   LiquidSceneHandle,
   SpecularSpot,
   Vec,
@@ -43,40 +42,22 @@ import type {
 import { useMotionSprings } from "../liquid/useMotionSprings";
 import { useInView, usePrefersReducedMotion } from "../utils";
 import { resolveIntensity } from "./intensity";
-import type { LiquidIntensity } from "./intensity";
 import { rimGlowStyle, rimStyle } from "./rim";
+import type { SurfaceStyleProps } from "./surface";
 
 export type LiquidPanelSide = "top" | "bottom" | "left" | "right";
 
-export interface LiquidPanelProps extends HTMLAttributes<HTMLDivElement> {
+export interface LiquidPanelProps
+  extends SurfaceStyleProps,
+    HTMLAttributes<HTMLDivElement> {
   /** Controlled state: true = poured in, false = drained out. */
   open: boolean;
   /** Edge the liquid pours from. Defaults to `"top"`. */
   side?: LiquidPanelSide;
-  material?: LiquidMaterial;
-  tint?: string;
-  color?: string;
-  /**
-   * How loudly the material reads: 0–1, or the presets `"whisper"`
-   * (0.35) / `"present"` (0.7). Defaults to `"whisper"`.
-   */
-  intensity?: LiquidIntensity;
   /** Corner radius in px. Defaults to `20`. */
   radius?: number;
   /** Content padding in px. Defaults to `20`. */
   padding?: number;
-  /** Scene light in panel coordinates; null disables speculars. */
-  light?: Vec | null;
-  /** Paint specular reflections on glass. Defaults to `true`. */
-  reflection?: boolean;
-  /**
-   * Edge lensing on glass via an SVG displacement filter inside
-   * `backdrop-filter` (Chromium-only; silently degrades to plain glass
-   * blur elsewhere). Defaults to `false`.
-   */
-  refraction?: boolean;
-  /** Drop shadow under the surface. Defaults to `true`. */
-  shadow?: boolean;
 }
 
 const POUR_SPRING = { stiffness: 160, damping: 24 };
@@ -188,6 +169,9 @@ export function LiquidPanel({
   // One spring slot: the pour fraction.
   const springs = useMotionSprings(1, () => (open ? 1 : 0), POUR_SPRING);
   const [settling, setSettling] = useState(false);
+  // Mirrors `settling` synchronously (state lands a commit late) so the
+  // resync effect can't flash the target scene on the flip commit.
+  const settlingRef = useRef(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const prevOpen = useRef(open);
@@ -195,10 +179,15 @@ export function LiquidPanel({
     if (prevOpen.current !== open) {
       if (animating) {
         springs.setTargets([open ? 1 : 0]);
+        settlingRef.current = true;
         setSettling(true);
         if (settleTimer.current) clearTimeout(settleTimer.current);
-        settleTimer.current = setTimeout(() => setSettling(false), SETTLE_MS);
+        settleTimer.current = setTimeout(() => {
+          settlingRef.current = false;
+          setSettling(false);
+        }, SETTLE_MS);
       } else {
+        settlingRef.current = false;
         springs.snapTo([open ? 1 : 0]);
       }
     }
@@ -211,7 +200,10 @@ export function LiquidPanel({
 
   // `animating` flipping off mid-settle would strand `settling` true.
   useEffect(() => {
-    if (!animating) setSettling(false);
+    if (!animating) {
+      settlingRef.current = false;
+      setSettling(false);
+    }
   }, [animating]);
 
   const staticScene = useMemo(
@@ -233,8 +225,10 @@ export function LiquidPanel({
   const renderer = useRef<LiquidSceneHandle>(null);
 
   // Resync the declarative scene whenever the settle loop isn't running.
+  // Guarded by the ref, not the state: on the flip commit `settling` is
+  // still false and the state guard alone would flash the target scene.
   useEffect(() => {
-    if (!(animating && settling) && staticScene)
+    if (!(animating && settlingRef.current) && staticScene)
       renderer.current?.setScene(staticScene);
   }, [animating, settling, staticScene]);
 
@@ -252,6 +246,25 @@ export function LiquidPanel({
       )
     );
   });
+
+  // Declarative props for LiquidRenderer. Mid-pour (including the flip
+  // commit itself, where `settling` hasn't landed yet) they must reflect
+  // the CURRENT spring frame — if they jumped to the target scene, React
+  // would paint the fully-poured panel for a frame before the loop takes
+  // over (and blink the surface out on close).
+  const midPour = animating && (settling || prevOpen.current !== open);
+  const renderScene =
+    midPour && size
+      ? buildPourScene(
+          springs.values[0].get(),
+          size.w,
+          size.h,
+          radius,
+          side,
+          resolved.specular ? sceneLight : null,
+          volume
+        )
+      : staticScene;
 
   // Content and rim wait a beat, then rise/fade in once the surface has
   // (mostly) arrived; on close they duck out fast ahead of the drain.
@@ -286,17 +299,18 @@ export function LiquidPanel({
           display: "block",
           pointerEvents: "none",
           // Closed at rest the geometry is a sub-pixel sliver; hide it
-          // (and its shadow) entirely.
-          visibility: !open && !settling ? "hidden" : undefined,
+          // (and its shadow) entirely. Mid-pour (incl. the flip commit,
+          // where `settling` hasn't landed) it must stay visible.
+          visibility: !open && !settling && !midPour ? "hidden" : undefined,
         }}
       >
         {refractionDefs}
-        {staticScene && (
+        {renderScene && (
           <LiquidRenderer
             ref={renderer}
-            path={staticScene.path}
+            path={renderScene.path}
             material={resolved}
-            speculars={staticScene.speculars}
+            speculars={renderScene.speculars}
             specularSlots={resolved.specular && sceneLight ? 1 : 0}
             shadow={shadow}
           />
