@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { LiquidDialog, JellyButton } from "fluidkit";
 import type { LiquidDialogProps } from "fluidkit";
-import { PageLayout, Stage, Controls, Slider, Seg, Snippet } from "../kit";
+import { PageLayout, Stage, Controls, Slider, Seg, Toggle, Snippet } from "../kit";
 
 type LiquidMaterial = NonNullable<LiquidDialogProps["material"]>;
 
@@ -22,6 +22,7 @@ export default function LiquidDialogPage() {
   const [open, setOpen] = useState(false);
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.5);
+  const [refraction, setRefraction] = useState(false);
 
   return (
     <PageLayout
@@ -39,6 +40,7 @@ export default function LiquidDialogPage() {
               aria-label="Example dialog"
               material={material}
               intensity={intensity}
+              refraction={refraction}
               color={material !== "glass" ? FLAT_COLOR : undefined}
             >
               <div style={{ maxWidth: 300 }}>
@@ -65,11 +67,12 @@ export default function LiquidDialogPage() {
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Toggle label="refraction" value={refraction} set={setRefraction} />
           </Controls>
         </>
       }
       usage={
-        <Snippet code={`<LiquidDialog open={open} onClose={() => setOpen(false)} aria-label="Settings" material="${material}" intensity={${intensity}}>
+        <Snippet code={`<LiquidDialog open={open} onClose={() => setOpen(false)} aria-label="Settings" material="${material}" intensity={${intensity}}${refraction ? "\n  refraction" : ""}>
   <h2>Settings</h2>
   …
 </LiquidDialog>`} />

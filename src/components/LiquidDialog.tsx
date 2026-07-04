@@ -44,6 +44,7 @@ import {
   resolveMaterial,
   roundRectPath,
   specularPlacement,
+  useRefraction,
 } from "../liquid";
 import type {
   LiquidMaterial,
@@ -86,6 +87,12 @@ export interface LiquidDialogProps
   light?: Vec | null;
   /** Paint specular reflections on glass. Defaults to `true`. */
   reflection?: boolean;
+  /**
+   * Edge lensing on glass via an SVG displacement filter inside
+   * `backdrop-filter` (Chromium-only; silently degrades to plain glass
+   * blur elsewhere). Defaults to `false`.
+   */
+  refraction?: boolean;
   /** Drop shadow under the surface. Defaults to `true`. */
   shadow?: boolean;
   children?: ReactNode;
@@ -150,6 +157,7 @@ export function LiquidDialog({
   padding = 28,
   light,
   reflection = true,
+  refraction = false,
   shadow = true,
   children,
   className,
@@ -239,9 +247,17 @@ export function LiquidDialog({
     return () => ro.disconnect();
   }, [mounted]);
 
+  // Sized to the OPEN (measured) box, not the mid-morph pw/ph — the dialog
+  // is a morphing surface, but the refraction lens should match its settled
+  // shape, same as `LiquidPanel` sizes to its box.
+  const { url: refractionUrl, defs: refractionDefs } = useRefraction(
+    refraction && material === "glass",
+    size?.w ?? 0,
+    size?.h ?? 0
+  );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color }),
-    [material, tint, color]
+    () => resolveMaterial(material, { tint, color, refractionUrl }),
+    [material, tint, color, refractionUrl]
   );
   const volume = resolveIntensity(intensity);
   const sceneLight = useMemo(() => {
@@ -470,6 +486,7 @@ export function LiquidDialog({
             pointerEvents: "none",
           }}
         >
+          {refractionDefs}
           {staticScene && (
             <LiquidRenderer
               ref={renderer}
