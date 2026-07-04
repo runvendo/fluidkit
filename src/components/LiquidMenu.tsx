@@ -41,6 +41,7 @@ import { useMotionSprings } from "../liquid/useMotionSprings";
 import { usePrefersReducedMotion } from "../utils";
 import { resolveIntensity } from "./intensity";
 import { overlayRoot, overlayZ } from "./overlay";
+import { rimGlowStyle, rimStyle } from "./rim";
 import type { SurfaceStyleProps } from "./surface";
 
 export type LiquidMenuItem =
@@ -461,6 +462,22 @@ export function LiquidMenu({
                 opacity: animating ? 0 : 1,
               }}
             >
+              {/* Rim ring + inset glow (the Card/Dialog treatment) so glass
+                  reads on a plain light page; fades in with the items. */}
+              {menuSize && resolved.specular && sceneLight && volume > 0 && (
+                <>
+                  <span
+                    aria-hidden
+                    data-fluidkit="liquid-menu-glow"
+                    style={rimGlowStyle(menuSize.w, menuSize.h, radius, volume)}
+                  />
+                  <span
+                    aria-hidden
+                    data-fluidkit="liquid-menu-rim"
+                    style={rimStyle(menuSize.w, menuSize.h, radius, sceneLight, volume)}
+                  />
+                </>
+              )}
               {items.map((item, i) => {
                 if (item.type === "separator") {
                   return (

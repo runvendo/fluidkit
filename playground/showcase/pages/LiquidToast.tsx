@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { LiquidToastProvider, toast } from "fluidkit";
-import type { LiquidToastPosition } from "fluidkit";
+import type { LiquidToastPosition, LiquidToastProviderProps } from "fluidkit";
 import {
   ColorField,
   Controls,
@@ -28,11 +28,18 @@ const MESSAGES = [
 ];
 let msgIndex = 0;
 
+type LiquidMaterial = NonNullable<LiquidToastProviderProps["material"]>;
+const MATERIALS: LiquidMaterial[] = ["glass", "flat"];
+const FLAT_COLOR = "#e7eaf2";
+
 export default function LiquidToastPage() {
   const [position, setPosition] = useState<LiquidToastPosition>("bottom-right");
   const [duration, setDuration] = useState(5);
   const [dismissible, setDismissible] = useState(true);
+  const [material, setMaterial] = useState<LiquidMaterial>("glass");
+  const [intensity, setIntensity] = useState(0.7);
   const [tint, setTint] = useState<string | null>(null);
+  const [color, setColor] = useState(FLAT_COLOR);
   const glassTint = tint ? glassTintFromHex(tint) : undefined;
 
   return (
@@ -44,11 +51,14 @@ export default function LiquidToastPage() {
           {/* The provider portals its viewport to the page body — toasts
               condense at the real screen corner, exactly like in an app. */}
           <LiquidToastProvider
-            key={`${position}-${duration}-${dismissible}-${glassTint ?? ""}`}
+            key={`${position}-${duration}-${dismissible}-${material}-${intensity}-${glassTint ?? ""}-${color}`}
             position={position}
             duration={duration * 1000}
             dismissible={dismissible}
-            tint={glassTint}
+            material={material}
+            intensity={intensity}
+            tint={material === "glass" ? glassTint : undefined}
+            color={material === "flat" ? color : undefined}
           />
           <Stage wall hint="fire a toast — it condenses at the screen corner">
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
@@ -86,6 +96,15 @@ export default function LiquidToastPage() {
           </Stage>
           <Controls>
             <Seg label="position" value={position} set={setPosition} options={POSITIONS} />
+            <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
+            <Slider
+              label="intensity"
+              value={intensity}
+              set={setIntensity}
+              min={0}
+              max={1}
+              step={0.05}
+            />
             <Slider
               label="auto-dismiss (0 = sticky)"
               value={duration}
@@ -96,14 +115,18 @@ export default function LiquidToastPage() {
               suffix="s"
             />
             <Toggle label="close button" value={dismissible} set={setDismissible} />
-            <ColorField label="tint" value={tint} set={setTint} />
+            {material === "glass" ? (
+              <ColorField label="tint" value={tint} set={setTint} />
+            ) : (
+              <ColorField label="color" value={color} set={setColor} />
+            )}
           </Controls>
         </>
       }
       usage={
         <Snippet
           code={`// once, near the root
-<LiquidToastProvider${position !== "bottom-right" ? `\n  position="${position}"` : ""}${duration !== 5 ? `\n  duration={${duration * 1000}}` : ""}${!dismissible ? `\n  dismissible={false}` : ""}${glassTint ? `\n  tint="${glassTint}"` : ""}>
+<LiquidToastProvider${position !== "bottom-right" ? `\n  position="${position}"` : ""}${duration !== 5 ? `\n  duration={${duration * 1000}}` : ""}${!dismissible ? `\n  dismissible={false}` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}>
   <App />
 </LiquidToastProvider>
 

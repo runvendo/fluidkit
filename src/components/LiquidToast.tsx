@@ -41,6 +41,7 @@ import { usePrefersReducedMotion } from "../utils";
 import { resolveIntensity } from "./intensity";
 import type { LiquidIntensity } from "./intensity";
 import { overlayRoot, overlayZ } from "./overlay";
+import { rimGlowStyle, rimStyle } from "./rim";
 import type { SurfaceStyleProps } from "./surface";
 
 /* ------------------------------ dispatcher ------------------------------ */
@@ -533,6 +534,29 @@ function ToastItem({
             >
               ×
             </button>
+          )}
+          {/* Rim ring + inset glow (the Card/Dialog treatment) so glass
+              reads on a plain light page. Inside the overlay layer, so they
+              fade in with the content once the pill has formed. */}
+          {size && resolved.specular && sceneLight && surface.volume > 0 && (
+            <>
+              <span
+                aria-hidden
+                data-fluidkit="liquid-toast-glow"
+                style={rimGlowStyle(size.w, size.h, RADIUS, surface.volume)}
+              />
+              <span
+                aria-hidden
+                data-fluidkit="liquid-toast-rim"
+                style={rimStyle(
+                  size.w,
+                  size.h,
+                  RADIUS,
+                  { x: sceneLight.x - BLEED, y: sceneLight.y - BLEED },
+                  surface.volume
+                )}
+              />
+            </>
           )}
         </div>
       </div>
