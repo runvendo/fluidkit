@@ -67,10 +67,12 @@ describe("Ripple (themed)", () => {
     expect(spawnRipple(container).style.background).not.toContain("color-mix");
   });
 
-  it("theme surface colors the flat wash", async () => {
+  it("theme accent colors the flat wash", async () => {
+    // Ripple ink derives from accent — it is click feedback in the brand
+    // color, not a container filled with the surface color.
     const { Ripple, FluidThemeProvider } = await loadThemedRipple();
     const { container } = render(
-      <FluidThemeProvider theme={{ surface: "#123456" }}>
+      <FluidThemeProvider theme={{ accent: "#123456", surface: "#FFFFFF" }}>
         <Ripple>Click me</Ripple>
       </FluidThemeProvider>
     );

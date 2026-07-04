@@ -43,24 +43,30 @@ export interface SurfaceOverlay
 interface DerivationRule {
   /** Accent share (in %) of the derived glass tint; absent = no tint derivation. */
   tintAlpha?: number;
-  /** Which theme token fills `color`: the flat surface, or text glyphs. */
-  colorFrom?: "surface" | "text";
+  /**
+   * Which theme token fills `color`. Containers fill from `surface`; selection
+   * and ink surfaces (a tab's indicator pill, a button fill, ripple ink) fill
+   * from `accent` — their flat fill IS the brand mark, and e.g. flat tabs
+   * paint their active label white, which needs an accent pill under it, not
+   * the brand's (usually light) surface. `text` fills glyphs.
+   */
+  colorFrom?: "surface" | "text" | "accent";
   /** Whether the component exposes a numeric radius prop. */
   radius?: boolean;
 }
 
 const DERIVATION: Record<ThemedComponentKey, DerivationRule> = {
   Droplets: { tintAlpha: 18, colorFrom: "surface" },
-  LiquidButton: { tintAlpha: 20, colorFrom: "surface" },
+  LiquidButton: { tintAlpha: 20, colorFrom: "accent" },
   LiquidCard: { tintAlpha: 14, colorFrom: "surface", radius: true },
   LiquidDialog: { tintAlpha: 16, colorFrom: "surface", radius: true },
   LiquidPanel: { tintAlpha: 12, colorFrom: "surface", radius: true },
-  LiquidTabs: { tintAlpha: 12, colorFrom: "surface" },
+  LiquidTabs: { tintAlpha: 12, colorFrom: "accent" },
   LiquidText: { colorFrom: "text" },
   LiquidTooltip: { tintAlpha: 18, colorFrom: "surface" },
   MeniscusDivider: { tintAlpha: 14, colorFrom: "surface" },
   MorphSurface: { tintAlpha: 16, colorFrom: "surface", radius: true },
-  Ripple: { tintAlpha: 14, colorFrom: "surface" },
+  Ripple: { tintAlpha: 14, colorFrom: "accent" },
   Thinking: { tintAlpha: 16, colorFrom: "surface" },
   VoiceBall: { tintAlpha: 16, colorFrom: "surface" },
 };
@@ -88,6 +94,8 @@ export function deriveSurfaceOverlay(
     overlay.color = theme.surface;
   } else if (rule.colorFrom === "text" && theme.text !== undefined) {
     overlay.color = theme.text;
+  } else if (rule.colorFrom === "accent" && theme.accent !== undefined) {
+    overlay.color = theme.accent;
   }
 
   if (rule.radius && theme.radius !== undefined) overlay.radius = theme.radius;

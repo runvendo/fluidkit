@@ -47,9 +47,11 @@ describe("LiquidButton theming", () => {
     expect(fillOf(container).style.background).toBe("rgb(1, 2, 3)");
   });
 
-  it("theme material+surface switch the default button to a flat brand fill", () => {
+  it("theme material+accent switch the default button to a flat accent fill", () => {
+    // Buttons are ink surfaces: their flat fill derives from accent (the
+    // brand mark), not from the (usually light) surface color.
     const { container } = render(
-      <FluidThemeProvider theme={{ material: "flat", surface: "#101010" }}>
+      <FluidThemeProvider theme={{ material: "flat", accent: "#101010", surface: "#FFFFFF" }}>
         <LiquidButton>Save</LiquidButton>
       </FluidThemeProvider>
     );

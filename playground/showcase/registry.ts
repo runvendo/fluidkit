@@ -31,6 +31,7 @@ export type ShowcasePage = {
  */
 export const REGISTRY: ShowcasePage[] = [
   { slug: "demos", title: "Demos", load: () => import("./pages/Demos") },
+  { slug: "themes", title: "Themes", load: () => import("./pages/Themes") },
   { slug: "droplets", title: "Droplets", load: () => import("./pages/Droplets") },
   { slug: "morph-surface", title: "MorphSurface", load: () => import("./pages/MorphSurface") },
   { slug: "thinking", title: "Thinking", load: () => import("./pages/Thinking") },
