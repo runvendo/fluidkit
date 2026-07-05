@@ -8,6 +8,7 @@ import "./showcase/styles.css";
 // The registry is static, so each page's lazy wrapper is created exactly once
 // here — recreating it per render would remount the page on every state change.
 const PAGES = REGISTRY.map((entry) => ({ ...entry, Page: lazy(entry.load) }));
+const BrandPage = lazy(() => import("./showcase/pages/Brand"));
 // Sidebar partitions, equally static: core pages first, GPU tier grouped below.
 const CORE_PAGES = PAGES.filter((p) => !p.isGpu);
 const GPU_PAGES = PAGES.filter((p) => p.isGpu);
@@ -64,8 +65,17 @@ function App() {
   const active = PAGES.find((p) => p.slug === slug) ?? PAGES[0];
   useEffect(() => {
     // Keep the URL honest after a fallback (replace, so Back still works).
-    if (active && active.slug !== slug) window.location.replace(`#/${active.slug}`);
+    if (slug !== "brand" && active && active.slug !== slug) window.location.replace(`#/${active.slug}`);
   }, [active, slug]);
+
+  if (slug === "brand") {
+    return (
+      <Suspense fallback={null}>
+        <BrandPage />
+      </Suspense>
+    );
+  }
+
   return (
     <>
       <Sidebar activeSlug={active?.slug} />

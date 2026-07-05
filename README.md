@@ -1,8 +1,16 @@
+<p align="center">
+  <img src="docs/assets/banner.png" alt="fluidkit — liquid UI animations for React" width="100%" />
+</p>
+
 # fluidkit
 
-[![CI](https://github.com/runvendo/fluidkit/actions/workflows/ci.yml/badge.svg)](https://github.com/runvendo/fluidkit/actions/workflows/ci.yml)
+[![CI](https://github.com/runvendo/fluidkit/actions/workflows/ci.yml/badge.svg)](https://github.com/runvendo/fluidkit/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/fluidkit)](https://www.npmjs.com/package/fluidkit) [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A React library of liquid UI animations built on one idea: **one liquid engine, swappable materials.** Shapes are real metaball geometry (computed bezier bridges applied as a live `clip-path`), motion is spring-driven with surface tension (drops connect on touch, stretch, and snap), and the same shape renders as clear glass or a flat fill via a `material` prop. Built on top of [Motion](https://motion.dev).
+
+<p align="center">
+  <img src="docs/assets/hero.gif" alt="fluidkit primitives — MorphSurface, LiquidTabs, LiquidSwitch, and Thinking animating on a glass backdrop" width="100%" />
+</p>
 
 ## The core principle
 
