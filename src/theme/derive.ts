@@ -38,6 +38,9 @@ export type ThemedComponentKey =
 export interface SurfaceOverlay
   extends Pick<SurfaceStyleProps, "material" | "tint" | "color" | "intensity"> {
   radius?: number;
+  /** Brand text color, for components that render a label over their own
+   *  glass (LiquidButton) — the label must track the brand's ink. */
+  ink?: string;
 }
 
 interface DerivationRule {
@@ -53,11 +56,13 @@ interface DerivationRule {
   colorFrom?: "surface" | "text" | "accent";
   /** Whether the component exposes a numeric radius prop. */
   radius?: boolean;
+  /** Whether the component receives the brand text color as label ink. */
+  ink?: boolean;
 }
 
 const DERIVATION: Record<ThemedComponentKey, DerivationRule> = {
   Droplets: { tintAlpha: 18, colorFrom: "surface" },
-  LiquidButton: { tintAlpha: 20, colorFrom: "accent" },
+  LiquidButton: { tintAlpha: 20, colorFrom: "accent", ink: true },
   LiquidCard: { tintAlpha: 14, colorFrom: "surface", radius: true },
   LiquidDialog: { tintAlpha: 16, colorFrom: "surface", radius: true },
   LiquidPanel: { tintAlpha: 12, colorFrom: "surface", radius: true },
@@ -99,6 +104,7 @@ export function deriveSurfaceOverlay(
   }
 
   if (rule.radius && theme.radius !== undefined) overlay.radius = theme.radius;
+  if (rule.ink && theme.text !== undefined) overlay.ink = theme.text;
 
   return overlay;
 }

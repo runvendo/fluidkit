@@ -67,6 +67,7 @@ import { resolveIntensity } from "./intensity";
 import type { LiquidIntensity } from "./intensity";
 import type { SurfaceStyleProps } from "./surface";
 import { useThemedSurface } from "../theme";
+import { readableInk } from "./ink";
 import { useInView, usePrefersReducedMotion } from "../utils";
 
 export interface LiquidButtonProps
@@ -623,11 +624,25 @@ export function LiquidButton(props: LiquidButtonProps) {
     ...style,
   };
 
+  // Label ink pairs with what's actually under it. On a flat fill the fill
+  // itself is the backdrop, so contrast is computed from it (a graphite
+  // accent must get a white label, a pastel one dark ink). On glass the
+  // backdrop shows through, so the brand's own text color (theme `text`,
+  // which tracks light/dark mode) is the right ink. No theme and no
+  // parseable fill → inherit currentColor, exactly as before. An explicit
+  // `style.color` from the consumer always wins.
+  const labelInk =
+    style?.color !== undefined
+      ? undefined
+      : material === "flat"
+        ? (readableInk(color) ?? themed.ink)
+        : themed.ink;
   const labelStyle: CSSProperties = {
     display: "grid",
     placeItems: "center",
     width: "100%",
     height: "100%",
+    ...(labelInk !== undefined ? { color: labelInk } : {}),
   };
 
   return (

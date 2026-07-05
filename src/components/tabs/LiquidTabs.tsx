@@ -46,6 +46,7 @@ import type { SurfaceStyleProps } from "../surface";
 import { useThemedSurface } from "../../theme";
 import { FLOWS, stretchEdgeConfigs, type FlowName, type TabRect } from "./flows";
 import { mixColor, parseColor, tabCoverage, type RGB } from "./tint";
+import { readableInk } from "../ink";
 import { useTabList } from "./useTabList";
 import { useTabsContext } from "./TabsGroup";
 
@@ -390,11 +391,17 @@ export function LiquidTabs(props: LiquidTabsProps) {
 
   const labelColors = useMemo(() => {
     const defaults = LABEL_COLORS[material];
+    // Flat indicator: the active label sits ON the indicator fill, so when a
+    // fill color is set (themed accent or explicit prop) the ink is computed
+    // for contrast — the shipped white default assumed the dark ink pill and
+    // inverts on light fills.
+    const flatFillInk =
+      material === "flat" ? parseColor(readableInk(color) ?? undefined) : null;
     return {
       base: parseColor(labelColor) ?? defaults.base,
-      active: parseColor(activeLabelColor) ?? defaults.active,
+      active: parseColor(activeLabelColor) ?? flatFillInk ?? defaults.active,
     };
-  }, [material, labelColor, activeLabelColor]);
+  }, [material, labelColor, activeLabelColor, color]);
 
   const paintLabels = useCallback(
     (intervals: [number, number][]) => {
