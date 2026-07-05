@@ -52,7 +52,7 @@ function Sidebar({ activeSlug }: { activeSlug?: string }) {
         {GPU_PAGES.map(navLink)}
       </div>
       <div className="sc-side-foot">
-        MIT · <a href="https://github.com/yousefh409/fluidkit">github.com/yousefh409/fluidkit</a>
+        MIT · <a href="https://github.com/runvendo/fluidkit">github.com/runvendo/fluidkit</a>
       </div>
     </nav>
   );

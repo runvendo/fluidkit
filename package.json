@@ -16,11 +16,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yousefh409/fluidkit.git"
+    "url": "git+https://github.com/runvendo/fluidkit.git"
   },
-  "homepage": "https://github.com/yousefh409/fluidkit#readme",
+  "homepage": "https://github.com/runvendo/fluidkit#readme",
   "bugs": {
-    "url": "https://github.com/yousefh409/fluidkit/issues"
+    "url": "https://github.com/runvendo/fluidkit/issues"
   },
   "license": "MIT",
   "type": "module",
