@@ -13,6 +13,7 @@ const FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif';
 const LOOP_MS = 8000;
 const TAB_SEQUENCE = ["home", "docs", "about", "docs"];
+const MORPH_OPEN_SIZE = { width: 214, height: 156 };
 
 function useLoopClock() {
   const [elapsed, setElapsed] = useState(0);
@@ -218,6 +219,52 @@ function Vignette({
   );
 }
 
+function MorphVignette({ open }: { open: boolean }) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: MORPH_OPEN_SIZE.width,
+        height: MORPH_OPEN_SIZE.height,
+        overflow: "visible",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        <MorphSurface
+          open={open}
+          material="glass"
+          closedSize={{ width: 154, height: 46 }}
+          openSize={MORPH_OPEN_SIZE}
+          closedContent={
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                fontFamily: FONT_STACK,
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#14151A",
+              }}
+            >
+              Ask fluidkit
+            </div>
+          }
+          openContent={<ChatPanel />}
+        />
+      </div>
+    </div>
+  );
+}
+
 function ReelStage() {
   const elapsed = useLoopClock();
   const phase = elapsed % LOOP_MS;
@@ -236,33 +283,11 @@ function ReelStage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 54,
+          gap: 80,
         }}
       >
         <Vignette label="MorphSurface">
-          <MorphSurface
-            open={morphOpen}
-            material="glass"
-            closedSize={{ width: 154, height: 46 }}
-            openSize={{ width: 214, height: 156 }}
-            closedContent={
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: "100%",
-                  fontFamily: FONT_STACK,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: "#14151A",
-                }}
-              >
-                Ask fluidkit
-              </div>
-            }
-            openContent={<ChatPanel />}
-          />
+          <MorphVignette open={morphOpen} />
         </Vignette>
         <Vignette label="LiquidTabs">
           <LiquidTabs
