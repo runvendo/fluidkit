@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LiquidDialog, JellyButton } from "fluidkit";
+import { LiquidDialog, LiquidButton } from "fluidkit";
 import type { LiquidDialogProps } from "fluidkit";
 import { PageLayout, Stage, Controls, Slider, Seg, Toggle, ColorField, Snippet, glassTintFromHex } from "../kit";
 
@@ -37,9 +37,9 @@ export default function LiquidDialogPage() {
       hero={
         <>
           <Stage wall hint="open the dialog, press Escape or click away to close">
-            <JellyButton onClick={() => setOpen(true)} style={{ color: "#23242c", fontSize: 14, fontWeight: 650 }}>
+            <LiquidButton onClick={() => setOpen(true)} style={{ color: "#23242c", fontSize: 14, fontWeight: 650 }}>
               Open dialog
-            </JellyButton>
+            </LiquidButton>
             <LiquidDialog
               open={open}
               onClose={() => setOpen(false)}
@@ -60,14 +60,14 @@ export default function LiquidDialogPage() {
                   sits a hand&apos;s depth under water.
                 </p>
                 <div style={{ marginTop: 18 }}>
-                  <JellyButton
+                  <LiquidButton
                     width={120}
                     height={40}
                     onClick={() => setOpen(false)}
                     style={{ color: "#23242c", fontSize: 13, fontWeight: 650 }}
                   >
                     Done
-                  </JellyButton>
+                  </LiquidButton>
                 </div>
               </div>
             </LiquidDialog>

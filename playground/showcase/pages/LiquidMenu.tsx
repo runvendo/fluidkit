@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { JellyButton, LiquidMenu } from "fluidkit";
+import { LiquidButton, LiquidMenu } from "fluidkit";
 import type { LiquidMenuAlign, LiquidMenuProps, LiquidMenuSide } from "fluidkit";
 import {
   ColorField,
@@ -48,7 +48,7 @@ export default function LiquidMenuPage() {
           <Stage wall hint="open the menu — arrows, Home/End, Escape all work">
             <div style={{ display: "grid", gap: 14, justifyItems: "center" }}>
               <LiquidMenu
-                trigger={<JellyButton>Options</JellyButton>}
+                trigger={<LiquidButton>Options</LiquidButton>}
                 items={items}
                 side={side}
                 align={align}
@@ -97,7 +97,7 @@ export default function LiquidMenuPage() {
       usage={
         <Snippet
           code={`<LiquidMenu
-  trigger={<JellyButton>Options</JellyButton>}${side !== "bottom" ? `\n  side="${side}"` : ""}${align !== "start" ? `\n  align="${align}"` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.35 ? `\n  intensity={${intensity}}` : ""}${opacityTouched ? `\n  opacity={${opacity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}
+  trigger={<LiquidButton>Options</LiquidButton>}${side !== "bottom" ? `\n  side="${side}"` : ""}${align !== "start" ? `\n  align="${align}"` : ""}${material !== "glass" ? `\n  material="${material}" color="${color}"` : ""}${intensity !== 0.35 ? `\n  intensity={${intensity}}` : ""}${opacityTouched ? `\n  opacity={${opacity}}` : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}
   items={[
     { label: "Rename", onSelect: rename },
     { label: "Duplicate", onSelect: duplicate },

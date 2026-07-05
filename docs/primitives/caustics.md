@@ -6,7 +6,7 @@ Two ways to use it:
 
 **As a background** — the component IS the background layer (`position: absolute; inset: 0; overflow: hidden; pointer-events: none`), placed inside a positioned parent alongside your real content.
 
-**As a surface material** — every liquid-engine surface takes `material="caustics"`: LiquidCard, LiquidPanel, LiquidDialog, LiquidTooltip, JellyButton, MorphSurface, Droplets, Thinking, VoiceBall, MeniscusDivider. The surface's `tint` prop recolors the light, `color` recolors the wall. Caustic surfaces paint no glass speculars — the caustic light is the highlight.
+**As a surface material** — every liquid-engine surface takes `material="caustics"`: LiquidCard, LiquidPanel, LiquidDialog, LiquidTooltip, LiquidButton, MorphSurface, Droplets, Thinking, VoiceBall, MeniscusDivider. The surface's `tint` prop recolors the light, `color` recolors the wall. Caustic surfaces paint no glass speculars — the caustic light is the highlight.
 
 Degradation: without WebGL (old browsers, SSR, context-starved pages) only the wall renders — a quiet plaster gradient, never a black box. Under `prefers-reduced-motion` the light renders one still frame. Browsers cap live WebGL contexts (roughly 8-16 per page): use a handful of caustic surfaces per view, not dozens; beyond the cap, extra surfaces quietly show the wall.
 
@@ -50,5 +50,5 @@ On surfaces:
 
 ```tsx
 <LiquidCard material="caustics" />
-<JellyButton material="caustics" tint="#dbeaff" color="#10161a" />
+<LiquidButton material="caustics" tint="#dbeaff" color="#10161a" />
 ```

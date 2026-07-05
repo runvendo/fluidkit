@@ -10,10 +10,10 @@ side has no room.
 ## Usage
 
 ```tsx
-import { JellyButton, LiquidMenu } from "fluidkit";
+import { LiquidButton, LiquidMenu } from "fluidkit";
 
 <LiquidMenu
-  trigger={<JellyButton>Options</JellyButton>}
+  trigger={<LiquidButton>Options</LiquidButton>}
   items={[
     { label: "Rename", onSelect: rename },
     { label: "Duplicate", onSelect: duplicate },

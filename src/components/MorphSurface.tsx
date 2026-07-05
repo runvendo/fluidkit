@@ -122,7 +122,7 @@ export function MorphSurface({
   refraction = false,
   // Material volume defaults "present" (0.7), because the two hand-rolled
   // specular sites below were tuned at different pre-pack constants:
-  // 0.4 · 0.7 reproduces the body's hardcoded 0.28 exactly (JellyButton's
+  // 0.4 · 0.7 reproduces the body's hardcoded 0.28 exactly (LiquidButton's
   // mapping), and 0.7 reproduces the satellites' bare `specularPlacement`
   // default identically (Droplets/Thinking's mapping) — see buildMorphScene.
   intensity = "present",
@@ -472,7 +472,7 @@ function buildMorphScene(
   if (light) {
     // One quiet sheen on the body itself, lit by the same source. Pre-pack
     // this was a hardcoded 0.28; `0.4 · volume` reproduces it exactly at
-    // the shared default "present" (0.7), like JellyButton's glint.
+    // the shared default "present" (0.7), like LiquidButton's glint.
     speculars.push(
       specularPlacement(
         { x: cx, y: by, r: Math.min(w, h) * 0.48 },

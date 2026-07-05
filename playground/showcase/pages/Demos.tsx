@@ -51,12 +51,12 @@ export default function Demos() {
       description={'Real app moments, live in the frame — each composed from the public API. Every "view source" is the exact code running on that phone.'}
       hero={
         <div className="phones">
-          <DemoPhone title="Dynamic Island" desc="One MorphSurface: the pill liquid-morphs into a live-activity card; controls are JellyButtons. Tap it."
+          <DemoPhone title="Dynamic Island" desc="One MorphSurface: the pill liquid-morphs into a live-activity card; controls are LiquidButtons. Tap it."
             source={dynamicIslandSrc} screenStyle={{ background: WALL_BG }}>
             <LockScreen />
             <DynamicIsland />
           </DemoPhone>
-          <DemoPhone title="Liquid Music Player" desc="A now-playing pill morphs into the full player sheet in glass. Play/pause is a JellyButton."
+          <DemoPhone title="Liquid Music Player" desc="A now-playing pill morphs into the full player sheet in glass. Play/pause is a LiquidButton."
             source={musicPlayerSrc} screenStyle={{ background: WALL_BG }}>
             <MusicPlayer />
           </DemoPhone>
@@ -64,7 +64,7 @@ export default function Demos() {
             source={liquidDockSrc}>
             <LiquidDock />
           </DemoPhone>
-          <DemoPhone title="Goo Progress Button" desc="JellyButton squashes on press, Thinking droplets churn while it downloads, the card ripples on tap."
+          <DemoPhone title="Goo Progress Button" desc="LiquidButton squashes on press, Thinking droplets churn while it downloads, the card ripples on tap."
             source={gooButtonSrc} screenStyle={{ background: WALL_BG }}>
             <GooButton />
           </DemoPhone>
