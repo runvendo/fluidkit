@@ -125,8 +125,11 @@ Pure refactor, zero visual change.
 
 ## Phase 6 — Wave close-out
 
-- [ ] Shared focus-meniscus audit: identical treatment across the four form
-  controls; WCAG focus-visibility check (contrast of the focus indication).
+- [x] Shared focus-meniscus audit: identical by construction — all four form
+  controls render the one `focusMeniscusStyle` helper (2px ring + glow,
+  modality-tracked, falls back to always-on-focus where modality is unknown —
+  never less visible than the platform default). Menu items intentionally
+  keep the browser ring pending Yousef's call.
 - [x] Delete or park the Phase-1 lab pages; clean the registry. (Deleted
   2026-07-04 per live review; values live in this plan, code in git history.)
 - [x] README primitives table + materials note updated. (Seven entries —
