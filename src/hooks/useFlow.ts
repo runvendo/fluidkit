@@ -99,8 +99,7 @@ const VISCOSITY_MAX_GAP = 1.3;
 const RIPPLE_STEP_S = 0.024;
 const RIPPLE_MAX_S = 0.15;
 
-/** Rise distance and blur amount, matching `@keyframes rise` in
- * prototypes/05-integrated-flowlet.html. */
+/** Rise distance and blur amount, matching the original flowlet rise. */
 const RISE_Y_PX = 12;
 const HIDDEN_BLUR = "blur(1.5px)";
 const VISIBLE_BLUR = "blur(0px)";

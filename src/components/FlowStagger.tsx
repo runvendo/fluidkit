@@ -1,7 +1,7 @@
 /**
  * `<FlowStagger>` — a list of children rise + un-blur + settle in a
- * staggered viscous cascade (evolved from `@keyframes rise` in
- * prototypes/05-integrated-flowlet.html). Because every item wrapper carries
+ * staggered viscous cascade (evolved from the original flowlet rise
+ * timing). Because every item wrapper carries
  * Motion's `layout`, siblings glide (FLIP, handled by Motion — never
  * hand-rolled) to their new positions whenever the list is added to, removed
  * from, or reordered — and the glides ripple outward from the change point:

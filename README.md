@@ -34,7 +34,7 @@ See [`docs/primitives/liquid-metal.md`](docs/primitives/liquid-metal.md) for pro
 
 ```tsx
 import { useState } from "react";
-import { MorphSurface, Thinking } from "fluidkit";
+import { MorphSurface } from "fluidkit";
 
 function App() {
   const [open, setOpen] = useState(false);
@@ -43,15 +43,14 @@ function App() {
       <MorphSurface
         open={open}
         closedContent={<span>Ask fluidkit</span>}
-        openContent={open && <ChatPanel />}
+        openContent={<div>Ready when you are.</div>}
       />
-      {loading && <Thinking />}
     </div>
   );
 }
 ```
 
-## Primitives (v0.3)
+## Primitives
 
 | Primitive | What it does | Degrades to |
 |---|---|---|
@@ -59,12 +58,20 @@ function App() {
 | [`Droplets`](docs/primitives/droplets.md) | Drop cluster with surface tension; grab / drag / tear / re-merge with the pointer (`interactive`) | Separate static dots |
 | [`Thinking`](docs/primitives/thinking.md) | Working indicator: droplets merge and split (`role="status"`) | Three static dots |
 | [`FlowStagger`](docs/primitives/flow-stagger.md) | Staggered rise + un-blur entrance for list items, FLIP on reorder | Simple simultaneous fade |
-| [`LiquidTabs`](docs/primitives/liquid-tabs.md) | Flagship tab strip: the indicator flows between tabs (slide or stretch), ink or glass material, labels tint by liquid coverage | Plain pill, snaps instantly |
+| [`LiquidTabs`](docs/primitives/liquid-tabs.md) | Flagship tab strip: the indicator flows between tabs (slide or stretch), flat or glass material, labels tint by liquid coverage | Plain pill, snaps instantly |
 | [`Ripple`](docs/primitives/ripple.md) | Pointer-origin water ripple on tap/click | No ripple, children render normally |
 | [`LiquidButton`](docs/primitives/liquid-button.md) | Liquid pill button; jelly variant squashes on press via geometry (label never scales), still variant holds rigid | Normal button with an opacity press dip |
 | [`MeshGradient`](docs/primitives/mesh-gradient.md) | Ambient CSS backdrop: large blurred radial-gradient blobs drift slowly behind your content | Static blobs at their home position |
 | [`Silk`](docs/primitives/silk.md) | Ambient CSS backdrop: full-height diagonal gradient sheets flowing like slow fabric | Static sheets at their home position |
 | [`GlassPanes`](docs/primitives/glass-panes.md) | Glass-native backdrop: edge-to-edge frosted panes sliding on a shared diagonal, each at its own blur depth | Layered frosted fills |
+| [`Caustics`](docs/primitives/caustics.md) | Poolside light background, or a caustic wall material for engine surfaces | Static plaster wall when WebGL or motion is unavailable |
+| [`LiquidCard`](docs/primitives/liquid-card.md) | Content surface that sizes to its children; the liquid layer stays behind crisp content | Static card; glass falls back to frosted flat fill |
+| [`MeniscusDivider`](docs/primitives/meniscus-divider.md) | Thin full-width liquid bead for section breaks, exposed as a separator | Static separator; glass falls back to frosted flat fill |
+| [`LiquidPanel`](docs/primitives/liquid-panel.md) | Drawer or sheet surface that pours in from one edge; content arrives above it | Surface snaps; content cross-fades |
+| [`LiquidTooltip`](docs/primitives/liquid-tooltip.md) | Tooltip droplet that condenses beside its trigger, with focus and Escape behavior | Full-size droplet fade |
+| [`LiquidText`](docs/primitives/liquid-text.md) | Glass or flat glyphs with a sheen sweep while the real text stays selectable | Solid readable text; sheen parks under reduced motion |
+| [`LiquidDialog`](docs/primitives/liquid-dialog.md) | Modal surface that rises from its trigger with focus restore, scroll lock, Escape and backdrop close | No travel; surface and content cross-fade |
+| [`VoiceBall`](docs/primitives/voice-ball.md) | Voice-assistant orb driven by `level` and `mode` (`idle`, `listening`, `speaking`) | Static circle reflecting the current level |
 | [`LiquidSwitch`](docs/primitives/liquid-switch.md) | Toggle: the thumb droplet tears off one well through a real bridge and merges into the other; real hidden checkbox underneath | Thumb snaps; the on-tint still flips |
 | [`LiquidCheckbox`](docs/primitives/liquid-checkbox.md) | The check is liquid: a droplet lands and fills the well; `indeterminate` is a half-filled meniscus | Fill level snaps |
 | [`LiquidSlider`](docs/primitives/liquid-slider.md) | Droplet thumb riding the meniscus edge of a part-filled channel; real hidden range input underneath | Thumb tracks the value, no spring lag |
@@ -76,10 +83,11 @@ function App() {
 
 ### Materials
 
-Every surface component shares one styling pack, applied wherever it's physically meaningful: `material` (`"glass"`/`"flat"`), `tint`/`color` (the glass tint or flat fill), `opacity` (how see-through the fill is, `0` clear – `1` solid; replaces the tint's own alpha, degrades to the default transparency where CSS relative color syntax is unsupported), `intensity` (how loudly the material reads, `0`-`1` or `"whisper"`/`"present"`), `light` (scene light position; `null` disables speculars), `reflection` (specular highlights on/off), `refraction` (opt-in Chromium-only edge lensing), and `shadow` (drop shadow on/off). Components omit only what can't physically apply: `LiquidText`'s lighting is its sheen sweep, not the scene light, so it takes none of `light`/`reflection`/`refraction`/`shadow`.
+Every surface component shares one styling pack, applied wherever it's physically meaningful: `material` (`"glass"`/`"flat"`, with `material="caustics"` available on engine surfaces), `tint`/`color` (the glass tint, caustic light, or flat fill), `opacity` (how see-through the fill is, `0` clear to `1` solid; replaces the tint's own alpha, degrades to the default transparency where CSS relative color syntax is unsupported), `intensity` (how loudly the material reads, `0`-`1` or `"whisper"`/`"present"`), `light` (scene light position; `null` disables speculars), `reflection` (specular highlights on/off), `refraction` (opt-in Chromium-only edge lensing), and `shadow` (drop shadow on/off). Components omit only what can't physically apply: `LiquidText`'s lighting is its sheen sweep, not the scene light, so it takes none of `light`/`reflection`/`refraction`/`shadow`.
 
 - `glass` — white tint + backdrop blur/saturation, specular highlights from one configurable scene light (`light` prop), toggleable via `reflection`. Opt-in `refraction` adds Chromium-only edge lensing (SVG displacement inside `backdrop-filter`; degrades silently). A drop of water is liquid glass.
 - `flat` — plain color; also the automatic fallback when `backdrop-filter` is unsupported.
+- `caustics` — poolside light over a plaster wall on supported engine surfaces. The wall is the no-WebGL fallback; caustic surfaces paint no glass speculars because the light pattern is the highlight.
 
 ### Theming
 
@@ -117,11 +125,14 @@ Every exported component ships with a tested degradation contract (`tests/degrad
 
 Consumers don't need to keep their own static fallbacks on top: if fluidkit renders it moving, it also renders it still.
 
-## Roadmap
+## Release status
 
-- **v0.2**: the liquid engine + `Droplets`, `Thinking`, `MorphSurface` in glass/mercury/flat.
-- **v0.3 (this release)**: `LiquidTabs` on the engine, grab/tear/re-merge pointer interactions, opt-in refraction, per-frame DOM writes (no React commits in animation loops), docs site.
-- **v1.0**: stable API, a11y pass, npm publish.
+- **0.5.0**: current package. Ships semantic theming, tested degradation contracts, React 19 CI coverage, controls, menus, toasts, and the optional `LiquidMetal` subpath.
+- **0.4.0**: added the surface family (`LiquidCard`, `LiquidPanel`, `LiquidDialog`, `LiquidTooltip`, `LiquidText`, `VoiceBall`, `MeniscusDivider`), ambient backgrounds, `Caustics`, and the docs showcase.
+- **0.3.0**: moved `LiquidTabs` onto the engine, added pointer grab / tear / re-merge interactions, opt-in refraction, per-frame DOM writes, and the docs site.
+- **0.2.0**: introduced the liquid engine and rebuilt `Droplets`, `Thinking`, and `MorphSurface` on it.
+
+See [`CHANGELOG.md`](CHANGELOG.md) for full release notes.
 
 ## Docs site
 
@@ -132,14 +143,14 @@ The playground doubles as the public docs site: hero, live demos, controls, and 
 
 ## More
 
-- Design spec: [`docs/superpowers/specs/2026-07-01-liquid-engine-design.md`](docs/superpowers/specs/2026-07-01-liquid-engine-design.md)
+- Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - Changelog: [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Development
 
 - `npm test`: run tests
 - `npm run typecheck`: type check the library
-- `npm run size`: check bundle size (14.9 kB brotli budget on the core entry via size-limit)
+- `npm run size`: check bundle size (36.7 kB brotli budget on the core entry via size-limit)
 - `npm run check:gpu-leak`: guard against GPU dependencies
 - `npm run check:pack`: verify npm pack contents
 

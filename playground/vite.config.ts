@@ -7,6 +7,7 @@ import react from "@vitejs/plugin-react";
 // Vite to serve files from the repo root (one level up) for those imports.
 export default defineConfig({
   root: __dirname,
+  base: process.env.GITHUB_PAGES === "true" ? "/fluidkit/" : "/",
   plugins: [react()],
   // Demo recipes import from "fluidkit" so their displayed source reads
   // exactly like consumer code; the alias points it at ../src. The GPU
