@@ -13,6 +13,7 @@
 
 import type { CSSProperties } from "react";
 import { supportsBackdropFilter } from "../utils/featureDetect";
+import { colorWithAlpha } from "../utils/color";
 
 export type LiquidMaterial = "glass" | "flat" | "caustics";
 
@@ -34,6 +35,15 @@ export interface ResolveMaterialOptions {
    * the recipe (tint, saturation, compositor hint) shared.
    */
   blurPx?: number;
+  /**
+   * How see-through the material's fill is: `0` fully clear, `1` fully
+   * solid. REPLACES the tint/color's own alpha (via CSS relative color
+   * syntax), so it works with any color format. Unset keeps the material's
+   * default transparency; ignored (default renders) where relative color
+   * syntax is unsupported. Not applicable to `caustics` (its fill is a
+   * gradient wall).
+   */
+  opacity?: number;
 }
 
 export interface ResolvedMaterial {
@@ -57,6 +67,14 @@ const CAUSTICS_LIGHT = "#fffdf7";
 /** Soft plaster wall — also the SSR / no-WebGL rendering. */
 const CAUSTICS_WALL = "linear-gradient(180deg, #f8f8f5, #eceeef)";
 
+/** The fill color with the pack's `opacity` applied (alpha REPLACED, not
+ * multiplied). Where relative color syntax is missing — or the base is
+ * `currentColor`, which some engines can't use as a relative-color origin
+ * — the base renders untouched. */
+function withOpacity(base: string, opacity: number | undefined): string {
+  return opacity == null ? base : colorWithAlpha(base, opacity);
+}
+
 export function resolveMaterial(
   material: LiquidMaterial,
   options: ResolveMaterialOptions = {}
@@ -65,7 +83,12 @@ export function resolveMaterial(
     if (!supportsBackdropFilter()) {
       return {
         kind: "flat",
-        fillStyle: { background: options.tint ?? GLASS_FALLBACK_FILL },
+        fillStyle: {
+          background: withOpacity(
+            options.tint ?? GLASS_FALLBACK_FILL,
+            options.opacity
+          ),
+        },
         specular: true,
       };
     }
@@ -79,7 +102,7 @@ export function resolveMaterial(
     return {
       kind: "glass",
       fillStyle: {
-        background: options.tint ?? GLASS_TINT,
+        background: withOpacity(options.tint ?? GLASS_TINT, options.opacity),
         backdropFilter: backdrop,
         WebkitBackdropFilter: backdrop,
         // Keep the fill on its own GPU layer even while still: without a
@@ -105,7 +128,9 @@ export function resolveMaterial(
   }
   return {
     kind: "flat",
-    fillStyle: { background: options.color ?? "currentColor" },
+    fillStyle: {
+      background: withOpacity(options.color ?? "currentColor", options.opacity),
+    },
     specular: false,
   };
 }

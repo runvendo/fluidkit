@@ -275,6 +275,7 @@ export function Thinking(props: ThinkingProps) {
     speed = 1,
     material = themed.material ?? "glass",
     tint = themed.tint,
+    opacity,
     color = themed.color,
     light,
     reflection = true,
@@ -303,8 +304,8 @@ export function Thinking(props: ThinkingProps) {
     side
   );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color, refractionUrl }),
-    [material, tint, color, refractionUrl]
+    () => resolveMaterial(material, { tint, color, refractionUrl, opacity }),
+    [material, tint, color, refractionUrl, opacity]
   );
   const sceneLight =
     !reflection || light === null ? null : light ?? defaultLight(side, side);

@@ -79,6 +79,7 @@ export function Ripple(props: RippleProps) {
   const {
     color = themed.color,
     tint = themed.tint,
+    opacity,
     duration,
     material = (themed.material as RippleProps["material"]) ?? "flat",
     intensity = themed.intensity ?? "whisper",
@@ -115,7 +116,7 @@ export function Ripple(props: RippleProps) {
   const fillStyle: CSSProperties =
     material === "glass"
       ? {
-          ...resolveMaterial("glass", { tint, blurPx: RIPPLE_BLUR_PX })
+          ...resolveMaterial("glass", { tint, blurPx: RIPPLE_BLUR_PX, opacity })
             .fillStyle,
           boxShadow: GLASS_RIM,
         }

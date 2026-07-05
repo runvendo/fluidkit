@@ -118,6 +118,7 @@ export function MorphSurface(props: MorphSurfaceProps) {
     radius = themed.radius ?? 24,
     material = themed.material ?? "glass",
     tint,
+    opacity,
     color,
     light,
     reflection = true,
@@ -190,8 +191,9 @@ export function MorphSurface(props: MorphSurfaceProps) {
         tint: tint ?? themed.tint,
         color: color ?? themed.color,
         refractionUrl,
+        opacity,
       }),
-    [material, tint, color, themed, refractionUrl]
+    [material, tint, color, themed, refractionUrl, opacity]
   );
   const sceneLight =
     !reflection || light === null

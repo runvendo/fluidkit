@@ -115,6 +115,7 @@ export function LiquidPanel(props: LiquidPanelProps) {
     side = "top",
     material = themed.material ?? "glass",
     tint,
+    opacity,
     color,
     intensity = themed.intensity ?? "whisper",
     radius = themed.radius ?? 20,
@@ -164,8 +165,9 @@ export function LiquidPanel(props: LiquidPanelProps) {
         tint: tint ?? themed.tint,
         color: color ?? themed.color,
         refractionUrl,
+        opacity,
       }),
-    [material, tint, color, themed, refractionUrl]
+    [material, tint, color, themed, refractionUrl, opacity]
   );
   const volume = resolveIntensity(intensity);
 

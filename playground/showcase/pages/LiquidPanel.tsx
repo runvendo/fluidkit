@@ -29,11 +29,12 @@ function PanelContent() {
   );
 }
 
-function PanelVariant({ open, side, material, intensity, tint, color }: {
+function PanelVariant({ open, side, material, intensity, opacity, tint, color }: {
   open: boolean;
   side: Side;
   material: LiquidMaterial;
   intensity: number;
+  opacity?: number;
   tint?: string;
   color?: string;
 }) {
@@ -43,6 +44,7 @@ function PanelVariant({ open, side, material, intensity, tint, color }: {
       side={side}
       material={material}
       intensity={intensity}
+      opacity={opacity}
       tint={material === "glass" ? tint : undefined}
       color={material !== "glass" ? (color ?? FLAT_COLOR) : undefined}
       style={{ width: 260, height: 170 }}
@@ -57,6 +59,8 @@ export default function LiquidPanelPage() {
   const [side, setSide] = useState<Side>("top");
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
@@ -69,13 +73,24 @@ export default function LiquidPanelPage() {
       hero={
         <>
           <Stage wall hint="toggle open, watch the pour" onClick={() => setOpen((o) => !o)}>
-            <PanelVariant open={open} side={side} material={material} intensity={intensity} tint={glassTint} color={color} />
+            <PanelVariant open={open} side={side} material={material} intensity={intensity} opacity={opacityTouched ? opacity : undefined} tint={glassTint} color={color} />
           </Stage>
           <Controls>
             <Toggle label="open" value={open} set={setOpen} />
             <Seg label="side" value={side} set={setSide} options={SIDES} />
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             {material === "glass" ? (
               <ColorField label="tint" value={tint} set={setTint} />
             ) : (

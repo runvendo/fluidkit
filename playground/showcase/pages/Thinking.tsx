@@ -19,6 +19,8 @@ export default function ThinkingPage() {
   const [reflection, setReflection] = useState(true);
   const [refraction, setRefraction] = useState(false);
   const [intensity, setIntensity] = useState(0.7);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
   const [color, setColor] = useState(FLAT_COLOR);
@@ -41,6 +43,7 @@ export default function ThinkingPage() {
               reflection={reflection}
               refraction={refraction}
               intensity={intensity}
+              opacity={opacityTouched ? opacity : undefined}
               tint={material === "glass" ? glassTint : undefined}
               color={material === "flat" ? color : undefined}
             />
@@ -51,6 +54,17 @@ export default function ThinkingPage() {
             <Toggle label="reflection" value={reflection} set={setReflection} />
             <Toggle label="refraction" value={refraction} set={setRefraction} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             {material === "glass" ? (
               <ColorField label="tint" value={tint} set={setTint} />
             ) : (

@@ -55,6 +55,8 @@ export default function VoiceBallPage() {
   const glassTint = tint ? glassTintFromHex(tint) : undefined;
   const [size, setSize] = useState(96);
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [refraction, setRefraction] = useState(false);
   const level = useVoiceLevel(auto, manual);
 
@@ -72,6 +74,7 @@ export default function VoiceBallPage() {
               material={material}
               tint={material === "glass" ? glassTint : undefined}
               intensity={intensity}
+              opacity={opacityTouched ? opacity : undefined}
               refraction={refraction}
               color={material === "flat" ? color : undefined}
             />
@@ -88,6 +91,17 @@ export default function VoiceBallPage() {
             )}
             <Slider label="size" value={size} set={setSize} min={48} max={160} step={8} suffix="px" />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             <Toggle label="refraction" value={refraction} set={setRefraction} />
           </Controls>
         </>

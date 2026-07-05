@@ -25,11 +25,12 @@ const PRESS_COLORS = {
 type PressColorKey = keyof typeof PRESS_COLORS;
 
 /** One pill — hero and variant cells alike — with the flat-material color/text fallbacks. */
-function LiquidVariant({ variant, material, squash, intensity, pressColor, tint, color }: {
+function LiquidVariant({ variant, material, squash, intensity, opacity, pressColor, tint, color }: {
   variant?: LiquidVariantName;
   material: LiquidMaterial;
   squash: number;
   intensity?: number;
+  opacity?: number;
   pressColor?: string;
   tint?: string;
   color?: string;
@@ -40,6 +41,7 @@ function LiquidVariant({ variant, material, squash, intensity, pressColor, tint,
       material={material}
       squash={squash}
       intensity={intensity}
+      opacity={opacity}
       pressColor={pressColor}
       tint={material === "glass" ? tint : undefined}
       color={material === "flat" ? (color ?? FLAT_COLOR) : undefined}
@@ -55,6 +57,8 @@ export default function LiquidButtonPage() {
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [squash, setSquash] = useState(0.12);
   const [intensity, setIntensity] = useState(0.7);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [pressColorKey, setPressColorKey] = useState<PressColorKey>("auto");
   const pressColor = PRESS_COLORS[pressColorKey];
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
@@ -70,13 +74,24 @@ export default function LiquidButtonPage() {
       hero={
         <>
           <Stage wall hint="press and hold">
-            <LiquidVariant variant={variant} material={material} squash={squash} intensity={intensity} pressColor={pressColor} tint={glassTint} color={color} />
+            <LiquidVariant variant={variant} material={material} squash={squash} intensity={intensity} opacity={opacityTouched ? opacity : undefined} pressColor={pressColor} tint={glassTint} color={color} />
           </Stage>
           <Controls>
             <Seg label="variant" value={variant} set={setVariant} options={VARIANTS} />
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="squash" value={squash} set={setSquash} min={0.02} max={0.3} step={0.01} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             <Seg
               label="press color"
               value={pressColorKey}

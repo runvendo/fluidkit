@@ -25,15 +25,17 @@ function Surface({
   material,
   duration,
   intensity = 0.35,
+  opacity,
   children = "Tap me",
 }: {
   material: "flat" | "glass";
   duration: number;
   intensity?: number;
+  opacity?: number;
   children?: ReactNode;
 }) {
   return (
-    <Ripple material={material} duration={duration} intensity={intensity} style={SURFACE_STYLE}>
+    <Ripple material={material} duration={duration} intensity={intensity} opacity={opacity} style={SURFACE_STYLE}>
       {children}
     </Ripple>
   );
@@ -43,6 +45,8 @@ export default function RipplePage() {
   const [duration, setDuration] = useState(600);
   const [material, setMaterial] = useState<"flat" | "glass">("glass");
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
 
   return (
     <PageLayout
@@ -51,12 +55,23 @@ export default function RipplePage() {
       hero={
         <>
           <Stage wall hint="tap the surface">
-            <Surface material={material} duration={duration} intensity={intensity} />
+            <Surface material={material} duration={duration} intensity={intensity} opacity={opacityTouched ? opacity : undefined} />
           </Stage>
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={["flat", "glass"]} />
             <Slider label="duration" value={duration} set={setDuration} min={200} max={2000} step={50} suffix="ms" />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
           </Controls>
         </>
       }

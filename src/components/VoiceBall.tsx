@@ -216,6 +216,7 @@ export function VoiceBall(props: VoiceBallProps) {
     size = 96,
     material = themed.material ?? "glass",
     tint = themed.tint,
+    opacity,
     color = themed.color,
     intensity = themed.intensity ?? "whisper",
     light,
@@ -247,8 +248,8 @@ export function VoiceBall(props: VoiceBallProps) {
     canvas
   );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color, refractionUrl }),
-    [material, tint, color, refractionUrl]
+    () => resolveMaterial(material, { tint, color, refractionUrl, opacity }),
+    [material, tint, color, refractionUrl, opacity]
   );
   const volume = resolveIntensity(intensity);
   const sceneLight = useMemo(() => {

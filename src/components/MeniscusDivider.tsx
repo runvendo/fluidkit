@@ -68,6 +68,7 @@ export function MeniscusDivider(props: MeniscusDividerProps) {
   const {
     material = themed.material ?? "glass",
     tint = themed.tint,
+    opacity,
     color = themed.color,
     thickness = 4,
     intensity = themed.intensity ?? "whisper",
@@ -102,8 +103,8 @@ export function MeniscusDivider(props: MeniscusDividerProps) {
     thickness
   );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color, refractionUrl }),
-    [material, tint, color, refractionUrl]
+    () => resolveMaterial(material, { tint, color, refractionUrl, opacity }),
+    [material, tint, color, refractionUrl, opacity]
   );
   const volume = resolveIntensity(intensity);
 

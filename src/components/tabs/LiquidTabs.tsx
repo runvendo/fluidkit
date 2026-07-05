@@ -196,6 +196,7 @@ export function LiquidTabs(props: LiquidTabsProps) {
     size = "md",
     color = themed.color,
     tint = themed.tint,
+    opacity,
     intensity = themed.intensity ?? "whisper",
     light,
     reflection = false,
@@ -366,6 +367,7 @@ export function LiquidTabs(props: LiquidTabsProps) {
   const resolvedColor = resolveColor(color);
   const resolvedMaterial = resolveMaterial(material, {
     tint,
+    opacity,
     color: resolvedColor,
   });
 
@@ -454,7 +456,7 @@ export function LiquidTabs(props: LiquidTabsProps) {
     // container's softer 10px blur — under a barely-there ring.
     ...(material === "glass"
       ? {
-          ...resolveMaterial("glass", { tint, blurPx: 10 }).fillStyle,
+          ...resolveMaterial("glass", { tint, blurPx: 10, opacity }).fillStyle,
           // The container never appears/re-rasterizes; only the indicator
           // fill needs the pinned layer.
           willChange: undefined,

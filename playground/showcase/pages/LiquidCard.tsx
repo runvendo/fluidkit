@@ -25,9 +25,10 @@ function CardContent({ title, body }: { title: string; body: string }) {
   );
 }
 
-function CardVariant({ material, intensity, variant, radius, tint, color }: {
+function CardVariant({ material, intensity, opacity, variant, radius, tint, color }: {
   material: LiquidMaterial;
   intensity: Intensity;
+  opacity?: number;
   variant: Variant;
   radius: number;
   /** Only meaningful on `variant="default"` — a named variant supplies its own accent otherwise. */
@@ -38,6 +39,7 @@ function CardVariant({ material, intensity, variant, radius, tint, color }: {
     <LiquidCard
       material={material}
       intensity={intensity}
+      opacity={opacity}
       variant={variant}
       radius={radius}
       tint={variant === "default" ? tint : undefined}
@@ -54,6 +56,8 @@ function CardVariant({ material, intensity, variant, radius, tint, color }: {
 export default function LiquidCardPage() {
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [variant, setVariant] = useState<Variant>("default");
   const [radius, setRadius] = useState(20);
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
@@ -68,11 +72,22 @@ export default function LiquidCardPage() {
       hero={
         <>
           <Stage wall>
-            <CardVariant material={material} intensity={intensity} variant={variant} radius={radius} tint={glassTint} color={color} />
+            <CardVariant material={material} intensity={intensity} opacity={opacityTouched ? opacity : undefined} variant={variant} radius={radius} tint={glassTint} color={color} />
           </Stage>
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             <Seg label="variant" value={variant} set={setVariant} options={VARIANTS} />
             <Slider label="radius" value={radius} set={setRadius} min={0} max={32} step={1} suffix="px" />
             {variant === "default" && (material === "glass" ? (

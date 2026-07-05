@@ -73,6 +73,8 @@ export default function MorphSurfacePage() {
   const [absorption, setAbsorption] = useState<Absorption>("shrink");
   const [spring, setSpring] = useState<SpringPreset>("standard");
   const [intensity, setIntensity] = useState(0.7);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [shadow, setShadow] = useState(true);
   // null = untouched: picker shows a neutral swatch, prop stays omitted (component default).
   const [tint, setTint] = useState<string | null>(null);
@@ -96,6 +98,7 @@ export default function MorphSurfacePage() {
               absorption={absorption}
               bodySpring={SPRING_PRESETS[spring]}
               intensity={intensity}
+              opacity={opacityTouched ? opacity : undefined}
               shadow={shadow}
               tint={material === "glass" ? glassTint : undefined}
               color={material === "flat" ? color ?? undefined : undefined}
@@ -113,6 +116,17 @@ export default function MorphSurfacePage() {
             <Toggle label="satellites" value={satellites} set={setSatellites} />
             <Toggle label="shadow" value={shadow} set={setShadow} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             {material === "glass" ? (
               <ColorField label="tint" value={tint} set={setTint} />
             ) : (
@@ -130,7 +144,7 @@ export default function MorphSurfacePage() {
       usage={
         <Snippet code={`<MorphSurface
   open={open}
-  material="${material}"${anchor !== "center" ? `\n  anchor="${anchor}"` : ""}${absorption !== "shrink" ? `\n  absorption="${absorption}"` : ""}${spring !== "standard" ? `\n  bodySpring={{ stiffness: ${SPRING_PRESETS[spring].stiffness}, damping: ${SPRING_PRESETS[spring].damping} }}` : ""}${refraction ? "\n  refraction" : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${!shadow ? "\n  shadow={false}" : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}${material === "flat" && color ? `\n  color="${color}"` : ""}
+  material="${material}"${anchor !== "center" ? `\n  anchor="${anchor}"` : ""}${absorption !== "shrink" ? `\n  absorption="${absorption}"` : ""}${spring !== "standard" ? `\n  bodySpring={{ stiffness: ${SPRING_PRESETS[spring].stiffness}, damping: ${SPRING_PRESETS[spring].damping} }}` : ""}${refraction ? "\n  refraction" : ""}${intensity !== 0.7 ? `\n  intensity={${intensity}}` : ""}${opacityTouched ? `\n  opacity={${opacity}}` : ""}${!shadow ? "\n  shadow={false}" : ""}${material === "glass" && glassTint ? `\n  tint="${glassTint}"` : ""}${material === "flat" && color ? `\n  color="${color}"` : ""}
   closedContent={<PillFace />}
   openContent={<PanelFace />}
 />`} />
