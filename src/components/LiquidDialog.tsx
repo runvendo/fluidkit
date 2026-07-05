@@ -55,6 +55,7 @@ import { useMotionSprings } from "../liquid/useMotionSprings";
 import { useThemedSurface } from "../theme";
 import { usePrefersReducedMotion } from "../utils";
 import { resolveIntensity } from "./intensity";
+import { overlayRoot, overlayZ } from "./overlay";
 import { rimGlowStyle, rimStyle } from "./rim";
 import type { SurfaceStyleProps } from "./surface";
 
@@ -134,6 +135,7 @@ export function LiquidDialog(props: LiquidDialogProps) {
     origin,
     material = themed.material ?? "glass",
     tint,
+    opacity,
     color,
     intensity = themed.intensity ?? "whisper",
     radius = themed.radius ?? 24,
@@ -244,8 +246,9 @@ export function LiquidDialog(props: LiquidDialogProps) {
         tint: tint ?? themed.tint,
         color: color ?? themed.color,
         refractionUrl,
+        opacity,
       }),
-    [material, tint, color, themed, refractionUrl]
+    [material, tint, color, themed, refractionUrl, opacity]
   );
   const volume = resolveIntensity(intensity);
   const sceneLight = useMemo(() => {
@@ -389,12 +392,13 @@ export function LiquidDialog(props: LiquidDialogProps) {
       boxRef.current.style.transform = `translate3d(${springs.values[2].get()}px, ${springs.values[3].get()}px, 0)`;
   });
 
-  if (!mounted || typeof document === "undefined") return null;
+  const portalTarget = overlayRoot();
+  if (!mounted || !portalTarget) return null;
 
   const backdropStyle: CSSProperties = {
     position: "fixed",
     inset: 0,
-    zIndex: 1000,
+    zIndex: overlayZ("dialog"),
     display: "grid",
     placeItems: "center",
     // Shallow water: faint tint, light blur. The blur itself animates —
@@ -511,6 +515,6 @@ export function LiquidDialog(props: LiquidDialogProps) {
         </div>
       </div>
     </div>,
-    document.body
+    portalTarget
   );
 }

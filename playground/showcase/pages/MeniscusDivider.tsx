@@ -19,10 +19,11 @@ const paragraph: React.CSSProperties = {
 };
 
 /** The divider between two lines of copy, the way it actually gets used. */
-function DividerInContext({ material, thickness, intensity, refraction, tint, color }: {
+function DividerInContext({ material, thickness, intensity, opacity, refraction, tint, color }: {
   material: LiquidMaterial;
   thickness: number;
   intensity: number;
+  opacity?: number;
   refraction?: boolean;
   tint?: string;
   color?: string;
@@ -34,6 +35,7 @@ function DividerInContext({ material, thickness, intensity, refraction, tint, co
         material={material}
         thickness={thickness}
         intensity={intensity}
+        opacity={opacity}
         refraction={refraction}
         tint={material === "glass" ? tint : undefined}
         color={material !== "glass" ? (color ?? FLAT_COLOR) : undefined}
@@ -47,6 +49,8 @@ export default function MeniscusDividerPage() {
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [thickness, setThickness] = useState(4);
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [refraction, setRefraction] = useState(false);
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
@@ -60,12 +64,23 @@ export default function MeniscusDividerPage() {
       hero={
         <>
           <Stage wall>
-            <DividerInContext material={material} thickness={thickness} intensity={intensity} refraction={refraction} tint={glassTint} color={color} />
+            <DividerInContext material={material} thickness={thickness} intensity={intensity} opacity={opacityTouched ? opacity : undefined} refraction={refraction} tint={glassTint} color={color} />
           </Stage>
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="thickness" value={thickness} set={setThickness} min={2} max={12} step={1} suffix="px" />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             <Toggle label="refraction" value={refraction} set={setRefraction} />
             {material === "glass" ? (
               <ColorField label="tint" value={tint} set={setTint} />

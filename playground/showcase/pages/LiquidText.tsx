@@ -10,6 +10,8 @@ const MATERIALS: Material[] = ["glass", "flat"];
 export default function LiquidTextPage() {
   const [material, setMaterial] = useState<Material>("glass");
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [angle, setAngle] = useState(115);
 
@@ -21,7 +23,7 @@ export default function LiquidTextPage() {
         <>
           <Stage wall hint="glass letters over the wall">
             <h2 style={{ margin: 0, fontSize: 46, fontWeight: 800, letterSpacing: "-0.02em" }}>
-              <LiquidText material={material} intensity={intensity} speed={speed} angle={angle}>
+              <LiquidText material={material} intensity={intensity} opacity={opacityTouched ? opacity : undefined} speed={speed} angle={angle}>
                 Liquid lettering
               </LiquidText>
             </h2>
@@ -29,6 +31,17 @@ export default function LiquidTextPage() {
           <Controls>
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             <Slider label="speed" value={speed} set={setSpeed} min={0.25} max={3} step={0.25} suffix="×" />
             <Slider label="angle" value={angle} set={setAngle} min={60} max={160} step={5} suffix="°" />
           </Controls>

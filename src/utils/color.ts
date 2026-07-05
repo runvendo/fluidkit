@@ -9,6 +9,8 @@
  * property reference) passes through untouched.
  */
 
+import { supportsRelativeColor } from "./featureDetect";
+
 /**
  * Resolves a consumer-provided `color` prop to a usable CSS color value.
  *
@@ -21,4 +23,19 @@ export function resolveColor(
 ): string {
   const trimmed = color?.trim();
   return trimmed ? trimmed : fallback;
+}
+
+/**
+ * `base` with its alpha REPLACED by `alpha`, composing with any CSS color
+ * format via relative color syntax. Degrades to `base` unchanged where the
+ * syntax is unsupported, and for `currentColor` (some engines accept
+ * `rgb(from white …)` but cannot parse a `currentColor` origin — an
+ * invalid declaration would drop the fill entirely, worse than the
+ * default transparency).
+ */
+export function colorWithAlpha(base: string, alpha: number): string {
+  const clamped = Math.max(0, Math.min(1, alpha));
+  if (base.trim() === "currentColor") return base;
+  if (!supportsRelativeColor()) return base;
+  return `rgb(from ${base} r g b / ${clamped})`;
 }

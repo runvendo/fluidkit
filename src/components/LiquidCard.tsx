@@ -101,6 +101,7 @@ export function LiquidCard(props: LiquidCardProps) {
   const {
     material = themed.material ?? "glass",
     tint,
+    opacity,
     color,
     variant = "default",
     intensity = themed.intensity ?? "whisper",
@@ -148,8 +149,9 @@ export function LiquidCard(props: LiquidCardProps) {
         tint: tint ?? accent?.tint ?? themed.tint,
         color: color ?? accent?.color ?? themed.color,
         refractionUrl,
+        opacity,
       }),
-    [material, tint, color, accent, themed, refractionUrl]
+    [material, tint, color, accent, themed, refractionUrl, opacity]
   );
 
   const sceneLight = useMemo(() => {

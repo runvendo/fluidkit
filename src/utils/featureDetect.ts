@@ -38,6 +38,16 @@ export function supportsRefraction(): boolean {
   );
 }
 
+/**
+ * Whether CSS relative color syntax (`rgb(from <color> r g b / a)`) works —
+ * the pack's `opacity` knob rewrites a tint's alpha with it. Evergreen
+ * browsers since 2024; where unsupported, `opacity` is ignored and the
+ * material's default transparency renders.
+ */
+export function supportsRelativeColor(): boolean {
+  return cssSupports("color", "rgb(from white r g b / 0.5)");
+}
+
 /** Whether the View Transitions API (`document.startViewTransition`) is available. */
 export function supportsViewTransition(): boolean {
   try {

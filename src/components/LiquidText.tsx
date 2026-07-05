@@ -142,6 +142,7 @@ export function LiquidText(props: LiquidTextProps) {
     material = (themed.material as LiquidTextMaterial | undefined) ?? "glass",
     color = themed.color ?? "#23242c",
     tint = themed.tint,
+    opacity,
     sheenColor = "#ffffff",
     intensity = themed.intensity ?? "whisper",
     speed = 1,
@@ -222,7 +223,7 @@ export function LiquidText(props: LiquidTextProps) {
   // The recipe (tint, saturation, compositor hint) is the shared resolver's;
   // only the blur radius is overridden to GLYPH_BLUR_PX (see its comment).
   const glassFill = glass
-    ? resolveMaterial("glass", { tint, blurPx: GLYPH_BLUR_PX }).fillStyle
+    ? resolveMaterial("glass", { tint, blurPx: GLYPH_BLUR_PX, opacity }).fillStyle
     : null;
   const glassLayer: CSSProperties | null =
     glass && mask && glassFill

@@ -24,10 +24,11 @@ const triggerStyle: React.CSSProperties = {
   cursor: "default",
 };
 
-function TooltipVariant({ placement, material, intensity, speed, refraction, label, tint, color }: {
+function TooltipVariant({ placement, material, intensity, opacity, speed, refraction, label, tint, color }: {
   placement: Placement;
   material: LiquidMaterial;
   intensity: number;
+  opacity?: number;
   speed?: number;
   refraction?: boolean;
   label?: string;
@@ -40,6 +41,7 @@ function TooltipVariant({ placement, material, intensity, speed, refraction, lab
       placement={placement}
       material={material}
       intensity={intensity}
+      opacity={opacity}
       speed={speed}
       refraction={refraction}
       tint={material === "glass" ? tint : undefined}
@@ -54,6 +56,8 @@ export default function LiquidTooltipPage() {
   const [placement, setPlacement] = useState<Placement>("top");
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [refraction, setRefraction] = useState(false);
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
@@ -68,12 +72,23 @@ export default function LiquidTooltipPage() {
       hero={
         <>
           <Stage wall hint="hover or focus the trigger">
-            <TooltipVariant placement={placement} material={material} intensity={intensity} speed={speed} refraction={refraction} tint={glassTint} color={color} />
+            <TooltipVariant placement={placement} material={material} intensity={intensity} opacity={opacityTouched ? opacity : undefined} speed={speed} refraction={refraction} tint={glassTint} color={color} />
           </Stage>
           <Controls>
             <Seg label="placement" value={placement} set={setPlacement} options={PLACEMENTS} />
             <Seg label="material" value={material} set={setMaterial} options={MATERIALS} />
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             <Slider label="speed" value={speed} set={setSpeed} min={0.25} max={2.5} step={0.25} suffix="×" />
             <Toggle label="refraction" value={refraction} set={setRefraction} />
             {material === "glass" ? (

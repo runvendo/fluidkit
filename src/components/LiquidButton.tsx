@@ -341,6 +341,7 @@ export function LiquidButton(props: LiquidButtonProps) {
     variant = "still",
     material = themed.material ?? "glass",
     tint = themed.tint,
+    opacity,
     color = themed.color,
     light,
     reflection = true,
@@ -405,8 +406,8 @@ export function LiquidButton(props: LiquidButtonProps) {
     canvasH
   );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color, refractionUrl }),
-    [material, tint, color, refractionUrl]
+    () => resolveMaterial(material, { tint, color, refractionUrl, opacity }),
+    [material, tint, color, refractionUrl, opacity]
   );
   // Press feedback decorates the resolved fill component-side: `color-mix`
   // derives the pressed shade from whatever the material resolved to (any
