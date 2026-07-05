@@ -16,7 +16,7 @@
  * the tint still flips so state never depends on motion.
  */
 
-import type { CSSProperties, InputHTMLAttributes, ReactNode } from "react";
+import type { InputHTMLAttributes, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAnimationFrame } from "motion/react";
 import {
@@ -40,7 +40,7 @@ import { useCheckedState, visuallyHiddenInput } from "./formControl";
 import type { SurfaceStyleProps } from "./surface";
 
 export interface LiquidSwitchProps
-  extends SurfaceStyleProps,
+  extends Omit<SurfaceStyleProps, "refraction">,
     Omit<
       InputHTMLAttributes<HTMLInputElement>,
       "size" | "type" | "checked" | "defaultChecked" | "onChange" | "color"
@@ -94,7 +94,6 @@ export function LiquidSwitch({
   intensity = "present",
   light,
   reflection = true,
-  refraction: _refraction, // reserved: edge lensing is not wired on switches yet
   shadow = true,
   disabled,
   className,

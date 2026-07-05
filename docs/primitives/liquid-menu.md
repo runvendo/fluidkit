@@ -38,7 +38,7 @@ open handlers are injected onto it.
 | `radius` | `number` | `14` | Corner radius in px. |
 
 Plus the surface style pack: `material`, `tint`, `color`, `intensity`, `light`,
-`reflection`, `shadow`. `refraction` is accepted but not wired on menus yet.
+`reflection`, `shadow`. `refraction` is omitted — not physically wired on menus.
 
 ## Keyboard
 

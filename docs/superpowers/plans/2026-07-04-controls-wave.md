@@ -140,7 +140,16 @@ Pure refactor, zero visual change.
   budget by 130 B; the close-out re-pin replaces this with measured +20%.)
 - [ ] Full verification: `npm test`, `npm run typecheck`, `npm run size`,
   `npm run check:gpu-leak`, `npm run check:pack`.
-- [ ] Code review pass (requesting-code-review), fix findings.
+- [x] Code review pass: 8 angles, 8 verified findings; the 7 actionable ones
+  fixed (toast stale exit timer / pre-mount dismiss / settle-gated loop,
+  checkbox native indeterminate re-assert, shared `colorWithAlpha` replacing
+  the fragile alpha regex + `currentColor` guard, `refraction` Omit'd on the
+  seven wave components). **Recorded follow-ups (next arc, not this PR):**
+  extract `useMeasuredSize` (8 copies of the ResizeObserver block) and
+  `useSpringSettle` (7 copies of the settle scaffold); scale the engine
+  shadow with surface size in `LiquidRenderer` (Slider/Progress tracks get
+  the same detached shadow the checkbox had — needs a design pass); consider
+  a shared recess-well tint constant (alphas drift 0.14–0.22).
 - [ ] PR: branch `yousefh409/new-components` → `main`, spec + plan linked.
 
 ## Verification contract (every component)

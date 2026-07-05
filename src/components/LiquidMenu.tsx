@@ -58,7 +58,7 @@ export type LiquidMenuItem =
 export type LiquidMenuSide = "bottom" | "top";
 export type LiquidMenuAlign = "start" | "end";
 
-export interface LiquidMenuProps extends SurfaceStyleProps {
+export interface LiquidMenuProps extends Omit<SurfaceStyleProps, "refraction"> {
   /** The trigger element; ARIA and open handlers are injected onto it. */
   trigger: ReactElement;
   items: LiquidMenuItem[];
@@ -124,7 +124,6 @@ export function LiquidMenu({
   intensity = "whisper",
   light,
   reflection = true,
-  refraction: _refraction, // reserved: edge lensing is not wired on menus yet
   shadow = true,
 }: LiquidMenuProps) {
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -228,6 +227,18 @@ export function LiquidMenu({
 
   /* --------------------------- focus & dismiss --------------------------- */
 
+  const moveFocus = (dir: 1 | -1 | "first" | "last") => {
+    const list = itemRefs.current.filter(
+      (el): el is HTMLButtonElement =>
+        !!el && el.getAttribute("aria-disabled") !== "true"
+    );
+    if (!list.length) return;
+    if (dir === "first") return list[0].focus();
+    if (dir === "last") return list[list.length - 1].focus();
+    const i = list.findIndex((el) => el === document.activeElement);
+    list[(i + dir + list.length) % list.length].focus();
+  };
+
   // Initial focus lands once the menu exists (a tick later, so the portal
   // subtree is in the document). Skipped if a close raced the timeout —
   // stealing focus mid-drain would strand it on an unmounting node.
@@ -235,17 +246,11 @@ export function LiquidMenu({
   closingRef.current = closing;
   useEffect(() => {
     if (openState === null) return;
-    const focusables = () =>
-      itemRefs.current.filter(
-        (el): el is HTMLButtonElement =>
-          !!el && el.getAttribute("aria-disabled") !== "true"
-      );
     const t = setTimeout(() => {
-      if (closingRef.current) return;
-      const list = focusables();
-      (openState.initialFocus === "last" ? list[list.length - 1] : list[0])?.focus();
+      if (!closingRef.current) moveFocus(openState.initialFocus);
     }, 0);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openState]);
 
   // Outside pointerdown closes (without stealing focus back).
@@ -261,18 +266,6 @@ export function LiquidMenu({
     return () => document.removeEventListener("pointerdown", onPointerDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  const moveFocus = (dir: 1 | -1 | "first" | "last") => {
-    const list = itemRefs.current.filter(
-      (el): el is HTMLButtonElement =>
-        !!el && el.getAttribute("aria-disabled") !== "true"
-    );
-    if (!list.length) return;
-    if (dir === "first") return list[0].focus();
-    if (dir === "last") return list[list.length - 1].focus();
-    const i = list.findIndex((el) => el === document.activeElement);
-    list[(i + dir + list.length) % list.length].focus();
-  };
 
   const onMenuKeyDown = (e: React.KeyboardEvent) => {
     switch (e.key) {

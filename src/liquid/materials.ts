@@ -12,10 +12,8 @@
  */
 
 import type { CSSProperties } from "react";
-import {
-  supportsBackdropFilter,
-  supportsRelativeColor,
-} from "../utils/featureDetect";
+import { supportsBackdropFilter } from "../utils/featureDetect";
+import { colorWithAlpha } from "../utils/color";
 
 export type LiquidMaterial = "glass" | "flat" | "caustics";
 
@@ -70,11 +68,11 @@ const CAUSTICS_LIGHT = "#fffdf7";
 const CAUSTICS_WALL = "linear-gradient(180deg, #f8f8f5, #eceeef)";
 
 /** The fill color with the pack's `opacity` applied (alpha REPLACED, not
- * multiplied). Where relative color syntax is missing, the base renders. */
+ * multiplied). Where relative color syntax is missing — or the base is
+ * `currentColor`, which some engines can't use as a relative-color origin
+ * — the base renders untouched. */
 function withOpacity(base: string, opacity: number | undefined): string {
-  if (opacity == null || !supportsRelativeColor()) return base;
-  const clamped = Math.max(0, Math.min(1, opacity));
-  return `rgb(from ${base} r g b / ${clamped})`;
+  return opacity == null ? base : colorWithAlpha(base, opacity);
 }
 
 export function resolveMaterial(

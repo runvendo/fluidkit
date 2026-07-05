@@ -52,7 +52,7 @@ Calls made before the provider mounts are queued and flushed on mount.
 
 Plus the surface style pack: `material`, `tint`, `color`, `intensity` (defaults
 to `"present"`, matching the approved prototype's glint), `light`, `reflection`,
-`shadow`. `refraction` is accepted but not wired on toasts yet.
+`shadow`. `refraction` is omitted — not physically wired on toasts.
 
 `tint` defaults to a **near-solid white** (`rgba(255,255,255,0.82)`) — a
 notification sits over unknown content and must stay readable. Lower the

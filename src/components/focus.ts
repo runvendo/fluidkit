@@ -12,6 +12,7 @@
 
 import type { CSSProperties, FocusEvent } from "react";
 import { useRef, useState } from "react";
+import { colorWithAlpha } from "../utils/color";
 
 /** Pointer-press → focus handoff window. */
 const POINTER_FOCUS_MS = 400;
@@ -49,7 +50,7 @@ export function focusMeniscusStyle(
     position: "absolute",
     inset: -3,
     borderRadius: radius + 3,
-    boxShadow: `0 0 0 2px ${tint}, 0 0 8px 2px ${tint.replace(/[\d.]+\)$/, "0.25)")}`,
+    boxShadow: `0 0 0 2px ${tint}, 0 0 8px 2px ${colorWithAlpha(tint, 0.25)}`,
     pointerEvents: "none",
   };
 }

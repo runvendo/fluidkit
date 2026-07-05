@@ -33,7 +33,7 @@ import {
 } from "../liquid";
 import type { LiquidSceneHandle, SpecularSpot, Vec } from "../liquid";
 import { useMotionSprings } from "../liquid/useMotionSprings";
-import { usePrefersReducedMotion } from "../utils";
+import { colorWithAlpha, usePrefersReducedMotion } from "../utils";
 import { resolveIntensity } from "./intensity";
 import type { LiquidIntensity } from "./intensity";
 import { focusMeniscusStyle, useFocusVisible } from "./focus";
@@ -41,7 +41,7 @@ import { visuallyHiddenInput } from "./formControl";
 import type { SurfaceStyleProps } from "./surface";
 
 export interface LiquidSliderProps
-  extends SurfaceStyleProps,
+  extends Omit<SurfaceStyleProps, "refraction">,
     Omit<
       InputHTMLAttributes<HTMLInputElement>,
       | "size"
@@ -85,10 +85,9 @@ const FOLLOW_SPRING = { stiffness: 400, damping: 30 };
 const SETTLE_MS = 700;
 const DEFAULT_FILL_TINT = "rgba(96, 156, 220, 0.45)";
 
-/** The active (being-slid) tint: the fill tint at near-full strength. */
+/** The rest-state tint: the fill tint at near-full strength. */
 function saturate(tint: string): string {
-  const vivid = tint.replace(/[\d.]+\)$/, "0.85)");
-  return vivid === tint ? tint : vivid;
+  return colorWithAlpha(tint, 0.85);
 }
 
 interface Scene {
@@ -114,7 +113,6 @@ export function LiquidSlider({
   intensity = "present",
   light,
   reflection = true,
-  refraction: _refraction, // reserved: edge lensing is not wired on sliders yet
   shadow = true,
   disabled,
   className,

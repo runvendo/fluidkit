@@ -1,5 +1,5 @@
 // Shared utilities will be re-exported from here as they are implemented.
-export { resolveColor } from "./color";
+export { colorWithAlpha, resolveColor } from "./color";
 export {
   supportsBackdropFilter,
   supportsRefraction,

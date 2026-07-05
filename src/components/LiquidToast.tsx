@@ -93,7 +93,17 @@ export function toast(
 
 /** Dismiss one toast by id, or every toast when called with no argument. */
 toast.dismiss = (id?: string | number): void => {
-  dismissDispatch?.(id);
+  if (!dismissDispatch) {
+    // No provider yet: purge the queue so a pre-mount dismiss doesn't
+    // resurrect the toast when the provider flushes.
+    if (id === undefined) pending.length = 0;
+    else {
+      const i = pending.findIndex((t) => t.id === id);
+      if (i !== -1) pending.splice(i, 1);
+    }
+    return;
+  }
+  dismissDispatch(id);
 };
 
 /* ------------------------------- provider ------------------------------- */
@@ -104,7 +114,7 @@ export type LiquidToastPosition =
   | "top-right"
   | "top-left";
 
-export interface LiquidToastProviderProps extends SurfaceStyleProps {
+export interface LiquidToastProviderProps extends Omit<SurfaceStyleProps, "refraction"> {
   /**
    * Glass tint. Defaults to a NEAR-SOLID white (`rgba(255,255,255,0.82)`) —
    * a documented divergence from the pack's translucent default: a
@@ -144,6 +154,8 @@ interface ToastRecord extends ToastPayload {
 
 /** How long a leaving toast stays mounted for its evaporate to finish. */
 const EXIT_MS = 520;
+/** How long the item's loop keeps running after a state flip. */
+const SETTLE_MS = 1100;
 
 export function LiquidToastProvider({
   position = "bottom-right",
@@ -161,7 +173,6 @@ export function LiquidToastProvider({
   intensity = "present",
   light,
   reflection = true,
-  refraction: _refraction, // reserved: edge lensing is not wired on toasts yet
   shadow = true,
   children,
 }: LiquidToastProviderProps) {
@@ -205,6 +216,13 @@ export function LiquidToastProvider({
         existing.nonce += 1;
         commitRef.current();
         return;
+      }
+      // Re-using an id whose predecessor is still evaporating: disarm its
+      // exit timer, or it would fire and unmount the NEW toast mid-display.
+      const staleExit = exitTimers.current.get(payload.id);
+      if (staleExit) {
+        clearTimeout(staleExit);
+        exitTimers.current.delete(payload.id);
       }
       // Cap the stack: the oldest live toast evaporates early.
       const live = listRef.current.filter((t) => !t.leaving);
@@ -439,14 +457,25 @@ function ToastItem({
     return { path, speculars };
   };
 
-  /* Condense fraction: 0 = droplet mist, 1 = seated. */
+  /* Condense fraction: 0 = droplet mist, 1 = seated. The loop only runs
+   * for a settle window around each transition — a seated (or sticky)
+   * toast must not burn 60fps doing visually static writes. */
   const f = useMotionSprings(1, () => (animating ? 0 : 1), CONDENSE_SPRING);
+  const [settling, setSettling] = useState(false);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!animating) {
       f.snapTo([leaving ? 0 : 1]);
+      setSettling(false);
       return;
     }
     f.setTargets([leaving ? 0 : 1], leaving ? EVAPORATE_SPRING : CONDENSE_SPRING);
+    setSettling(true);
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => setSettling(false), SETTLE_MS);
+    return () => {
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaving, animating]);
 
@@ -459,13 +488,25 @@ function ToastItem({
     [size, resolved.specular, sceneLight, surface.volume]
   );
 
-  // When the loop isn't running the declarative (static) rendering wins.
+  // When the loop isn't running the declarative (static) rendering wins,
+  // and the loop's per-frame style writes are normalized to their resting
+  // values so nothing sticks a hair short of settled.
   useEffect(() => {
-    if (!animating) renderer.current?.setScene(staticScene);
-  }, [animating, staticScene]);
+    if (animating && settling) return;
+    renderer.current?.setScene(staticScene);
+    if (canvasRef.current) {
+      const st = canvasRef.current.style;
+      st.opacity = leaving ? "0" : "1";
+      st.filter = "";
+      st.transform = "";
+    }
+    if (overlayRef.current) {
+      overlayRef.current.style.opacity = leaving ? "0" : "1";
+    }
+  }, [animating, settling, staticScene, leaving]);
 
   useAnimationFrame(() => {
-    if (!animating || !size) return;
+    if (!animating || !settling || !size) return;
     const v = f.values[0].get();
     renderer.current?.setScene(buildScene(Math.max(v, GROW_FLOOR)));
     if (canvasRef.current) {

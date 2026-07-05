@@ -39,7 +39,7 @@ type NativeFieldProps = Omit<
   "color" | "size"
 >;
 
-export interface LiquidFieldProps extends SurfaceStyleProps, NativeFieldProps {
+export interface LiquidFieldProps extends Omit<SurfaceStyleProps, "refraction">, NativeFieldProps {
   /** Label rendered above the field, associated via `htmlFor`. */
   label?: ReactNode;
   /** Render a `<textarea>` instead of a single-line input. */
@@ -61,7 +61,6 @@ export function LiquidField({
   intensity = "whisper",
   light,
   reflection = true,
-  refraction: _refraction, // reserved: edge lensing is not wired on fields yet
   shadow = true,
   className,
   style,
@@ -162,7 +161,6 @@ export function LiquidField({
     <div
       data-fluidkit="liquid-field"
       data-focused={focused}
-      data-animating={false}
       className={className}
       onPointerDown={focus.onPointerDown}
       style={{ display: "grid", gap: 6, ...style }}

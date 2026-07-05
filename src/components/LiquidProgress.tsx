@@ -31,7 +31,7 @@ import type { LiquidIntensity } from "./intensity";
 import type { SurfaceStyleProps } from "./surface";
 
 export interface LiquidProgressProps
-  extends SurfaceStyleProps,
+  extends Omit<SurfaceStyleProps, "refraction">,
     Omit<HTMLAttributes<HTMLDivElement>, "color" | "role"> {
   /** Current progress, `0..max` (native `<progress>` convention). */
   value: number;
@@ -81,7 +81,6 @@ export function LiquidProgress({
   intensity = "present",
   light,
   reflection = true,
-  refraction: _refraction, // reserved: edge lensing is not wired on progress yet
   shadow = true,
   className,
   style,

@@ -33,7 +33,7 @@ import { useCheckedState, visuallyHiddenInput } from "./formControl";
 import type { SurfaceStyleProps } from "./surface";
 
 export interface LiquidCheckboxProps
-  extends SurfaceStyleProps,
+  extends Omit<SurfaceStyleProps, "refraction">,
     Omit<
       InputHTMLAttributes<HTMLInputElement>,
       "size" | "type" | "checked" | "defaultChecked" | "onChange" | "color"
@@ -80,7 +80,6 @@ export function LiquidCheckbox({
   intensity = "present",
   light,
   reflection = true,
-  refraction: _refraction, // reserved: edge lensing is not wired on checkboxes yet
   shadow = true,
   disabled,
   className,
@@ -293,7 +292,13 @@ export function LiquidCheckbox({
           disabled={disabled}
           checked={checked !== undefined ? checked : undefined}
           defaultChecked={checked !== undefined ? undefined : defaultChecked}
-          onChange={(e) => state.handleChange(e.target.checked)}
+          onChange={(e) => {
+            // A user click auto-clears the NATIVE indeterminate flag;
+            // re-assert the prop so assistive tech and :indeterminate CSS
+            // stay in step with the painted half-fill.
+            e.target.indeterminate = indeterminate;
+            state.handleChange(e.target.checked);
+          }}
           onFocus={focus.onFocus}
           onBlur={focus.onBlur}
           {...inputRest}
