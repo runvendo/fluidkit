@@ -22,6 +22,8 @@ export default function LiquidDialogPage() {
   const [open, setOpen] = useState(false);
   const [material, setMaterial] = useState<LiquidMaterial>("glass");
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [refraction, setRefraction] = useState(false);
   // null = untouched: picker shows a neutral swatch, snippet/prop stay omitted.
   const [tint, setTint] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export default function LiquidDialogPage() {
               aria-label="Example dialog"
               material={material}
               intensity={intensity}
+              opacity={opacityTouched ? opacity : undefined}
               refraction={refraction}
               tint={material === "glass" ? glassTint : undefined}
               color={material === "flat" ? color : undefined}
@@ -77,6 +80,17 @@ export default function LiquidDialogPage() {
               <ColorField label="color" value={color} set={setColor} />
             )}
             <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             <Toggle label="refraction" value={refraction} set={setRefraction} />
           </Controls>
         </>

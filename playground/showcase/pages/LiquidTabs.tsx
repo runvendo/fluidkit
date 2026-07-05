@@ -44,6 +44,8 @@ export default function LiquidTabsPage() {
   const [color, setColor] = useState(FLAT_COLOR);
   const [reflection, setReflection] = useState(false);
   const [intensity, setIntensity] = useState(0.35);
+  const [opacity, setOpacity] = useState(0.5);
+  const [opacityTouched, setOpacityTouched] = useState(false);
   const [shadow, setShadow] = useState(false);
   // null = untouched: picker shows the component default, snippet omits the prop.
   const [labelColor, setLabelColor] = useState<string | null>(null);
@@ -74,6 +76,7 @@ export default function LiquidTabsPage() {
               tint={material === "glass" ? tint : undefined}
               reflection={reflection}
               intensity={intensity}
+              opacity={opacityTouched ? opacity : undefined}
               shadow={shadow}
               labelColor={labelColor ?? undefined}
               activeLabelColor={activeLabelColor ?? undefined}
@@ -109,6 +112,17 @@ export default function LiquidTabsPage() {
             {material === "glass" && reflection && (
               <Slider label="intensity" value={intensity} set={setIntensity} min={0} max={1} step={0.05} />
             )}
+            <Slider
+              label="opacity"
+              value={opacity}
+              set={(n) => {
+                setOpacity(n);
+                setOpacityTouched(true);
+              }}
+              min={0}
+              max={1}
+              step={0.02}
+            />
             <Toggle label="shadow" value={shadow} set={setShadow} />
             <Toggle label="disable Automations" value={disableOne} set={setDisableOne} />
           </Controls>

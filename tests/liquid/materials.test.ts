@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-async function loadWithBackdropSupport(supported: boolean) {
+async function loadWithBackdropSupport(
+  supported: boolean,
+  relativeColor = true
+) {
   vi.resetModules();
   vi.doMock("../../src/utils/featureDetect", () => ({
     supportsBackdropFilter: () => supported,
+    supportsRelativeColor: () => relativeColor,
   }));
   return import("../../src/liquid/materials");
 }
@@ -101,5 +105,42 @@ describe("resolveMaterial", () => {
     const m = resolveMaterial("caustics", { tint: "#dbeaff", color: "#10161a" });
     expect(m.fillStyle.background).toBe("#10161a");
     expect(m.caustics).toEqual({ light: "#dbeaff" });
+  });
+
+  it("opacity REPLACES the fill's alpha via relative color syntax", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(true);
+    const glass = resolveMaterial("glass", { opacity: 0.8 });
+    expect(glass.fillStyle.background).toBe(
+      "rgb(from rgba(255,255,255,0.3) r g b / 0.8)"
+    );
+    const tinted = resolveMaterial("glass", { tint: "#88bbee", opacity: 0.5 });
+    expect(tinted.fillStyle.background).toBe("rgb(from #88bbee r g b / 0.5)");
+    const flat = resolveMaterial("flat", { color: "tomato", opacity: 0.4 });
+    expect(flat.fillStyle.background).toBe("rgb(from tomato r g b / 0.4)");
+  });
+
+  it("opacity is clamped to 0..1 and applies to the glass fallback fill", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(false);
+    const m = resolveMaterial("glass", { opacity: 1.7 });
+    expect(m.kind).toBe("flat");
+    expect(m.fillStyle.background).toBe(
+      "rgb(from rgba(255,255,255,0.65) r g b / 1)"
+    );
+  });
+
+  it("opacity degrades to the default transparency where relative color is unsupported", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(true, false);
+    const m = resolveMaterial("glass", { tint: "#88bbee", opacity: 0.5 });
+    expect(m.fillStyle.background).toBe("#88bbee");
+  });
+
+  it("unset opacity leaves every fill untouched", async () => {
+    const { resolveMaterial } = await loadWithBackdropSupport(true);
+    expect(resolveMaterial("glass").fillStyle.background).toBe(
+      "rgba(255,255,255,0.3)"
+    );
+    expect(
+      resolveMaterial("flat", { color: "tomato" }).fillStyle.background
+    ).toBe("tomato");
   });
 });

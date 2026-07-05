@@ -335,6 +335,7 @@ export function LiquidButton({
   variant = "jelly",
   material = "glass",
   tint,
+  opacity,
   color,
   light,
   reflection = true,
@@ -399,8 +400,8 @@ export function LiquidButton({
     canvasH
   );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color, refractionUrl }),
-    [material, tint, color, refractionUrl]
+    () => resolveMaterial(material, { tint, color, refractionUrl, opacity }),
+    [material, tint, color, refractionUrl, opacity]
   );
   // Press feedback decorates the resolved fill component-side: `color-mix`
   // derives the pressed shade from whatever the material resolved to (any

@@ -134,6 +134,7 @@ export function Droplets({
   speed = 1,
   material = "glass",
   tint,
+  opacity,
   color,
   light,
   reflection = true,
@@ -171,8 +172,8 @@ export function Droplets({
     side
   );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color, refractionUrl }),
-    [material, tint, color, refractionUrl]
+    () => resolveMaterial(material, { tint, color, refractionUrl, opacity }),
+    [material, tint, color, refractionUrl, opacity]
   );
   const sceneLight =
     !reflection || light === null ? null : light ?? defaultLight(side, side);

@@ -115,6 +115,7 @@ export function MorphSurface({
   radius = 24,
   material = "glass",
   tint,
+  opacity,
   color,
   light,
   reflection = true,
@@ -182,8 +183,8 @@ export function MorphSurface({
     height
   );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color, refractionUrl }),
-    [material, tint, color, refractionUrl]
+    () => resolveMaterial(material, { tint, color, refractionUrl, opacity }),
+    [material, tint, color, refractionUrl, opacity]
   );
   const sceneLight =
     !reflection || light === null

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Caustics, JellyButton, LiquidCard } from "fluidkit";
+import { Caustics, LiquidButton, LiquidCard } from "fluidkit";
 import {
   PageLayout,
   Stage,
@@ -111,9 +111,9 @@ export default function CausticsPage() {
               </LiquidCard>
             </div>
           </VariantCell>
-          <VariantCell label='JellyButton material="caustics"'>
+          <VariantCell label='LiquidButton material="caustics"'>
             <div style={{ display: "grid", placeItems: "center", height: "100%" }}>
-              <JellyButton material="caustics">Press me</JellyButton>
+              <LiquidButton material="caustics">Press me</LiquidButton>
             </div>
           </VariantCell>
         </VariantGrid>

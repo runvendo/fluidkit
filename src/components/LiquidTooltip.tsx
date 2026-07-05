@@ -184,6 +184,7 @@ export function LiquidTooltip({
   placement = "top",
   material = "glass",
   tint,
+  opacity,
   color,
   intensity = "whisper",
   light,
@@ -251,8 +252,8 @@ export function LiquidTooltip({
     size ? size.h + BLEED * 2 : 0
   );
   const resolved = useMemo(
-    () => resolveMaterial(material, { tint, color, refractionUrl }),
-    [material, tint, color, refractionUrl]
+    () => resolveMaterial(material, { tint, color, refractionUrl, opacity }),
+    [material, tint, color, refractionUrl, opacity]
   );
   const volume = resolveIntensity(intensity);
 

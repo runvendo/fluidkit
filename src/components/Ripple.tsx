@@ -72,6 +72,7 @@ const GLASS_RIM = "inset 0 0 0 1px rgba(255,255,255,0.45)";
 export function Ripple({
   color,
   tint,
+  opacity,
   duration,
   material = "flat",
   intensity = "whisper",
@@ -108,7 +109,7 @@ export function Ripple({
   const fillStyle: CSSProperties =
     material === "glass"
       ? {
-          ...resolveMaterial("glass", { tint, blurPx: RIPPLE_BLUR_PX })
+          ...resolveMaterial("glass", { tint, blurPx: RIPPLE_BLUR_PX, opacity })
             .fillStyle,
           boxShadow: GLASS_RIM,
         }
