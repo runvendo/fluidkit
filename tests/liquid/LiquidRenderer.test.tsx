@@ -8,7 +8,10 @@ import { resolveMaterial } from "../../src/liquid/materials";
 const PATH = "M 10 10 L 20 10 L 20 20 Z ";
 
 describe("LiquidRenderer", () => {
-  it("clips on a wrapper element, NOT on the backdrop-filter fill (Chromium artifact)", () => {
+  it("clips on BOTH the wrapper and the backdrop-filter fill (halo containment)", () => {
+    // The wrapper clip is the paint fallback; the fill's own clip bounds the
+    // backdrop-filter REGION, which GPU Chromium does not clip by ancestor
+    // clip-path (the glass-halo rectangle around chromatic brand tints).
     const { container } = render(
       <LiquidRenderer path={PATH} material={resolveMaterial("glass")} />
     );
@@ -19,7 +22,7 @@ describe("LiquidRenderer", () => {
       '[data-fluidkit="liquid-fill"]'
     ) as HTMLElement;
     expect(clip.style.clipPath).toContain("path(");
-    expect(fill.style.clipPath).toBe("");
+    expect(fill.style.clipPath).toBe(clip.style.clipPath);
     expect(fill.parentElement).toBe(clip);
   });
 
@@ -93,6 +96,10 @@ describe("LiquidRenderer", () => {
     expect(clip.style.clipPath).toContain("M 0 0");
     expect(shadow.style.clipPath).toContain("M 0 0");
     expect(content.style.clipPath).toContain("M 0 0");
+    const fill = container.querySelector(
+      '[data-fluidkit="liquid-fill"]'
+    ) as HTMLElement;
+    expect(fill.style.clipPath).toContain("M 0 0");
     // Ellipse pool: slot 0 updated, slot 1 hidden.
     const ellipses = container.querySelectorAll("ellipse");
     expect(ellipses).toHaveLength(2);

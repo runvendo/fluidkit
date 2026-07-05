@@ -8,9 +8,16 @@
  *                never backdrop-samples a heavy black behind itself)
  *   2. clip    — wrapper holding the clip-path; the material fill (possibly
  *                backdrop-filtered) is its CHILD (Chromium artifact when
- *                clip-path + backdrop-filter share an element). For the
- *                caustics material a `CausticsLayer` (WebGL light) mounts
- *                after the fill, clipped by the same wrapper.
+ *                clip-path + backdrop-filter share an element). The fill
+ *                ALSO carries the same clip-path itself: on GPU-composited
+ *                Chromium an ancestor clip does not clip a descendant's
+ *                backdrop-filter REGION, so an unclipped fill paints its
+ *                blur/saturate as a visible rectangle around the shape
+ *                (invisible with the old translucent-white tint, glaring
+ *                with chromatic brand tints). Same-element clip bounds the
+ *                backdrop region; the wrapper stays as the paint fallback.
+ *                For the caustics material a `CausticsLayer` (WebGL light)
+ *                mounts after the fill, clipped by the same wrapper.
  *   3. spec    — svg with EXPLICIT 100% width/height, clipped to the shape,
  *                radial-gradient ellipses (no blur filters)
  *   4. content — unclipped overlay; only ever cross-fades, never scales
@@ -101,6 +108,7 @@ export const LiquidRenderer = forwardRef<
 
   const shadowRef = useRef<HTMLDivElement>(null);
   const clipRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
   const specRef = useRef<SVGSVGElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const ellipseRefs = useRef<(SVGEllipseElement | null)[]>([]);
@@ -112,6 +120,7 @@ export const LiquidRenderer = forwardRef<
         const nextClip = `path('${scene.path}')`;
         if (shadowRef.current) shadowRef.current.style.clipPath = nextClip;
         if (clipRef.current) clipRef.current.style.clipPath = nextClip;
+        if (fillRef.current) fillRef.current.style.clipPath = nextClip;
         if (specRef.current) specRef.current.style.clipPath = nextClip;
         if (clipContent && contentRef.current) {
           contentRef.current.style.clipPath = nextClip;
@@ -149,8 +158,9 @@ export const LiquidRenderer = forwardRef<
         style={{ ...layer, clipPath }}
       >
         <div
+          ref={fillRef}
           data-fluidkit="liquid-fill"
-          style={{ ...layer, ...material.fillStyle }}
+          style={{ ...layer, ...material.fillStyle, clipPath }}
         />
         {material.kind === "caustics" && material.caustics && (
           <CausticsLayer light={material.caustics.light} />

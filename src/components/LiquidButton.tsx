@@ -73,13 +73,13 @@ export interface LiquidButtonProps
   extends SurfaceStyleProps,
     ButtonHTMLAttributes<HTMLButtonElement> {
   /**
-   * Press feel. `"jelly"` (default) deforms the geometry on press —
-   * volume-preserving squash, point-aware dent, release jiggle, optional
-   * `releaseWave`. `"still"` keeps the same pill rigid: zero geometry
+   * Press feel. `"still"` (default) keeps the pill rigid: zero geometry
    * deformation, pressing only through the non-geometric polish (fill
    * deepening via `pressFeedback` and the press glint via `pressGlint`).
-   * `squash`, `spring`, `releaseWave`, and `deformPress` are jelly-only and
-   * inert on `"still"`. Reduced motion still wins over `"jelly"`.
+   * `"jelly"` deforms the geometry on press — volume-preserving squash,
+   * point-aware dent, release jiggle, optional `releaseWave`. `squash`,
+   * `spring`, `releaseWave`, and `deformPress` are jelly-only and inert on
+   * `"still"`. Reduced motion still wins over `"jelly"`.
    */
   variant?: "jelly" | "still";
   /**
@@ -337,7 +337,7 @@ export function LiquidButton(props: LiquidButtonProps) {
   // above the built-in defaults. Empty (all-undefined) with no provider.
   const themed = useThemedSurface("LiquidButton");
   const {
-    variant = "jelly",
+    variant = "still",
     material = themed.material ?? "glass",
     tint = themed.tint,
     color = themed.color,

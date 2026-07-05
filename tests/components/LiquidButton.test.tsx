@@ -91,7 +91,8 @@ describe("LiquidButton", () => {
 
   it("press (pointerdown) while animating starts geometry deformation", async () => {
     const LiquidButton = await loadLiquidButton(false);
-    const { getByRole, container } = render(<LiquidButton>Press</LiquidButton>);
+    // Geometry deformation is jelly-only, and "still" is the default now.
+    const { getByRole, container } = render(<LiquidButton variant="jelly">Press</LiquidButton>);
     const button = getByRole("button", { name: "Press" });
     const clip = container.querySelector(
       '[data-fluidkit="liquid-clip"]'
@@ -363,8 +364,9 @@ describe("LiquidButton", () => {
 
   it("force-releases when disabled flips true mid-press and geometry returns home", async () => {
     const LiquidButton = await loadLiquidButton(false);
+    // Geometry deformation is jelly-only, and "still" is the default now.
     const { getByRole, container, rerender } = render(
-      <LiquidButton>Hold</LiquidButton>
+      <LiquidButton variant="jelly">Hold</LiquidButton>
     );
     const button = getByRole("button", { name: "Hold" });
     const clip = container.querySelector(
@@ -378,7 +380,7 @@ describe("LiquidButton", () => {
       expect(clip.style.clipPath).not.toBe(restingClip);
     });
 
-    rerender(<LiquidButton disabled>Hold</LiquidButton>);
+    rerender(<LiquidButton variant="jelly" disabled>Hold</LiquidButton>);
     expect(button.getAttribute("data-pressed")).toBe("false");
 
     // The spring retargets home; once it settles the clip is exactly the
