@@ -40,7 +40,7 @@
  */
 
 import type { CSSProperties, HTMLAttributes } from "react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { resolveColor, useInView, usePrefersReducedMotion } from "../utils";
 import { GOLDEN_RATIO_FRAC, MIN_SPEED } from "../utils/constants";
 import { supportsBackdropFilter } from "../utils/featureDetect";
@@ -66,8 +66,8 @@ const MAX_COUNT = 8;
 const PANE_ANGLE_DEG = 8;
 
 /** Pane blur depth range, px — depth is the point: far panes frost lightly, near panes heavily. */
-const MIN_BLUR_PX = 8;
-const BLUR_SPAN_PX = 18; // 8-26px
+const MIN_BLUR_PX = 4;
+const BLUR_SPAN_PX = 8; // 4-12px
 
 /** How far past each container edge the slot row extends, % of width —
  * absorbs the sideways shift the shared rotation causes at the container's
@@ -101,7 +101,7 @@ const PANE_SHADOW =
 const KEYFRAMES_CSS = `
 @keyframes ${SLIDE_KEYFRAMES_NAME} {
   0% { transform: rotate(var(--fluidkit-panes-rot)) translate(0%, 0%); }
-  50% { transform: rotate(var(--fluidkit-panes-rot)) translate(var(--fluidkit-panes-drift), -2.5%); }
+  50% { transform: rotate(var(--fluidkit-panes-rot)) translate(var(--fluidkit-panes-drift), -3.5%); }
   100% { transform: rotate(var(--fluidkit-panes-rot)) translate(0%, 0%); }
 }
 `;
@@ -133,7 +133,7 @@ function layoutPanes(colors: string[] | undefined, count: number, speed: number)
       // covers every point regardless of count.
       widthPct: spacing + MIN_OVERLAP_PCT + frac * OVERLAP_SPAN_PCT,
       blurPx: Math.round(MIN_BLUR_PX + frac * BLUR_SPAN_PX),
-      driftPct: `${i % 2 === 0 ? 4 : -4}%`,
+      driftPct: `${i % 2 === 0 ? 13 : -13}%`,
       periodS,
       // Negative delay starts each pane mid-cycle instead of all in-phase
       // at 0%, so panes don't visibly synchronize.
@@ -159,8 +159,20 @@ export function GlassPanes({
   style,
   ...rest
 }: GlassPanesProps) {
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const rawPrefersReducedMotion = usePrefersReducedMotion();
   const { ref, inView } = useInView<HTMLDivElement>();
+
+  // Feature detection (reduced-motion + backdrop-filter support) is
+  // static-safe during SSR and the first client render — it assumes reduced
+  // motion and no backdrop-filter. Without re-checking after mount the panes
+  // stay stuck on that flat, non-animated fallback in the browser. Flip a
+  // mounted flag in an effect so we re-render once with the real values.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const prefersReducedMotion = mounted ? rawPrefersReducedMotion : true;
   const animating = !prefersReducedMotion && inView;
 
   useEffect(() => {
@@ -170,8 +182,10 @@ export function GlassPanes({
   const clampedSpeed = Math.max(speed, MIN_SPEED);
   const clampedCount = Math.min(MAX_COUNT, Math.max(1, Math.round(count)));
   // Guarded pure function (never throws, false in SSR) — same detector the
-  // engine's resolveMaterial uses, safe to call during render.
-  const frosted = supportsBackdropFilter();
+  // engine's resolveMaterial uses, safe to call during render. Gate on
+  // `mounted` so SSR/first render stays on the flat fallback and the client
+  // upgrades to frosted glass after mount.
+  const frosted = mounted && supportsBackdropFilter();
   const panes = useMemo(
     () => layoutPanes(colors, clampedCount, clampedSpeed),
     [colors, clampedCount, clampedSpeed]
